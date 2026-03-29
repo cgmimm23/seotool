@@ -27,6 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Site Audit', href: '/dashboard/audit', icon: '✓' },
     { label: 'Keywords', href: '/dashboard/keywords', icon: '≡' },
     { label: 'SERP Tracker', href: '/dashboard/serp', icon: '◎' },
+    { label: 'Page Speed', href: '/dashboard/pagespeed', icon: '⚡' },
     { label: 'Backlinks', href: '/dashboard/backlinks', icon: '⇄' },
     { label: 'Analytics', href: '/dashboard/analytics', icon: '↗' },
     { label: 'Settings', href: '/dashboard/settings', icon: '⚙' },
