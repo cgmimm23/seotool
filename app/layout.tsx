@@ -23,16 +23,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const navItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: '▦' },
-    { label: 'Site Audit', href: '/dashboard/audit', icon: '✓' },
-    { label: 'Keywords', href: '/dashboard/keywords', icon: '≡' },
-    { label: 'SERP Tracker', href: '/dashboard/serp', icon: '◎' },
-    { label: 'Page Speed', href: '/dashboard/pagespeed', icon: '⚡' },
-    { label: 'Schema Builder', href: '/dashboard/schema', icon: '{}' },
-    { label: 'AI Visibility', href: '/dashboard/ai-visibility', icon: '🤖' },
-    { label: 'Backlinks', href: '/dashboard/backlinks', icon: '⇄' },
-    { label: 'Analytics', href: '/dashboard/analytics', icon: '↗' },
-    { label: 'Settings', href: '/dashboard/settings', icon: '⚙' },
+    { label: 'Dashboard', href: '/dashboard', icon: '#' },
+    { label: 'Site Audit', href: '/dashboard/audit', icon: 'A' },
+    { label: 'Keywords', href: '/dashboard/keywords', icon: 'K' },
+    { label: 'SERP Tracker', href: '/dashboard/serp', icon: 'S' },
+    { label: 'Page Speed', href: '/dashboard/pagespeed', icon: 'P' },
+    { label: 'Schema Builder', href: '/dashboard/schema', icon: 'Sc' },
+    { label: 'AI Visibility', href: '/dashboard/ai-visibility', icon: 'AI' },
+    { label: 'Backlinks', href: '/dashboard/backlinks', icon: 'B' },
+    { label: 'Analytics', href: '/dashboard/analytics', icon: 'An' },
+    { label: 'Settings', href: '/dashboard/settings', icon: 'St' },
   ]
 
   return (
