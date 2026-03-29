@@ -232,7 +232,7 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals (autho
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '13px', fontWeight: 600, fontFamily: 'Roboto Mono, monospace', color: '#0d1b2e' }}>/{f.file}</span>
-                      {f.learnMore && <a href={f.learnMore} target="_blank" style={{ fontSize: '11px', color: '#1e90ff', textDecoration: 'none' }}>learn more -></a>}
+                      {f.learnMore && <a href={f.learnMore} target="_blank" style={{ fontSize: '11px', color: '#1e90ff', textDecoration: 'none' }}>learn more </a>}
                     </div>
                     <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px' }}>{f.desc}</div>
                     {f.content && (
