@@ -164,7 +164,7 @@ export default function AggregatorsPage() {
                       <div style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>{agg.coverage}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', align: 'center', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {isConnected && (
                       <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: 'rgba(0,208,132,0.1)', color: '#00d084', fontFamily: 'Roboto Mono, monospace', fontWeight: 600 }}>Connected</span>
                     )}
