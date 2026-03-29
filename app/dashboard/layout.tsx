@@ -13,6 +13,7 @@ const navItems = [
   { label: 'Backlinks', href: '/dashboard/backlinks', section: null },
   { label: 'Analytics', href: '/dashboard/analytics', section: 'Google Data' },
   { label: 'Search Console', href: '/dashboard/search-console', section: null },
+  { label: 'Google Ads', href: '/dashboard/google-ads', section: null },
   { label: 'Local SEO', href: '/dashboard/local-seo', section: 'Local' },
   { label: 'Schema Builder', href: '/dashboard/schema', section: 'Tools' },
   { label: 'Image Tool', href: '/dashboard/tools/image', section: null },
