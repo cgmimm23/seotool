@@ -385,7 +385,7 @@ export default function SchemaPage() {
                 <div style={{ marginBottom: '4px' }}>2. Open your page's HTML and paste it inside the <code style={{ background: '#e4eaf0', padding: '1px 5px', borderRadius: '3px', fontFamily: 'Roboto Mono, monospace' }}>&lt;head&gt;</code> tag.</div>
                 <div style={{ marginBottom: '4px' }}>3. If you're using WordPress, use the <strong>Insert Headers and Footers</strong> plugin and paste it in the header section for the specific page.</div>
                 <div style={{ marginBottom: '4px' }}>4. If you're using Wix, Squarespace, or Webflow, paste it in the page's custom code / header section.</div>
-                <div>5. Validate your schema at <a href="https://search.google.com/test/rich-results" target="_blank" style={{ color: '#1e90ff' }}>Google's Rich Results Test -></a></div>
+                <div>5. Validate your schema at <a href="https://search.google.com/test/rich-results" target="_blank" style={{ color: '#1e90ff' }}>Google's Rich Results Test</a></div>
               </div>
             </div>
           </div>
