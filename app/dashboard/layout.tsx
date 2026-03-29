@@ -17,6 +17,7 @@ const navItems = [
   { label: 'Local SEO', href: '/dashboard/local-seo', section: 'Local' },
   { label: 'Schema Builder', href: '/dashboard/schema', section: 'Tools' },
   { label: 'Image Tool', href: '/dashboard/tools/image', section: null },
+  { label: 'GBP Creator', href: '/dashboard/tools/gbp-creator', section: null },
   { label: 'Settings', href: '/dashboard/settings', section: 'Account' },
 ]
 
@@ -47,7 +48,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ width: '28px', height: '28px', background: '#1e90ff', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '13px', color: '#fff' }}>M</div>
           <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '15px', color: '#0d1b2e' }}>Marketing<span style={{ color: '#1e90ff' }}>SEO</span></div>
         </div>
-
         <nav style={{ flex: 1, padding: '0.5rem 0', overflowY: 'auto' }}>
           {navItems.map(item => {
             const active = pathname === item.href
@@ -65,13 +65,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )
           })}
         </nav>
-
         <div style={{ padding: '1rem', borderTop: '1px solid rgba(0,0,0,0.08)' }}>
           <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
           <button onClick={signOut} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', padding: '0.4rem', fontSize: '12px', color: '#7a8fa8', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif' }}>Sign Out</button>
         </div>
       </aside>
-
       <div style={{ marginLeft: '220px', flex: 1 }}>
         <div style={{ padding: '2rem 1.5rem', maxWidth: '1200px' }}>{children}</div>
       </div>
