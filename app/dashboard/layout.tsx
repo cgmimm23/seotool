@@ -23,9 +23,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     setPathname(window.location.pathname)
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { window.location.href = '/login'; return }
-      setEmail(user.email || '')
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setEmail(session.user.email || '')
+      }
     })
   }, [])
 
