@@ -15,6 +15,7 @@ const navItems = [
   { label: 'Search Console', href: '/dashboard/search-console', section: null },
   { label: 'Google Ads', href: '/dashboard/google-ads', section: null },
   { label: 'Local SEO', href: '/dashboard/local-seo', section: 'Local' },
+  { label: 'Google Reviews', href: '/dashboard/reviews', section: null },
   { label: 'Schema Builder', href: '/dashboard/schema', section: 'Tools' },
   { label: 'Image Tool', href: '/dashboard/tools/image', section: null },
   { label: 'GBP Creator', href: '/dashboard/tools/gbp-creator', section: null },
