@@ -138,7 +138,7 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals (autho
     <div>
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>AI Visibility</h2>
-        <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Check how visible your site is to AI search engines — ChatGPT, Perplexity, Google AI Overviews</p>
+        <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Check how visible your site is to AI search engines - ChatGPT, Perplexity, Google AI Overviews</p>
       </div>
 
       {/* Input */}
@@ -201,8 +201,8 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals (autho
                   file: 'llms.txt',
                   exists: result.llms.exists,
                   desc: result.llms.exists
-                    ? 'Found — helps AI models understand your site content'
-                    : 'Not found — create /llms.txt to guide AI crawlers',
+                    ? 'Found - helps AI models understand your site content'
+                    : 'Not found - create /llms.txt to guide AI crawlers',
                   content: result.llms.content,
                   learnMore: 'https://llmstxt.org',
                 },
@@ -210,8 +210,8 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals (autho
                   file: 'ai.txt',
                   exists: result.aiTxt.exists,
                   desc: result.aiTxt.exists
-                    ? 'Found — AI permissions file present'
-                    : 'Not found — optional file for AI crawler permissions',
+                    ? 'Found - AI permissions file present'
+                    : 'Not found - optional file for AI crawler permissions',
                   content: result.aiTxt.content,
                   learnMore: null,
                 },
@@ -219,20 +219,20 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals (autho
                   file: 'robots.txt',
                   exists: result.robots.exists,
                   desc: result.robots.exists
-                    ? 'Found — check AI bot rules below'
-                    : 'Not found — robots.txt is missing',
+                    ? 'Found - check AI bot rules below'
+                    : 'Not found - robots.txt is missing',
                   content: null,
                   learnMore: null,
                 },
               ].map(f => (
                 <div key={f.file} style={{ display: 'flex', gap: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', background: '#f8f9fb', alignItems: 'flex-start' }}>
                   <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: f.exists ? 'rgba(0,208,132,0.1)' : 'rgba(255,68,68,0.1)', color: f.exists ? '#00d084' : '#ff4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, marginTop: '1px', flexShrink: 0 }}>
-                    {f.exists ? '✓' : '✕'}
+                    {f.exists ? 'OK' : 'X'}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '13px', fontWeight: 600, fontFamily: 'Roboto Mono, monospace', color: '#0d1b2e' }}>/{f.file}</span>
-                      {f.learnMore && <a href={f.learnMore} target="_blank" style={{ fontSize: '11px', color: '#1e90ff', textDecoration: 'none' }}>learn more →</a>}
+                      {f.learnMore && <a href={f.learnMore} target="_blank" style={{ fontSize: '11px', color: '#1e90ff', textDecoration: 'none' }}>learn more -></a>}
                     </div>
                     <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px' }}>{f.desc}</div>
                     {f.content && (
@@ -262,7 +262,7 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals (autho
               })}
             </div>
             {!result.robots.exists && (
-              <div style={{ fontSize: '12px', color: '#ffa500', marginTop: '8px' }}>⚠ No robots.txt found — AI bots will use default crawl behavior</div>
+              <div style={{ fontSize: '12px', color: '#ffa500', marginTop: '8px' }}>! No robots.txt found - AI bots will use default crawl behavior</div>
             )}
           </div>
 
@@ -273,7 +273,7 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals (autho
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {result.aiAnalysis.checks.map((c: any, i: number) => {
                   const colors: any = { pass: '#00d084', fail: '#ff4444', warn: '#ffa500' }
-                  const icons: any = { pass: '✓', fail: '✕', warn: '!' }
+                  const icons: any = { pass: 'OK', fail: 'X', warn: '!' }
                   const color = colors[c.status] || '#7a8fa8'
                   return (
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '20px 1fr', gap: '10px', alignItems: 'start', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', borderLeft: `2px solid ${color}`, background: '#f8f9fb' }}>

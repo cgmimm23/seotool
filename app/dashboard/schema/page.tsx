@@ -5,12 +5,12 @@ import { useState } from 'react'
 type SchemaType = 'organization' | 'website' | 'webpage' | 'faq' | 'product' | 'review'
 
 const SCHEMA_TYPES = [
-  { key: 'organization', label: 'Organization / Local Business', icon: '🏢' },
-  { key: 'website', label: 'Website / Sitelinks', icon: '🌐' },
-  { key: 'webpage', label: 'WebPage / Article', icon: '📄' },
-  { key: 'faq', label: 'FAQ Page', icon: '❓' },
-  { key: 'product', label: 'Product', icon: '📦' },
-  { key: 'review', label: 'Review / Rating', icon: '⭐' },
+  { key: 'organization', label: 'Organization / Local Business', icon: 'Org' },
+  { key: 'website', label: 'Website / Sitelinks', icon: 'Web' },
+  { key: 'webpage', label: 'WebPage / Article', icon: 'Pg' },
+  { key: 'faq', label: 'FAQ Page', icon: 'FAQ' },
+  { key: 'product', label: 'Product', icon: 'Prd' },
+  { key: 'review', label: 'Review / Rating', icon: 'Rev' },
 ]
 
 export default function SchemaPage() {
@@ -311,7 +311,7 @@ export default function SchemaPage() {
                   <div key={i} style={{ background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '8px', padding: '0.85rem', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <div style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>Q{i + 1}</div>
-                      {faqs.length > 1 && <button onClick={() => removeFaq(i)} style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '14px' }}>×</button>}
+                      {faqs.length > 1 && <button onClick={() => removeFaq(i)} style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '14px' }}>x</button>}
                     </div>
                     <div style={{ marginBottom: '6px' }}>{input(faq.q, v => updateFaq(i, 'q', v), 'Question')}</div>
                     <textarea
@@ -370,7 +370,7 @@ export default function SchemaPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '14px', fontWeight: 600 }}>Generated JSON-LD</div>
               <button className="btn btn-accent" onClick={copyCode} style={{ fontSize: '12px' }}>
-                {copied ? '✓ Copied!' : 'Copy Code'}
+                {copied ? 'OK Copied!' : 'Copy Code'}
               </button>
             </div>
             <pre style={{ background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', padding: '1rem', fontSize: '11px', fontFamily: 'Roboto Mono, monospace', color: '#0d1b2e', overflowX: 'auto', lineHeight: 1.6, maxHeight: '320px', overflowY: 'auto' }}>
@@ -385,7 +385,7 @@ export default function SchemaPage() {
                 <div style={{ marginBottom: '4px' }}>2. Open your page's HTML and paste it inside the <code style={{ background: '#e4eaf0', padding: '1px 5px', borderRadius: '3px', fontFamily: 'Roboto Mono, monospace' }}>&lt;head&gt;</code> tag.</div>
                 <div style={{ marginBottom: '4px' }}>3. If you're using WordPress, use the <strong>Insert Headers and Footers</strong> plugin and paste it in the header section for the specific page.</div>
                 <div style={{ marginBottom: '4px' }}>4. If you're using Wix, Squarespace, or Webflow, paste it in the page's custom code / header section.</div>
-                <div>5. Validate your schema at <a href="https://search.google.com/test/rich-results" target="_blank" style={{ color: '#1e90ff' }}>Google's Rich Results Test →</a></div>
+                <div>5. Validate your schema at <a href="https://search.google.com/test/rich-results" target="_blank" style={{ color: '#1e90ff' }}>Google's Rich Results Test -></a></div>
               </div>
             </div>
           </div>
