@@ -12,8 +12,3 @@ export async function GET(request: Request) {
 
   return NextResponse.redirect('https://seotool-34nk9.ondigitalocean.app/dashboard')
 }
-```
-
-Save and close Notepad. Then in the seotool terminal run:
-```
-git add .
