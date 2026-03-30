@@ -16,7 +16,7 @@ export default function PageSpeedPage() {
     setData(null)
     try {
       const res = await fetch(
-        `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}`
+        `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}&key=${process.env.NEXT_PUBLIC_PAGESPEED_API_KEY || ""}`
       )
       if (!res.ok) throw new Error('PageSpeed API error ' + res.status)
       const json = await res.json()
