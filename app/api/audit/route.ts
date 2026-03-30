@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         site_id: siteId,
         user_id: user.id,
         url: audit.url || url,
-        overall_score: audit.overall,
+        overall_score: audit.overall_score,
         grade: audit.grade,
         summary: audit.summary,
         categories: audit.categories,
