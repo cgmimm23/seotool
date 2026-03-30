@@ -128,8 +128,6 @@ export default function SiteCrawlerPage() {
   }
 
   async function generateAISummary() {
-    const claudeKey = localStorage.getItem('riq_claude_key')
-    if (!claudeKey) { alert('Add your Anthropic API key in Settings first'); return }
     setGeneratingSummary(true)
 
     const summary = {
@@ -147,18 +145,17 @@ export default function SiteCrawlerPage() {
     }
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': claudeKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 600,
           system: 'You are a technical SEO expert. Analyze the crawl data and provide a concise 3-4 sentence executive summary of the site\'s SEO health, the most critical issues to fix first, and the expected impact of fixing them. Be specific and actionable.',
-          messages: [{ role: 'user', content: `Site crawl results for ${url}:\n${JSON.stringify(summary, null, 2)}\n\nProvide an executive SEO summary.` }],
+          prompt: `Site crawl results for ${url}:\n${JSON.stringify(summary, null, 2)}\n\nProvide an executive SEO summary.`,
         }),
       })
       const data = await res.json()
-      const text = data.content?.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('') || ''
+      if (data.error) throw new Error(data.error)
+      const text = data.text || ''
       setAiSummary(text)
       saveCrawlReport(pages, url, text)
     } catch (err: any) { setError(err.message) }

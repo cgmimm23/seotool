@@ -60,18 +60,11 @@ export default function AIVisibilityPage() {
       })
 
       // Now use AI to analyze the page content for AI optimization
-      const claudeKey = localStorage.getItem('riq_claude_key') ||
-        (typeof window !== 'undefined' ? prompt('Enter your Anthropic API key to run AI analysis:') : null)
-
       let aiAnalysis = null
-      if (claudeKey) {
-        const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      {
+        const aiRes = await fetch('/api/ai', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': claudeKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
+          headers: { 'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
