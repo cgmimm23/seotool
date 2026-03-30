@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 interface PageResult {
   url: string
@@ -35,7 +36,13 @@ export default function SiteCrawlerPage() {
   const [generatingSummary, setGeneratingSummary] = useState(false)
   const stopRef = useRef(false)
 
-  useEffect(() => { loadLastReport() }, [])
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    loadLastReport()
+    const siteUrl = searchParams.get('site') || searchParams.get('url')
+    if (siteUrl) setUrl(siteUrl)
+  }, [])
 
   async function loadLastReport() {
     try {
@@ -128,6 +135,8 @@ export default function SiteCrawlerPage() {
   }
 
   async function generateAISummary() {
+    const claudeKey = localStorage.getItem('riq_claude_key')
+    if (!claudeKey) { alert('Add your Anthropic API key in Settings first'); return }
     setGeneratingSummary(true)
 
     const summary = {
@@ -145,17 +154,18 @@ export default function SiteCrawlerPage() {
     }
 
     try {
-      const res = await fetch('/api/ai', {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': claudeKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 600,
           system: 'You are a technical SEO expert. Analyze the crawl data and provide a concise 3-4 sentence executive summary of the site\'s SEO health, the most critical issues to fix first, and the expected impact of fixing them. Be specific and actionable.',
-          prompt: `Site crawl results for ${url}:\n${JSON.stringify(summary, null, 2)}\n\nProvide an executive SEO summary.`,
+          messages: [{ role: 'user', content: `Site crawl results for ${url}:\n${JSON.stringify(summary, null, 2)}\n\nProvide an executive SEO summary.` }],
         }),
       })
       const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      const text = data.text || ''
+      const text = data.content?.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('') || ''
       setAiSummary(text)
       saveCrawlReport(pages, url, text)
     } catch (err: any) { setError(err.message) }

@@ -1,26 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 export default function AuditPage() {
   const [url, setUrl] = useState('')
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const siteUrl = searchParams.get('site') || searchParams.get('url')
+    if (siteUrl) setUrl(siteUrl)
+  }, [])
   const [loading, setLoading] = useState(false)
   const [audit, setAudit] = useState<any>(null)
   const [error, setError] = useState('')
-
-  useEffect(() => { loadLastAudit() }, [])
-
-  async function loadLastAudit() {
-    try {
-      const res = await fetch('/api/audit')
-      const data = await res.json()
-      if (data.reports?.[0]) {
-        const r = data.reports[0]
-        setUrl(r.url || '')
-        setAudit({ url: r.url, overall_score: r.overall_score, grade: r.grade, summary: r.summary, categories: r.categories, checks: r.checks })
-      }
-    } catch {}
-  }
 
   async function runAudit() {
     if (!url) return

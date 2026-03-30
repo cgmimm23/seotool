@@ -11,9 +11,18 @@ export default function Dashboard() {
   const [newSiteName, setNewSiteName] = useState('')
   const [addingsite, setAddingSite] = useState(false)
   const [scanningId, setScanningId] = useState<string | null>(null)
+  const [planInfo, setPlanInfo] = useState<any>(null)
   const supabase = createClient()
 
-  useEffect(() => { loadSites() }, [])
+  useEffect(() => { loadSites(); loadPlan() }, [])
+
+  async function loadPlan() {
+    try {
+      const res = await fetch('/api/plan')
+      const data = await res.json()
+      setPlanInfo(data)
+    } catch {}
+  }
 
   async function loadSites() {
     setLoading(true)
@@ -66,6 +75,10 @@ export default function Dashboard() {
 
   async function addSite() {
     if (!newSiteUrl) return
+    if (planInfo && !planInfo.canAddSite) {
+      alert(`Your ${planInfo.label} plan allows up to ${planInfo.siteLimit} site${planInfo.siteLimit > 1 ? 's' : ''}. Upgrade your plan to add more sites.`)
+      return
+    }
     setAddingSite(true)
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
@@ -149,7 +162,14 @@ export default function Dashboard() {
           <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>All Sites</h2>
           <p style={{ fontSize: '13px', color: '#7a8fa8' }}>{sites.length} site{sites.length !== 1 ? 's' : ''} tracked</p>
         </div>
-        <button className="btn btn-accent" onClick={() => setShowAddSite(true)}>+ Add Site</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {planInfo && (
+            <div style={{ fontSize: '11px', fontFamily: 'Roboto Mono, monospace', color: '#7a8fa8' }}>
+              <span style={{ color: '#1e90ff', fontWeight: 600 }}>{planInfo.label}</span> plan — {planInfo.sitesUsed}/{planInfo.siteLimit === 999 ? 'unlimited' : planInfo.siteLimit} sites
+            </div>
+          )}
+          <button className="btn btn-accent" onClick={() => setShowAddSite(true)}>+ Add Site</button>
+        </div>
       </div>
 
       {/* Add site form */}

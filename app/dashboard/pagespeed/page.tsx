@@ -1,9 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 export default function PageSpeedPage() {
   const [url, setUrl] = useState('')
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const siteUrl = searchParams.get('site') || searchParams.get('url')
+    if (siteUrl) setUrl(siteUrl)
+  }, [])
   const [loading, setLoading] = useState(false)
   const [mobileData, setMobileData] = useState<any>(null)
   const [desktopData, setDesktopData] = useState<any>(null)
