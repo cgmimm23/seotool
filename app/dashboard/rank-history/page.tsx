@@ -1,396 +1,381 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
-interface RankEntry {
-  keyword: string
-  position: number
-  url: string
-  checked_at: string
+type SourcePositions = {
+  gsc: number | null
+  bing: number | null
+  serp: number | null
 }
 
-interface KeywordHistory {
+type KeywordRow = {
   keyword: string
-  history: RankEntry[]
-  current: number | null
-  previous: number | null
-  change: number | null
-  best: number | null
-  avg: number | null
+  positions: Record<string, SourcePositions>
+}
+
+type RankData = {
+  dates: string[]
+  rows: KeywordRow[]
+}
+
+const DAYS_OPTIONS = [7, 14, 30, 60, 90]
+
+function positionColor(pos: number | null): string {
+  if (pos === null) return 'transparent'
+  if (pos <= 3) return 'rgba(34,197,94,0.25)'
+  if (pos <= 10) return 'rgba(59,130,246,0.2)'
+  if (pos <= 20) return 'rgba(234,179,8,0.2)'
+  return 'rgba(239,68,68,0.15)'
+}
+
+function positionTextColor(pos: number | null): string {
+  if (pos === null) return 'rgba(255,255,255,0.2)'
+  if (pos <= 3) return '#4ade80'
+  if (pos <= 10) return '#60a5fa'
+  if (pos <= 20) return '#facc15'
+  return '#f87171'
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export default function RankHistoryPage() {
-  const [keywords, setKeywords] = useState<KeywordHistory[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState<string | null>(null)
-  const [checkingKeyword, setCheckingKeyword] = useState<string | null>(null)
-  const [newKeyword, setNewKeyword] = useState('')
-  const [newUrl, setNewUrl] = useState('')
-  const [adding, setAdding] = useState(false)
+  const searchParams = useSearchParams()
+  const siteParam = searchParams.get('site') || ''
+
+  const [siteId, setSiteId] = useState<string | null>(null)
+  const [siteName, setSiteName] = useState<string>('')
   const [days, setDays] = useState(30)
+  const [data, setData] = useState<RankData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const tableRef = useRef<HTMLDivElement>(null)
+
   const supabase = createClient()
 
-  useEffect(() => { loadHistory() }, [days])
+  // Resolve site URL -> site ID
+  useEffect(() => {
+    async function resolveSite() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
 
-  async function loadHistory() {
-    setLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setLoading(false); return }
+      const decodedUrl = decodeURIComponent(siteParam)
+      const { data: site } = await supabase
+        .from('sites')
+        .select('id, name')
+        .eq('url', decodedUrl)
+        .eq('user_id', session.user.id)
+        .single()
 
-    const since = new Date()
-    since.setDate(since.getDate() - days)
-
-    const { data } = await supabase
-      .from('serp_rankings')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .gte('checked_at', since.toISOString())
-      .order('checked_at', { ascending: true })
-
-    if (!data) { setLoading(false); return }
-
-    // Group by keyword
-    const grouped: Record<string, RankEntry[]> = {}
-    data.forEach((row: any) => {
-      if (!grouped[row.keyword]) grouped[row.keyword] = []
-      grouped[row.keyword].push({
-        keyword: row.keyword,
-        position: row.position,
-        url: row.url || '',
-        checked_at: row.checked_at,
-      })
-    })
-
-    const histories: KeywordHistory[] = Object.entries(grouped).map(([keyword, history]) => {
-      const sorted = history.sort((a, b) => new Date(a.checked_at).getTime() - new Date(b.checked_at).getTime())
-      const current = sorted[sorted.length - 1]?.position || null
-      const previous = sorted.length > 1 ? sorted[sorted.length - 2]?.position || null : null
-      const change = current && previous ? previous - current : null // positive = improvement
-      const best = Math.min(...sorted.map(h => h.position))
-      const avg = Math.round(sorted.reduce((a, h) => a + h.position, 0) / sorted.length)
-      return { keyword, history: sorted, current, previous, change, best, avg }
-    })
-
-    setKeywords(histories.sort((a, b) => (a.current || 999) - (b.current || 999)))
-    if (histories.length > 0 && !selected) setSelected(histories[0].keyword)
-    setLoading(false)
-  }
-
-  async function checkRank(keyword: string) {
-    const serpKey = localStorage.getItem('riq_serp_key')
-    if (!serpKey) { alert('Add your SerpAPI key in Settings first'); return }
-
-    setCheckingKeyword(keyword)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-
-    try {
-      const params = new URLSearchParams({ q: keyword, api_key: serpKey, engine: 'google', num: '20' })
-      const res = await fetch(`https://serpapi.com/search.json?${params}`)
-      const data = await res.json()
-      const organic = data.organic_results || []
-      const position = organic.findIndex((_: any, i: number) => i + 1) + 1 || 100
-
-      await supabase.from('serp_rankings').insert({
-        user_id: session.user.id,
-        keyword,
-        position,
-        url: organic[0]?.link || '',
-        checked_at: new Date().toISOString(),
-      })
-
-      loadHistory()
-    } catch (err: any) { alert('Error: ' + err.message) }
-    finally { setCheckingKeyword(null) }
-  }
-
-  async function addKeyword() {
-    if (!newKeyword) return
-    const serpKey = localStorage.getItem('riq_serp_key')
-    if (!serpKey) { alert('Add your SerpAPI key in Settings first'); return }
-
-    setAdding(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-
-    try {
-      const params = new URLSearchParams({ q: newKeyword, api_key: serpKey, engine: 'google', num: '20' })
-      const res = await fetch(`https://serpapi.com/search.json?${params}`)
-      const data = await res.json()
-      const organic = data.organic_results || []
-
-      let position = 100
-      if (newUrl) {
-        const domain = newUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
-        const idx = organic.findIndex((r: any) => (r.link || '').replace(/^https?:\/\//, '').replace(/^www\./, '').startsWith(domain))
-        position = idx >= 0 ? idx + 1 : 100
-      } else {
-        position = organic.length > 0 ? 1 : 100
+      if (site) {
+        setSiteId(site.id)
+        setSiteName(site.name)
       }
+    }
+    if (siteParam) resolveSite()
+  }, [siteParam])
 
-      await supabase.from('serp_rankings').insert({
-        user_id: session.user.id,
-        keyword: newKeyword,
-        position,
-        url: newUrl || organic[0]?.link || '',
-        checked_at: new Date().toISOString(),
-      })
+  // Fetch rank history once we have siteId
+  useEffect(() => {
+    if (!siteId) return
+    fetchData()
+  }, [siteId, days])
 
-      setNewKeyword('')
-      setNewUrl('')
-      loadHistory()
-    } catch (err: any) { alert('Error: ' + err.message) }
-    finally { setAdding(false) }
+  async function fetchData() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/rank-history?siteId=${siteId}&days=${days}`)
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      setData(json)
+    } catch (e: any) {
+      setError(e.message || 'Failed to load rank history')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function changeColor(change: number | null) {
-    if (change === null) return '#7a8fa8'
-    if (change > 0) return '#00d084'
-    if (change < 0) return '#ff4444'
-    return '#7a8fa8'
-  }
-
-  function changeLabel(change: number | null) {
-    if (change === null) return '-'
-    if (change > 0) return `+${change}`
-    if (change < 0) return `${change}`
-    return '0'
-  }
-
-  function posColor(pos: number | null) {
-    if (!pos) return '#7a8fa8'
-    if (pos <= 3) return '#00d084'
-    if (pos <= 10) return '#ffa500'
-    return '#ff4444'
-  }
-
-  const selectedKw = keywords.find(k => k.keyword === selected)
-  const avgPosition = keywords.length ? Math.round(keywords.reduce((a, k) => a + (k.current || 0), 0) / keywords.length) : 0
-  const improved = keywords.filter(k => k.change && k.change > 0).length
-  const dropped = keywords.filter(k => k.change && k.change < 0).length
-
-  // Build chart data for selected keyword
-  function buildChart(history: RankEntry[]) {
-    if (!history.length) return null
-    const maxPos = Math.max(...history.map(h => h.position), 20)
-    const minPos = Math.max(1, Math.min(...history.map(h => h.position)) - 3)
-    const range = maxPos - minPos
-
-    const points = history.map((h, i) => {
-      const x = history.length === 1 ? 50 : (i / (history.length - 1)) * 100
-      const y = range === 0 ? 50 : ((h.position - minPos) / range) * 80 + 10
-      return { x, y: 100 - y, pos: h.position, date: h.checked_at }
-    })
-
-    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-    return { points, pathD, minPos, maxPos }
-  }
-
-  const chart = selectedKw ? buildChart(selectedKw.history) : null
-  const card = { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }
+  const filteredRows = data?.rows.filter(r =>
+    r.keyword.toLowerCase().includes(search.toLowerCase())
+  ) || []
 
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Rank History</h2>
-          <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Track keyword position trends over time</p>
+    <div style={{
+      fontFamily: 'Inter, system-ui, sans-serif',
+      color: '#e2e8f0',
+      minHeight: '100vh',
+    }}>
+      {/* Header */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ fontSize: '11px', color: '#4a6080', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px', fontFamily: 'Roboto Mono, monospace' }}>
+          {siteName || decodeURIComponent(siteParam)}
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <select value={days} onChange={e => setDays(+e.target.value)} className="form-input" style={{ width: 'auto' }}>
-            <option value={7}>Last 7 days</option>
-            <option value={30}>Last 30 days</option>
-            <option value={60}>Last 60 days</option>
-            <option value={90}>Last 90 days</option>
-          </select>
-          <button onClick={loadHistory} className="btn btn-ghost" style={{ fontSize: '12px' }}>Refresh</button>
-        </div>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#fff', margin: 0, fontFamily: 'Montserrat, sans-serif' }}>
+          Rank History
+        </h1>
+        <p style={{ fontSize: '13px', color: '#7a8fa8', margin: '4px 0 0', fontFamily: 'Roboto Mono, monospace' }}>
+          Keyword positions over time across GSC, Bing, and SERP
+        </p>
       </div>
 
-      {/* Add keyword */}
-      <div style={card}>
-        <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '14px', fontWeight: 600, marginBottom: '10px' }}>Track New Keyword</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px' }}>
-          <input type="text" className="form-input" placeholder="Keyword to track" value={newKeyword} onChange={e => setNewKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} />
-          <input type="text" className="form-input" placeholder="Your domain (optional)" value={newUrl} onChange={e => setNewUrl(e.target.value)} />
-          <button className="btn btn-accent" onClick={addKeyword} disabled={adding || !newKeyword} style={{ whiteSpace: 'nowrap' }}>
-            {adding ? 'Checking...' : 'Track Keyword'}
-          </button>
+      {/* Controls */}
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+        {/* Search */}
+        <input
+          type="text"
+          placeholder="Filter keywords..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{
+            background: '#0d1b2e',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            padding: '0.5rem 0.75rem',
+            fontSize: '13px',
+            color: '#e2e8f0',
+            outline: 'none',
+            width: '220px',
+          }}
+        />
+
+        {/* Days selector */}
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {DAYS_OPTIONS.map(d => (
+            <button
+              key={d}
+              onClick={() => setDays(d)}
+              style={{
+                padding: '0.4rem 0.75rem',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: days === d ? 700 : 400,
+                border: days === d ? '1px solid #1e90ff' : '1px solid rgba(255,255,255,0.1)',
+                background: days === d ? 'rgba(30,144,255,0.2)' : '#0d1b2e',
+                color: days === d ? '#60a5fa' : 'rgba(255,255,255,0.5)',
+                cursor: 'pointer',
+              }}
+            >
+              {d}d
+            </button>
+          ))}
         </div>
+
+        {/* Refresh */}
+        <button
+          onClick={fetchData}
+          style={{
+            padding: '0.4rem 1rem',
+            borderRadius: '8px',
+            fontSize: '12px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            background: '#0d1b2e',
+            color: 'rgba(255,255,255,0.5)',
+            cursor: 'pointer',
+            marginLeft: 'auto',
+          }}
+        >
+          ↻ Refresh
+        </button>
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#7a8fa8', fontSize: '13px', fontFamily: 'Roboto Mono, monospace' }}>Loading rank history...</div>
-      ) : keywords.length === 0 ? (
-        <div style={{ ...card, textAlign: 'center', padding: '3rem' }}>
-          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>No keywords tracked yet</div>
-          <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Add keywords above to start tracking position over time.</p>
-        </div>
-      ) : (
-        <>
-          {/* Summary stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '12px' }}>
-            {[
-              { label: 'Keywords Tracked', value: keywords.length, color: '#0d1b2e' },
-              { label: 'Avg Position', value: '#' + avgPosition, color: posColor(avgPosition) },
-              { label: 'Improved', value: improved, color: '#00d084' },
-              { label: 'Dropped', value: dropped, color: dropped > 0 ? '#ff4444' : '#7a8fa8' },
-            ].map(s => (
-              <div key={s.label} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.1rem 1.25rem' }}>
-                <div style={{ fontSize: '11px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem', fontFamily: 'Roboto Mono, monospace' }}>{s.label}</div>
-                <div style={{ fontSize: '26px', fontWeight: 700, fontFamily: 'Montserrat, sans-serif', color: s.color }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '1rem', fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>
+        <span style={{ color: '#4ade80' }}>■ 1–3</span>
+        <span style={{ color: '#60a5fa' }}>■ 4–10</span>
+        <span style={{ color: '#facc15' }}>■ 11–20</span>
+        <span style={{ color: '#f87171' }}>■ 21+</span>
+        <span style={{ color: 'rgba(255,255,255,0.2)' }}>— no data</span>
+      </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '12px', alignItems: 'start' }}>
-            {/* Keywords list */}
-            <div style={card}>
-              <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '14px', fontWeight: 600, marginBottom: '1rem' }}>All Keywords</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {keywords.map(kw => (
-                  <div
-                    key={kw.keyword}
-                    onClick={() => setSelected(kw.keyword)}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '8px', cursor: 'pointer', background: selected === kw.keyword ? 'rgba(30,144,255,0.06)' : '#f8f9fb', border: `1px solid ${selected === kw.keyword ? 'rgba(30,144,255,0.2)' : 'rgba(0,0,0,0.05)'}` }}
+      {/* Error */}
+      {error && (
+        <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '13px', color: '#f87171', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2rem', color: '#7a8fa8', fontSize: '13px' }}>
+          <div style={{ width: '16px', height: '16px', border: '2px solid rgba(30,144,255,0.3)', borderTop: '2px solid #1e90ff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          Loading rank history...
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && data && data.rows.length === 0 && (
+        <div style={{ padding: '3rem', textAlign: 'center', color: '#7a8fa8', fontSize: '14px' }}>
+          No rank history found for this site in the last {days} days.<br />
+          <span style={{ fontSize: '12px', opacity: 0.6 }}>Run SERP checks from the SERP Tracker page to start tracking.</span>
+        </div>
+      )}
+
+      {/* Table */}
+      {!loading && data && data.dates.length > 0 && filteredRows.length > 0 && (
+        <div
+          ref={tableRef}
+          style={{
+            overflowX: 'auto',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.07)',
+            background: '#0d1b2e',
+          }}
+        >
+          <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: `${220 + data.dates.length * 105}px` }}>
+            <thead>
+              {/* Date row */}
+              <tr>
+                <th
+                  rowSpan={2}
+                  style={{
+                    position: 'sticky',
+                    left: 0,
+                    background: '#0a1628',
+                    zIndex: 10,
+                    padding: '0.75rem 1rem',
+                    textAlign: 'left',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.4)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    borderRight: '1px solid rgba(255,255,255,0.08)',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    minWidth: '220px',
+                    fontFamily: 'Roboto Mono, monospace',
+                  }}
+                >
+                  Keyword
+                </th>
+                {data.dates.map(date => (
+                  <th
+                    key={date}
+                    colSpan={3}
+                    style={{
+                      padding: '0.5rem 0.25rem 0.25rem',
+                      textAlign: 'center',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: 'rgba(255,255,255,0.5)',
+                      borderBottom: '1px solid rgba(255,255,255,0.05)',
+                      borderLeft: '1px solid rgba(255,255,255,0.05)',
+                      whiteSpace: 'nowrap',
+                      fontFamily: 'Roboto Mono, monospace',
+                    }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kw.keyword}</div>
-                      <div style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', marginTop: '2px' }}>
-                        {kw.history.length} data point{kw.history.length !== 1 ? 's' : ''}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                      {kw.change !== null && kw.change !== 0 && (
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: changeColor(kw.change), fontFamily: 'Roboto Mono, monospace' }}>
-                          {changeLabel(kw.change)}
-                        </span>
-                      )}
-                      <span style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'Montserrat, sans-serif', color: posColor(kw.current), minWidth: '28px', textAlign: 'right' }}>
-                        {kw.current ? '#' + kw.current : '-'}
-                      </span>
-                      <button
-                        onClick={e => { e.stopPropagation(); checkRank(kw.keyword) }}
-                        disabled={checkingKeyword === kw.keyword}
-                        style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '6px', border: '1px solid rgba(30,144,255,0.3)', background: 'rgba(30,144,255,0.05)', color: '#1e90ff', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif', whiteSpace: 'nowrap' }}
-                      >
-                        {checkingKeyword === kw.keyword ? '...' : 'Check'}
-                      </button>
-                    </div>
-                  </div>
+                    {formatDate(date)}
+                  </th>
                 ))}
-              </div>
-            </div>
+              </tr>
+              {/* Source sub-headers */}
+              <tr>
+                {data.dates.map(date => (
+                  ['GSC', 'Bing', 'SERP'].map((src, si) => (
+                    <th
+                      key={`${date}-${src}`}
+                      style={{
+                        padding: '0.25rem 0.4rem 0.5rem',
+                        textAlign: 'center',
+                        fontSize: '9px',
+                        fontWeight: 500,
+                        color: src === 'GSC' ? '#4ade80' : src === 'Bing' ? '#60a5fa' : '#c084fc',
+                        borderBottom: '1px solid rgba(255,255,255,0.08)',
+                        borderLeft: si === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        fontFamily: 'Roboto Mono, monospace',
+                        width: '35px',
+                      }}
+                    >
+                      {src}
+                    </th>
+                  ))
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.map((row, ri) => (
+                <tr
+                  key={row.keyword}
+                  style={{ background: ri % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}
+                >
+                  {/* Keyword cell */}
+                  <td
+                    style={{
+                      position: 'sticky',
+                      left: 0,
+                      background: ri % 2 === 0 ? '#0d1b2e' : '#0e1e32',
+                      zIndex: 5,
+                      padding: '0.5rem 1rem',
+                      fontSize: '13px',
+                      color: '#e2e8f0',
+                      borderRight: '1px solid rgba(255,255,255,0.08)',
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      whiteSpace: 'nowrap',
+                      maxWidth: '220px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      fontWeight: 500,
+                    }}
+                    title={row.keyword}
+                  >
+                    {row.keyword}
+                  </td>
 
-            {/* Chart panel */}
-            {selectedKw && (
-              <div>
-                <div style={card}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                    <div>
-                      <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '16px', fontWeight: 700 }}>{selectedKw.keyword}</div>
-                      <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', fontFamily: 'Roboto Mono, monospace' }}>{selectedKw.history.length} checks over {days} days</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                      {[
-                        { label: 'Current', value: selectedKw.current ? '#' + selectedKw.current : '-', color: posColor(selectedKw.current) },
-                        { label: 'Best', value: selectedKw.best ? '#' + selectedKw.best : '-', color: '#00d084' },
-                        { label: 'Avg', value: selectedKw.avg ? '#' + selectedKw.avg : '-', color: '#7a8fa8' },
-                        { label: 'Change', value: changeLabel(selectedKw.change), color: changeColor(selectedKw.change) },
-                      ].map(s => (
-                        <div key={s.label} style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '10px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase', marginBottom: '2px' }}>{s.label}</div>
-                          <div style={{ fontSize: '20px', fontWeight: 700, fontFamily: 'Montserrat, sans-serif', color: s.color }}>{s.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Position cells */}
+                  {data.dates.map((date, di) => {
+                    const pos = row.positions[date] || { gsc: null, bing: null, serp: null }
+                    return (
+                      ['gsc', 'bing', 'serp'] as const
+                    ).map((src, si) => {
+                      const val = pos[src]
+                      return (
+                        <td
+                          key={`${date}-${src}`}
+                          style={{
+                            padding: '0.5rem 0.25rem',
+                            textAlign: 'center',
+                            fontSize: '12px',
+                            fontWeight: val !== null ? 600 : 400,
+                            color: positionTextColor(val),
+                            background: positionColor(val),
+                            borderBottom: '1px solid rgba(255,255,255,0.04)',
+                            borderLeft: si === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                            fontFamily: 'Roboto Mono, monospace',
+                            width: '35px',
+                          }}
+                        >
+                          {val !== null ? val : '—'}
+                        </td>
+                      )
+                    })
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-                  {/* Line chart */}
-                  {chart && (
-                    <div style={{ position: 'relative' }}>
-                      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '180px', display: 'block' }}>
-                        {/* Grid lines */}
-                        {[10, 3, 1].map(pos => {
-                          if (chart.minPos > pos || chart.maxPos < pos) return null
-                          const y = 100 - (((pos - chart.minPos) / (chart.maxPos - chart.minPos)) * 80 + 10)
-                          return (
-                            <g key={pos}>
-                              <line x1="0" y1={y} x2="100" y2={y} stroke="rgba(0,0,0,0.05)" strokeWidth="0.5" />
-                            </g>
-                          )
-                        })}
-                        {/* Area fill */}
-                        <path
-                          d={`${chart.pathD} L 100 100 L 0 100 Z`}
-                          fill="rgba(30,144,255,0.06)"
-                        />
-                        {/* Line */}
-                        <path
-                          d={chart.pathD}
-                          fill="none"
-                          stroke="#1e90ff"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          vectorEffect="non-scaling-stroke"
-                        />
-                        {/* Data points */}
-                        {chart.points.map((p, i) => (
-                          <circle
-                            key={i}
-                            cx={p.x}
-                            cy={p.y}
-                            r="1.5"
-                            fill="#fff"
-                            stroke="#1e90ff"
-                            strokeWidth="1"
-                            vectorEffect="non-scaling-stroke"
-                          />
-                        ))}
-                      </svg>
-                      {/* Y axis labels */}
-                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none', padding: '8px 0' }}>
-                        <span style={{ fontSize: '9px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>#{chart.minPos}</span>
-                        <span style={{ fontSize: '9px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>#{Math.round((chart.minPos + chart.maxPos) / 2)}</span>
-                        <span style={{ fontSize: '9px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>#{chart.maxPos}</span>
-                      </div>
-                    </div>
-                  )}
+      {/* No filter results */}
+      {!loading && data && data.rows.length > 0 && filteredRows.length === 0 && (
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#7a8fa8', fontSize: '13px' }}>
+          No keywords match "{search}"
+        </div>
+      )}
 
-                  {selectedKw.history.length < 2 && (
-                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#7a8fa8', fontSize: '13px' }}>
-                      Check this keyword again tomorrow to start seeing the trend line
-                    </div>
-                  )}
-                </div>
-
-                {/* History table */}
-                <div style={card}>
-                  <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '14px', fontWeight: 600, marginBottom: '1rem' }}>Position History</div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead><tr>{['Date', 'Position', 'Change', 'URL'].map(h => <th key={h} style={{ fontSize: '11px', color: '#7a8fa8', textTransform: 'uppercase', fontWeight: 400, padding: '0.4rem 0.5rem', borderBottom: '1px solid rgba(0,0,0,0.08)', textAlign: 'left', fontFamily: 'Roboto Mono, monospace' }}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {[...selectedKw.history].reverse().map((h, i, arr) => {
-                        const prev = arr[i + 1]
-                        const chg = prev ? prev.position - h.position : null
-                        return (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
-                            <td style={{ padding: '0.55rem 0.5rem', fontSize: '12px', fontFamily: 'Roboto Mono, monospace', color: '#7a8fa8' }}>{new Date(h.checked_at).toLocaleDateString()}</td>
-                            <td style={{ padding: '0.55rem 0.5rem', fontSize: '14px', fontWeight: 700, fontFamily: 'Montserrat, sans-serif', color: posColor(h.position) }}>#{h.position}</td>
-                            <td style={{ padding: '0.55rem 0.5rem', fontSize: '12px', fontWeight: 600, fontFamily: 'Roboto Mono, monospace', color: changeColor(chg) }}>{chg !== null ? changeLabel(chg) : '-'}</td>
-                            <td style={{ padding: '0.55rem 0.5rem', fontSize: '11px', fontFamily: 'Roboto Mono, monospace', color: '#7a8fa8', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.url?.replace(/^https?:\/\//, '') || '-'}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        </>
+      {/* Summary footer */}
+      {!loading && data && data.rows.length > 0 && (
+        <div style={{ marginTop: '1rem', fontSize: '11px', color: '#4a6080', fontFamily: 'Roboto Mono, monospace' }}>
+          {filteredRows.length} keyword{filteredRows.length !== 1 ? 's' : ''} · {data.dates.length} date{data.dates.length !== 1 ? 's' : ''} · last {days} days
+        </div>
       )}
     </div>
   )
