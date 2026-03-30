@@ -11,18 +11,9 @@ export default function Dashboard() {
   const [newSiteName, setNewSiteName] = useState('')
   const [addingsite, setAddingSite] = useState(false)
   const [scanningId, setScanningId] = useState<string | null>(null)
-  const [planInfo, setPlanInfo] = useState<any>(null)
   const supabase = createClient()
 
-  useEffect(() => { loadSites(); loadPlan() }, [])
-
-  async function loadPlan() {
-    try {
-      const res = await fetch('/api/plan')
-      const data = await res.json()
-      setPlanInfo(data)
-    } catch {}
-  }
+  useEffect(() => { loadSites() }, [])
 
   async function loadSites() {
     setLoading(true)
@@ -75,10 +66,6 @@ export default function Dashboard() {
 
   async function addSite() {
     if (!newSiteUrl) return
-    if (planInfo && !planInfo.canAddSite) {
-      alert(`Your ${planInfo.label} plan allows up to ${planInfo.siteLimit} site${planInfo.siteLimit > 1 ? 's' : ''}. Upgrade your plan to add more sites.`)
-      return
-    }
     setAddingSite(true)
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
@@ -162,14 +149,7 @@ export default function Dashboard() {
           <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>All Sites</h2>
           <p style={{ fontSize: '13px', color: '#7a8fa8' }}>{sites.length} site{sites.length !== 1 ? 's' : ''} tracked</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {planInfo && (
-            <div style={{ fontSize: '11px', fontFamily: 'Roboto Mono, monospace', color: '#7a8fa8' }}>
-              <span style={{ color: '#1e90ff', fontWeight: 600 }}>{planInfo.label}</span> plan — {planInfo.sitesUsed}/{planInfo.siteLimit === 999 ? 'unlimited' : planInfo.siteLimit} sites
-            </div>
-          )}
-          <button className="btn btn-accent" onClick={() => setShowAddSite(true)}>+ Add Site</button>
-        </div>
+        <button className="btn btn-accent" onClick={() => setShowAddSite(true)}>+ Add Site</button>
       </div>
 
       {/* Add site form */}
@@ -276,11 +256,16 @@ export default function Dashboard() {
 
                 {/* Action buttons */}
                 <div style={{ padding: '12px 1.25rem', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <a href={`/dashboard/sites/${site.id}`} className="btn btn-accent" style={{ fontSize: '12px', padding: '5px 12px', flex: 1, textDecoration: 'none', textAlign: 'center' }}>View Site</a>
-                  <button onClick={() => runAudit(site)} disabled={isScanning} className="btn btn-ghost" style={{ fontSize: '12px', padding: '5px 12px' }}>
-                    {isScanning ? '...' : 'Audit'}
+                  <button
+                    onClick={() => runAudit(site)}
+                    disabled={isScanning}
+                    className="btn btn-accent"
+                    style={{ fontSize: '12px', padding: '5px 12px', flex: 1 }}
+                  >
+                    {isScanning ? 'Scanning...' : 'Run Audit'}
                   </button>
                   <a href={`/dashboard/serp?site=${encodeURIComponent(site.url)}`} className="btn btn-ghost" style={{ fontSize: '12px', padding: '5px 12px', textDecoration: 'none' }}>SERP</a>
+                  <a href={`/dashboard/keywords?site=${encodeURIComponent(site.url)}`} className="btn btn-ghost" style={{ fontSize: '12px', padding: '5px 12px', textDecoration: 'none' }}>Keywords</a>
                   <button onClick={() => deleteSite(site.id)} style={{ background: 'none', border: 'none', color: '#ff4444', fontSize: '12px', cursor: 'pointer', padding: '5px 8px', borderRadius: '6px' }}>Remove</button>
                 </div>
               </div>
