@@ -45,7 +45,7 @@ export async function runSeoAudit(url: string): Promise<AuditResult> {
   const message = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1500,
-    tools: [{ type: 'web_search_20250305' as any, name: 'web_search' }],
+    tools: [{ type: 'web_search_20250305', name: 'web_search' }] as any,
     system: `You are an expert SEO auditor. Use web_search to fetch and analyze the page. Return ONLY valid JSON — no markdown, no backticks, no explanation, no preamble.
 
 Schema:
