@@ -229,7 +229,6 @@ Check for: business name completeness, category accuracy, address presence, phon
     fontWeight: tab === t ? 600 : 400,
     background: 'none',
     border: 'none',
-    borderBottom: `2px solid ${tab === t ? '#1e90ff' : 'transparent'}`,
     fontFamily: 'Open Sans, sans-serif',
   } as any)
 
