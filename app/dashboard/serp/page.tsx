@@ -1,6 +1,6 @@
-import { Suspense } from 'react'
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
