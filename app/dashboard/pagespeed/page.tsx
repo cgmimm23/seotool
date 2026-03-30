@@ -5,24 +5,33 @@ import { useState } from 'react'
 export default function PageSpeedPage() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
-  const [data, setData] = useState<any>(null)
+  const [mobileData, setMobileData] = useState<any>(null)
+  const [desktopData, setDesktopData] = useState<any>(null)
   const [error, setError] = useState('')
-  const [strategy, setStrategy] = useState<'mobile' | 'desktop'>('mobile')
+  const [activeTab, setActiveTab] = useState<'mobile' | 'desktop'>('mobile')
+
+  async function fetchStrategy(strategy: 'mobile' | 'desktop') {
+    const res = await fetch(
+      `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}&key=${process.env.NEXT_PUBLIC_PAGESPEED_API_KEY || ''}`
+    )
+    if (!res.ok) throw new Error('PageSpeed API error ' + res.status)
+    const json = await res.json()
+    return { cats: json.lighthouseResult?.categories, audits: json.lighthouseResult?.audits, url: json.id }
+  }
 
   async function runPageSpeed() {
     if (!url) return
     setLoading(true)
     setError('')
-    setData(null)
+    setMobileData(null)
+    setDesktopData(null)
     try {
-      const res = await fetch(
-        `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}&key=${process.env.NEXT_PUBLIC_PAGESPEED_API_KEY || ""}`
-      )
-      if (!res.ok) throw new Error('PageSpeed API error ' + res.status)
-      const json = await res.json()
-      const cats = json.lighthouseResult?.categories
-      const audits = json.lighthouseResult?.audits
-      setData({ cats, audits, url: json.id })
+      const [mobile, desktop] = await Promise.all([
+        fetchStrategy('mobile'),
+        fetchStrategy('desktop'),
+      ])
+      setMobileData(mobile)
+      setDesktopData(desktop)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -42,6 +51,8 @@ export default function PageSpeedPage() {
     return 'Poor'
   }
 
+  const data = activeTab === 'mobile' ? mobileData : desktopData
+
   const keyAudits = data?.audits ? [
     { key: 'first-contentful-paint', label: 'First Contentful Paint' },
     { key: 'largest-contentful-paint', label: 'Largest Contentful Paint' },
@@ -49,131 +60,122 @@ export default function PageSpeedPage() {
     { key: 'cumulative-layout-shift', label: 'Cumulative Layout Shift' },
     { key: 'speed-index', label: 'Speed Index' },
     { key: 'interactive', label: 'Time to Interactive' },
-  ].map(a => ({ ...a, audit: data.audits[a.key] })).filter(a => a.audit) : []
+  ].map(a => ({ ...a, data: data.audits[a.key] })).filter(a => a.data) : []
 
-  const failedAudits = data?.audits ? Object.values(data.audits).filter((a: any) =>
-    a.score !== null && a.score < 0.9 && a.details?.type !== 'debugdata' && a.title
-  ).sort((a: any, b: any) => a.score - b.score).slice(0, 10) : []
+  const opportunities = data?.audits ? Object.values(data.audits).filter((a: any) =>
+    a.details?.type === 'opportunity' && a.score !== null && a.score < 0.9
+  ).sort((a: any, b: any) => (a.score || 0) - (b.score || 0)).slice(0, 6) : []
+
+  const card = { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }
 
   return (
     <div>
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Page Speed</h2>
-        <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Google PageSpeed Insights — Core Web Vitals</p>
+        <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Core Web Vitals and performance via Google PageSpeed Insights</p>
       </div>
 
-      {/* Input */}
-      <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '0.75rem' }}>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="https://yoursite.com"
-            value={url}
-            onChange={e => setUrl(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && runPageSpeed()}
-            style={{ flex: 1 }}
-          />
-          <button className="btn btn-accent" onClick={runPageSpeed} disabled={loading}>
-            {loading ? 'Analyzing...' : 'Analyze'}
+      <div style={card}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px' }}>
+          <input type="text" className="form-input" placeholder="https://yoursite.com" value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && runPageSpeed()} />
+          <button className="btn btn-accent" onClick={runPageSpeed} disabled={loading || !url}>
+            {loading ? 'Analyzing...' : 'Run Test'}
           </button>
         </div>
-        {/* Mobile / Desktop toggle */}
-        <div style={{ display: 'flex', gap: '6px' }}>
-          {(['mobile', 'desktop'] as const).map(s => (
-            <button
-              key={s}
-              onClick={() => setStrategy(s)}
-              style={{
-                padding: '4px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer',
-                border: `1px solid ${strategy === s ? '#1e90ff' : 'rgba(0,0,0,0.1)'}`,
-                background: strategy === s ? 'rgba(30,144,255,0.08)' : 'transparent',
-                color: strategy === s ? '#1e90ff' : '#7a8fa8',
-                fontFamily: 'Open Sans, sans-serif', textTransform: 'capitalize',
-              }}
-            >{s}</button>
-          ))}
-        </div>
+        {loading && <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '8px', fontFamily: 'Roboto Mono, monospace' }}>Running mobile and desktop tests simultaneously...</div>}
       </div>
 
-      {error && (
-        <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '1rem' }}>
-          {error}
-        </div>
-      )}
+      {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}
 
-      {loading && (
-        <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '3rem', textAlign: 'center', color: '#7a8fa8', fontSize: '13px', fontFamily: 'Roboto Mono, monospace' }}>
-          Running PageSpeed analysis on {url}... this takes ~10 seconds
-        </div>
-      )}
-
-      {data && (
+      {(mobileData || desktopData) && (
         <>
-          {/* Category scores */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '12px' }}>
-            {Object.entries(data.cats || {}).map(([key, cat]: any) => {
-              const score = Math.round(cat.score * 100)
+          {/* Score summary for both */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            {[
+              { label: 'Mobile', data: mobileData, tab: 'mobile' as const },
+              { label: 'Desktop', data: desktopData, tab: 'desktop' as const },
+            ].map(({ label, data: d, tab }) => {
+              const score = d ? Math.round((d.cats?.performance?.score || 0) * 100) : null
               return (
-                <div key={key} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', textAlign: 'center' }}>
-                  <div style={{ width: '70px', height: '70px', borderRadius: '50%', border: `3px solid ${scoreColor(score)}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
-                    <span style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: scoreColor(score), lineHeight: 1 }}>{score}</span>
+                <div key={label} onClick={() => setActiveTab(tab)} style={{ ...card, cursor: 'pointer', borderColor: activeTab === tab ? '#1e90ff' : 'rgba(0,0,0,0.08)', marginBottom: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: `3px solid ${score !== null ? scoreColor(score) : '#e4eaf0'}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'Montserrat, sans-serif', color: score !== null ? scoreColor(score) : '#7a8fa8', lineHeight: 1 }}>{score !== null ? score : '--'}</span>
+                    </div>
+                    <div>
+                      <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 700 }}>{label}</div>
+                      {score !== null && <div style={{ fontSize: '13px', color: scoreColor(score), fontWeight: 600 }}>{scoreLabel(score)}</div>}
+                      {!d && <div style={{ fontSize: '12px', color: '#7a8fa8' }}>Loading...</div>}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e', fontFamily: 'Montserrat, sans-serif' }}>{cat.title}</div>
-                  <div style={{ fontSize: '11px', marginTop: '3px', color: scoreColor(score), fontFamily: 'Roboto Mono, monospace' }}>{scoreLabel(score)}</div>
+                  {d && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '6px', marginTop: '12px' }}>
+                      {['performance', 'accessibility', 'best-practices', 'seo'].map(cat => {
+                        const s = Math.round((d.cats?.[cat]?.score || 0) * 100)
+                        return (
+                          <div key={cat} style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: scoreColor(s) }}>{s}</div>
+                            <div style={{ fontSize: '9px', color: '#7a8fa8', textTransform: 'capitalize' }}>{cat.replace('-', ' ')}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
 
-          {/* Core Web Vitals */}
-          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }}>
-            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Core Web Vitals</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
-              {keyAudits.map(({ key, label, audit }) => {
-                const score = audit.score !== null ? Math.round(audit.score * 100) : null
-                return (
-                  <div key={key} style={{ background: '#f8f9fb', borderRadius: '10px', padding: '1rem' }}>
-                    <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '4px', fontFamily: 'Roboto Mono, monospace' }}>{label}</div>
-                    <div style={{ fontSize: '20px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: score !== null ? scoreColor(score) : '#7a8fa8' }}>
-                      {audit.displayValue || '—'}
-                    </div>
-                    {score !== null && (
-                      <div style={{ height: '3px', background: '#e4eaf0', borderRadius: '2px', marginTop: '8px' }}>
-                        <div style={{ width: `${score}%`, height: '100%', background: scoreColor(score), borderRadius: '2px' }} />
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+          {/* Tab switcher */}
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(0,0,0,0.08)', marginBottom: '1rem' }}>
+            {(['mobile', 'desktop'] as const).map(t => (
+              <button key={t} onClick={() => setActiveTab(t)} style={{ padding: '0.5rem 1rem', fontSize: '13px', color: activeTab === t ? '#1e90ff' : '#7a8fa8', cursor: 'pointer', borderBottom: `2px solid ${activeTab === t ? '#1e90ff' : 'transparent'}`, marginBottom: '-1px', fontWeight: activeTab === t ? 600 : 400, background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === t ? '#1e90ff' : 'transparent'}`, fontFamily: 'Open Sans, sans-serif', textTransform: 'capitalize' as const }}>{t}</button>
+            ))}
           </div>
 
-          {/* Opportunities */}
-          {failedAudits.length > 0 && (
-            <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem' }}>
-              <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Opportunities to Improve</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                {failedAudits.map((a: any, i: number) => {
-                  const score = a.score !== null ? Math.round(a.score * 100) : null
-                  const color = score !== null ? scoreColor(score) : '#ffa500'
-                  return (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '20px 1fr auto', gap: '10px', alignItems: 'start', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', borderLeft: `2px solid ${color}`, background: '#f8f9fb' }}>
-                      <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: `${color}18`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, marginTop: '1px' }}>!</div>
+          {data && (
+            <>
+              {/* Core Web Vitals */}
+              <div style={card}>
+                <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Core Web Vitals — {activeTab === 'mobile' ? 'Mobile' : 'Desktop'}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+                  {keyAudits.map(a => (
+                    <div key={a.key} style={{ background: '#f8f9fb', borderRadius: '10px', padding: '12px' }}>
+                      <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '4px', fontFamily: 'Roboto Mono, monospace' }}>{a.label}</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'Montserrat, sans-serif', color: a.data.score !== null ? scoreColor(Math.round(a.data.score * 100)) : '#0d1b2e' }}>{a.data.displayValue || '--'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Opportunities */}
+              {opportunities.length > 0 && (
+                <div style={card}>
+                  <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Opportunities to Improve</div>
+                  {(opportunities as any[]).map((a, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '12px', padding: '10px 0', borderBottom: i < opportunities.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: scoreColor(Math.round((a.score || 0) * 100)) + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: scoreColor(Math.round((a.score || 0) * 100)) }}>{Math.round((a.score || 0) * 100)}</span>
+                      </div>
                       <div>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>{a.title}</div>
-                        <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>{a.description?.replace(/\[.*?\]\(.*?\)/g, '').substring(0, 120)}</div>
+                        <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>{a.description?.split('.')[0]}.</div>
+                        {a.details?.overallSavingsMs && <div style={{ fontSize: '11px', color: '#00d084', marginTop: '2px', fontFamily: 'Roboto Mono, monospace' }}>Potential savings: {Math.round(a.details.overallSavingsMs)}ms</div>}
                       </div>
-                      {a.displayValue && (
-                        <div style={{ fontSize: '11px', fontFamily: 'Roboto Mono, monospace', color, whiteSpace: 'nowrap' }}>{a.displayValue}</div>
-                      )}
                     </div>
-                  )
-                })}
-              </div>
-            </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </>
+      )}
+
+      {!loading && !mobileData && !desktopData && !error && (
+        <div style={{ ...card, textAlign: 'center', padding: '3rem', color: '#7a8fa8' }}>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', color: '#4a6080', marginBottom: '4px' }}>Enter a URL and click Run Test</div>
+          <div style={{ fontSize: '13px' }}>Tests mobile and desktop simultaneously — results show in seconds</div>
+        </div>
       )}
     </div>
   )
