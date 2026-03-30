@@ -14,8 +14,8 @@ export default function SiteContextBar() {
     if (!siteParam) return
 
     async function findSite() {
-      const { data: { user } } = await supabase.auth.getSession()
-      if (!user?.session) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
       const clean = siteParam!.replace(/^https?:\/\//, '').split('/')[0]
       const { data } = await supabase
         .from('sites')
