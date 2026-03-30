@@ -6,7 +6,7 @@ const client = new Anthropic({
 
 export interface AuditResult {
   url: string
-  overall: number
+  overall_score: number
   grade: string
   summary: string
   categories: Record<string, number>
@@ -28,40 +28,63 @@ export interface KeywordAnalysis {
   }>
 }
 
+function parseJSON(text: string): any {
+  // Try direct parse first
+  const cleaned = text.replace(/```json|```/g, '').trim()
+  try { return JSON.parse(cleaned) } catch {}
+  // Try to extract JSON object
+  const start = cleaned.indexOf('{')
+  const end = cleaned.lastIndexOf('}')
+  if (start !== -1 && end !== -1) {
+    try { return JSON.parse(cleaned.slice(start, end + 1)) } catch {}
+  }
+  throw new Error('Could not parse response as JSON')
+}
+
 export async function runSeoAudit(url: string): Promise<AuditResult> {
   const message = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1500,
-    tools: [{ type: 'web_search_20250305', name: 'web_search' } as any],
-    system: `You are an expert SEO auditor. Use web_search to fetch and analyze the page. Return ONLY valid JSON — no markdown, no backticks, no explanation.
+    tools: [{ type: 'web_search_20250305' as any, name: 'web_search' }],
+    system: `You are an expert SEO auditor. Use web_search to fetch and analyze the page. Return ONLY valid JSON — no markdown, no backticks, no explanation, no preamble.
 
 Schema:
 {
   "url": "",
-  "overall": 72,
+  "overall_score": 72,
   "grade": "Good",
   "summary": "one sentence",
   "categories": { "Technical": 80, "Content": 65, "On-Page": 70, "Performance": 60, "Mobile": 85 },
   "checks": [
-    { "status": "pass|fail|warn", "category": "Technical|Content|On-Page|Performance|Mobile", "title": "", "detail": "" }
+    { "status": "pass", "category": "Technical", "title": "", "detail": "" },
+    { "status": "fail", "category": "Content", "title": "", "detail": "" },
+    { "status": "warn", "category": "On-Page", "title": "", "detail": "" }
   ]
 }
 
-Include 14-18 checks covering: meta title, meta description, h1, h2s, canonical, robots.txt, sitemap, image alt, page speed signals, mobile viewport, structured data, internal links, SSL, open graph, Twitter cards, keyword usage. Be accurate from actual page content found.`,
+Include 14-18 checks covering: meta title, meta description, h1, h2s, canonical, robots.txt, sitemap, image alt, page speed signals, mobile viewport, structured data, internal links, SSL, open graph, Twitter cards, keyword usage. Your ENTIRE response must be the JSON object and nothing else.`,
     messages: [{ role: 'user', content: `Full SEO audit: ${url}` }],
   })
 
-  const text = message.content
+  // Get all text blocks including after tool use
+  const allText = message.content
     .filter((b) => b.type === 'text')
     .map((b: any) => b.text)
     .join('')
 
   try {
-    return JSON.parse(text.replace(/```json|```/g, '').trim())
+    const result = parseJSON(allText)
+    // Normalize field names
+    return {
+      url: result.url || url,
+      overall_score: result.overall_score || result.overall || 50,
+      grade: result.grade || 'Unknown',
+      summary: result.summary || '',
+      categories: result.categories || {},
+      checks: result.checks || [],
+    }
   } catch {
-    const match = text.match(/\{[\s\S]*\}/)
-    if (match) return JSON.parse(match[0])
-    throw new Error('Could not parse audit response')
+    throw new Error('Could not parse audit response. Please try again.')
   }
 }
 
@@ -73,7 +96,7 @@ export async function analyzeKeywords(
   const message = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1000,
-    system: `You are an SEO expert. Analyze a page's keyword optimization. Return ONLY valid JSON.
+    system: `You are an SEO expert. Analyze a page's keyword optimization. Return ONLY valid JSON, no markdown, no explanation.
 
 Schema:
 {
@@ -84,14 +107,11 @@ Schema:
   ]
 }
 
-Include 5-8 fixes ordered by SEO impact. Be specific — name exact changes to make.`,
+Include 5-8 fixes ordered by SEO impact. Your ENTIRE response must be the JSON object and nothing else.`,
     messages: [
       {
         role: 'user',
-        content: `URL: ${url}${pagePath}
-Target keywords: ${keywords.join(', ')}
-
-What specific changes should be made to optimize this page for these keywords?`,
+        content: `URL: ${url}${pagePath}\nTarget keywords: ${keywords.join(', ')}\n\nWhat specific changes should be made to optimize this page for these keywords?`,
       },
     ],
   })
@@ -102,10 +122,8 @@ What specific changes should be made to optimize this page for these keywords?`,
     .join('')
 
   try {
-    return JSON.parse(text.replace(/```json|```/g, '').trim())
+    return parseJSON(text)
   } catch {
-    const match = text.match(/\{[\s\S]*\}/)
-    if (match) return JSON.parse(match[0])
     throw new Error('Could not parse keyword analysis response')
   }
 }
