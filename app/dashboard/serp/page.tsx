@@ -1,9 +1,10 @@
+import { Suspense } from 'react'
 'use client'
 
 import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
-export default function SerpPage() {
+function SerpPageInner() {
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<any[]>([])
@@ -89,5 +90,13 @@ export default function SerpPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function SerpPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#7a8fa8', fontSize: '13px' }}>Loading...</div>}>
+      <SerpPageInner />
+    </Suspense>
   )
 }

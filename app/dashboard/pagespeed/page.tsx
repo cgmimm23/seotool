@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
-export default function PageSpeedPage() {
+function PageSpeedPageInner() {
   const [url, setUrl] = useState('')
   const searchParams = useSearchParams()
 
@@ -184,5 +185,13 @@ export default function PageSpeedPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function PageSpeedPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#7a8fa8', fontSize: '13px' }}>Loading...</div>}>
+      <PageSpeedPageInner />
+    </Suspense>
   )
 }

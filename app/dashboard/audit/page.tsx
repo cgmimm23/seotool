@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
-export default function AuditPage() {
+function AuditPageInner() {
   const [url, setUrl] = useState('')
   const searchParams = useSearchParams()
 
@@ -143,5 +144,13 @@ export default function AuditPage() {
         </>
       )}
     </div>
+  )
+}
+
+export default function AuditPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#7a8fa8', fontSize: '13px' }}>Loading...</div>}>
+      <AuditPageInner />
+    </Suspense>
   )
 }

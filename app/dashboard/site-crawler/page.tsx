@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 interface PageResult {
@@ -21,7 +22,7 @@ interface PageResult {
   internalLinks: string[]
 }
 
-export default function SiteCrawlerPage() {
+function SiteCrawlerPageInner() {
   const [url, setUrl] = useState('')
   const [maxPages, setMaxPages] = useState(50)
   const [crawling, setCrawling] = useState(false)
@@ -435,5 +436,13 @@ export default function SiteCrawlerPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function SiteCrawlerPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#7a8fa8', fontSize: '13px' }}>Loading...</div>}>
+      <SiteCrawlerPageInner />
+    </Suspense>
   )
 }
