@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,7 +19,6 @@ export async function GET(req: NextRequest) {
   const since = new Date()
   since.setDate(since.getDate() - days)
 
-  // Get all keywords for this site
   const { data: keywords, error: kwError } = await supabase
     .from('keywords')
     .select('id, keyword')
@@ -33,7 +34,6 @@ export async function GET(req: NextRequest) {
 
   const keywordIds = keywords.map((k) => k.id)
 
-  // Get all ranking rows for these keywords within the date range
   const { data: rankings, error: rankError } = await supabase
     .from('serp_rankings')
     .select('keyword_id, position, source, checked_at')
@@ -45,21 +45,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: rankError.message }, { status: 500 })
   }
 
-  // Build a map: keyword_id -> keyword text
   const kwMap: Record<string, string> = {}
   for (const kw of keywords) {
     kwMap[kw.id] = kw.keyword
   }
 
-  // Collect all unique dates (YYYY-MM-DD)
   const dateSet = new Set<string>()
   for (const r of rankings || []) {
     dateSet.add(r.checked_at.slice(0, 10))
   }
   const dates = Array.from(dateSet).sort()
 
-  // Build rows: one per keyword
-  // row = { keyword, positions: { [date]: { gsc: number|null, bing: number|null, serp: number|null } } }
   const rowMap: Record<string, {
     keyword: string
     positions: Record<string, { gsc: number | null; bing: number | null; serp: number | null }>
