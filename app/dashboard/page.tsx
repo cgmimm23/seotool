@@ -256,16 +256,11 @@ export default function Dashboard() {
 
                 {/* Action buttons */}
                 <div style={{ padding: '12px 1.25rem', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => runAudit(site)}
-                    disabled={isScanning}
-                    className="btn btn-accent"
-                    style={{ fontSize: '12px', padding: '5px 12px', flex: 1 }}
-                  >
-                    {isScanning ? 'Scanning...' : 'Run Audit'}
+                  <a href={`/sites/${site.id}`} className="btn btn-accent" style={{ fontSize: '12px', padding: '5px 12px', flex: 1, textDecoration: 'none', textAlign: 'center' }}>View Site</a>
+                  <button onClick={() => runAudit(site)} disabled={isScanning} className="btn btn-ghost" style={{ fontSize: '12px', padding: '5px 12px' }}>
+                    {isScanning ? '...' : 'Audit'}
                   </button>
                   <a href={`/dashboard/serp?site=${encodeURIComponent(site.url)}`} className="btn btn-ghost" style={{ fontSize: '12px', padding: '5px 12px', textDecoration: 'none' }}>SERP</a>
-                  <a href={`/dashboard/keywords?site=${encodeURIComponent(site.url)}`} className="btn btn-ghost" style={{ fontSize: '12px', padding: '5px 12px', textDecoration: 'none' }}>Keywords</a>
                   <button onClick={() => deleteSite(site.id)} style={{ background: 'none', border: 'none', color: '#ff4444', fontSize: '12px', cursor: 'pointer', padding: '5px 8px', borderRadius: '6px' }}>Remove</button>
                 </div>
               </div>
