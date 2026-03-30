@@ -14,11 +14,39 @@ export async function POST(request: NextRequest) {
     // Run the AI audit
     const audit = await runSeoAudit(url)
 
-    // Save to Supabase
+    // Find or create site record
+    let resolvedSiteId = siteId
+    if (!resolvedSiteId) {
+      const cleanUrl = url.replace(/^https?:\/\//, '').split('/')[0]
+      const baseUrl = url.startsWith('http') ? url.split('/').slice(0, 3).join('/') : 'https://' + cleanUrl
+
+      // Check if site already exists
+      const { data: existing } = await supabase
+        .from('sites')
+        .select('id')
+        .eq('user_id', user.id)
+        .ilike('url', `%${cleanUrl}%`)
+        .limit(1)
+        .single()
+
+      if (existing) {
+        resolvedSiteId = existing.id
+      } else {
+        // Create new site
+        const { data: newSite } = await supabase
+          .from('sites')
+          .insert({ user_id: user.id, url: baseUrl, name: cleanUrl, active: true })
+          .select()
+          .single()
+        if (newSite) resolvedSiteId = newSite.id
+      }
+    }
+
+    // Save audit report
     const { data, error } = await supabase
       .from('audit_reports')
       .insert({
-        site_id: siteId,
+        site_id: resolvedSiteId,
         user_id: user.id,
         url: audit.url || url,
         overall_score: audit.overall_score,
@@ -33,11 +61,13 @@ export async function POST(request: NextRequest) {
     if (error) throw error
 
     // Update scan schedule
-    await supabase.from('scan_schedule').upsert({
-      site_id: siteId,
-      user_id: user.id,
-      last_scanned_at: new Date().toISOString(),
-    })
+    if (resolvedSiteId) {
+      await supabase.from('scan_schedule').upsert({
+        site_id: resolvedSiteId,
+        user_id: user.id,
+        last_scanned_at: new Date().toISOString(),
+      })
+    }
 
     return NextResponse.json({ report: data, audit })
   } catch (err: any) {
@@ -55,14 +85,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const siteId = searchParams.get('siteId')
 
-    const query = supabase
+    let query = supabase
       .from('audit_reports')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(10)
+      .limit(20)
 
-    if (siteId) query.eq('site_id', siteId)
+    if (siteId) query = query.eq('site_id', siteId)
 
     const { data, error } = await query
     if (error) throw error
