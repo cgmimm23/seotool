@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
           site_id: schedule.site_id,
           user_id: schedule.user_id,
           url,
-          overall_score: audit.overall,
+          overall_score: audit.overall_score,
           grade: audit.grade,
           summary: audit.summary,
           categories: audit.categories,
