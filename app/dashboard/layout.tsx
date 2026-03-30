@@ -60,7 +60,9 @@ function SiteContextBar() {
 
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState('')
+  const [activeSite, setActiveSite] = useState<{ id: string; url: string; name: string } | null>(null)
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     const supabase = createClient()
@@ -68,6 +70,28 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       if (session?.user) setEmail(session.user.email || '')
     })
   }, [])
+
+  useEffect(() => {
+    const siteParam = searchParams.get('site') || searchParams.get('url')
+    if (siteParam) {
+      const supabase = createClient()
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (!session) return
+        const clean = siteParam.replace(/^https?:\/\//, '').split('/')[0]
+        const { data } = await supabase.from('sites').select('id, name, url').ilike('url', '%' + clean + '%').limit(1).single()
+        if (data) setActiveSite(data)
+      })
+    } else if (!pathname.startsWith('/dashboard/sites/')) {
+      setActiveSite(null)
+    }
+  }, [searchParams, pathname])
+
+  function navHref(href: string) {
+    if (activeSite && href !== '/dashboard') {
+      return href + '?site=' + encodeURIComponent(activeSite.url)
+    }
+    return href
+  }
 
   async function signOut() {
     const supabase = createClient()
@@ -92,7 +116,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             return (
               <div key={item.href}>
                 {showSection && <div style={{ fontSize: '10px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0.75rem 1rem 0.25rem', fontFamily: 'Roboto Mono, monospace' }}>{item.section}</div>}
-                <a href={item.href} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: active ? '#1e90ff' : '#4a6080', background: active ? 'rgba(30,144,255,0.08)' : 'transparent', fontWeight: active ? 600 : 400, textDecoration: 'none' }}>
+                <a href={navHref(item.href)} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: active ? '#1e90ff' : '#4a6080', background: active ? 'rgba(30,144,255,0.08)' : 'transparent', fontWeight: active ? 600 : 400, textDecoration: 'none' }}>
                   {item.label}
                 </a>
               </div>
