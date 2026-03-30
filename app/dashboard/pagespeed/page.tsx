@@ -26,11 +26,10 @@ export default function PageSpeedPage() {
     setMobileData(null)
     setDesktopData(null)
     try {
-      const [mobile, desktop] = await Promise.all([
-        fetchStrategy('mobile'),
-        fetchStrategy('desktop'),
-      ])
+      const mobile = await fetchStrategy('mobile')
       setMobileData(mobile)
+      await new Promise(r => setTimeout(r, 1500))
+      const desktop = await fetchStrategy('desktop')
       setDesktopData(desktop)
     } catch (err: any) {
       setError(err.message)
