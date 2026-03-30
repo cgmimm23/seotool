@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
-export default function KeywordsPage() {
+function KeywordsPageInner() {
   const [pages, setPages] = useState<any[]>([])
   const [selectedPage, setSelectedPage] = useState<string>('/')
   const [keywords, setKeywords] = useState<string[]>([])
@@ -14,12 +15,23 @@ export default function KeywordsPage() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [siteUrl, setSiteUrl] = useState('')
+  const [siteId, setSiteId] = useState<string | null>(null)
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+
+      // Get site from URL param
+      const siteParam = searchParams.get('site') || searchParams.get('url')
+      if (siteParam) {
+        setSiteUrl(siteParam)
+        // Find site_id for this URL
+        const { data: siteData } = await supabase.from('sites').select('id').ilike('url', '%' + siteParam.replace(/^https?:\/\//, '').split('/')[0] + '%').eq('user_id', user.id).limit(1).single()
+        if (siteData) setSiteId(siteData.id)
+      }
 
       // Load existing keywords grouped by page
       const res = await fetch('/api/keywords')
@@ -82,7 +94,7 @@ export default function KeywordsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          siteId: null,
+          siteId: siteId,
           siteUrl,
           pagePath: selectedPage,
           keywords,
@@ -114,7 +126,7 @@ export default function KeywordsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          siteId: null,
+          siteId: siteId,
           siteUrl,
           pagePath: selectedPage,
           keywords,
@@ -274,5 +286,13 @@ export default function KeywordsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function KeywordsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#7a8fa8' }}>Loading...</div>}>
+      <KeywordsPageInner />
+    </Suspense>
   )
 }
