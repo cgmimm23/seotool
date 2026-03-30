@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-function extractMeta(html: string, tag: string, attr: string = 'content'): string | null {
-  const patterns = [
-    new RegExp(`<meta[^>]+name=["']${tag}["'][^>]+${attr}=["']([^"']+)["']`, 'i'),
-    new RegExp(`<meta[^>]+${attr}=["']([^"']+)["'][^>]+name=["']${tag}["']`, 'i'),
-  ]
-  for (const p of patterns) {
-    const m = html.match(p)
-    if (m) return m[1].trim()
-  }
-  return null
+function extractMeta(html: string, tag: string): string | null {
+  const p1 = new RegExp(`<meta[^>]+name=["']${tag}["'][^>]+content=["']([^"']+)["']`, 'i')
+  const p2 = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+name=["']${tag}["']`, 'i')
+  const m = html.match(p1) || html.match(p2)
+  return m ? m[1].trim() : null
 }
 
 function extractTitle(html: string): string | null {
@@ -34,27 +29,36 @@ function extractCanonical(html: string): string | null {
 
 function countImages(html: string): { total: number; noAlt: number } {
   const imgs = html.match(/<img[^>]+>/gi) || []
-  const noAlt = imgs.filter(img => !img.match(/alt=["'][^"']+["']/i)).length
+  const noAlt = imgs.filter((img: string) => !img.match(/alt=["'][^"']+["']/i)).length
   return { total: imgs.length, noAlt }
 }
 
 function countWords(html: string): number {
   const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-  return text.split(' ').filter(w => w.length > 2).length
+  return text.split(' ').filter((w: string) => w.length > 2).length
 }
 
 function extractInternalLinks(html: string, baseUrl: string): string[] {
   const domain = new URL(baseUrl).origin
-  const links = new Set<string>()
-  const hrefs = html.matchAll(/href=["']([^"'#?]+)["']/gi)
-  for (const match of hrefs) {
+  const links: string[] = []
+  const seen = new Set<string>()
+  const pattern = /href=["']([^"'#?]+)["']/gi
+  let match = pattern.exec(html)
+  while (match !== null && links.length < 30) {
     let href = match[1].trim()
     if (href.startsWith('/')) href = domain + href
-    if (href.startsWith(domain) && !href.match(/\.(pdf|jpg|jpeg|png|gif|svg|webp|css|js|ico|xml|txt)$/i)) {
-      links.add(href.replace(/\/$/, '') || domain)
+    const clean = href.replace(/\/$/, '') || domain
+    if (
+      href.startsWith(domain) &&
+      !seen.has(clean) &&
+      !href.match(/\.(pdf|jpg|jpeg|png|gif|svg|webp|css|js|ico|xml|txt)$/i)
+    ) {
+      seen.add(clean)
+      links.push(clean)
     }
+    match = pattern.exec(html)
   }
-  return [...links].slice(0, 30)
+  return links
 }
 
 function analyzeIssues(data: any): string[] {
@@ -67,9 +71,9 @@ function analyzeIssues(data: any): string[] {
   else if (data.description.length > 160) issues.push('Meta description too long (over 160 chars)')
   if (!data.h1) issues.push('Missing H1 tag')
   if (data.h2Count === 0) issues.push('No H2 tags found')
-  if (data.wordCount < 300) issues.push(`Thin content (${data.wordCount} words)`)
-  if (data.imagesNoAlt > 0) issues.push(`${data.imagesNoAlt} image${data.imagesNoAlt > 1 ? 's' : ''} missing alt text`)
-  if (data.isRedirect) issues.push(`Redirects to ${data.redirectTo}`)
+  if (data.wordCount < 300) issues.push('Thin content (' + data.wordCount + ' words)')
+  if (data.imagesNoAlt > 0) issues.push(data.imagesNoAlt + ' image' + (data.imagesNoAlt > 1 ? 's' : '') + ' missing alt text')
+  if (data.isRedirect) issues.push('Redirects to ' + data.redirectTo)
   if (data.canonical && data.canonical !== data.url) issues.push('Canonical points to different URL')
   if (data.status === 404) issues.push('Page returns 404')
   if (data.status === 500) issues.push('Page returns 500 server error')
@@ -77,14 +81,16 @@ function analyzeIssues(data: any): string[] {
 }
 
 export async function POST(request: NextRequest) {
+  let url = ''
   try {
-    const { url, visited = [], queue = [] } = await request.json()
+    const body = await request.json()
+    url = body.url
     if (!url) return NextResponse.json({ error: 'URL required' }, { status: 400 })
 
     const start = Date.now()
     let finalUrl = url
     let isRedirect = false
-    let redirectTo = null
+    let redirectTo: string | null = null
     let status = 200
 
     const res = await fetch(url, {
@@ -101,9 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     let html = ''
-    if (res.ok) {
-      html = await res.text()
-    }
+    if (res.ok) html = await res.text()
 
     const title = extractTitle(html)
     const description = extractMeta(html, 'description')
@@ -115,7 +119,7 @@ export async function POST(request: NextRequest) {
     const internalLinks = extractInternalLinks(html, url)
     const loadTime = Date.now() - start
 
-    const pageData = {
+    const pageData: any = {
       url: finalUrl,
       status,
       title,
@@ -129,7 +133,7 @@ export async function POST(request: NextRequest) {
       isRedirect,
       redirectTo,
       loadTime,
-      issues: [] as string[],
+      issues: [],
       internalLinks,
     }
 
