@@ -43,7 +43,7 @@ function parseJSON(text: string): any {
 
 export async function runSeoAudit(url: string): Promise<AuditResult> {
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1500,
     tools: [{ type: 'web_search_20250305', name: 'web_search' }] as any,
     system: `You are an expert SEO auditor. Use web_search to fetch and analyze the page. Return ONLY valid JSON — no markdown, no backticks, no explanation, no preamble.
@@ -94,7 +94,7 @@ export async function analyzeKeywords(
   keywords: string[]
 ): Promise<KeywordAnalysis> {
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     system: `You are an SEO expert. Analyze a page's keyword optimization. Return ONLY valid JSON, no markdown, no explanation.
 
