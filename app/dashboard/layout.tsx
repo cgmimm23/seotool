@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase'
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', section: null },
   { label: 'Site Audit', href: '/dashboard/audit', section: 'SEO Tools' },
+  { label: 'Site Crawler', href: '/dashboard/site-crawler', section: null },
   { label: 'Keywords', href: '/dashboard/keywords', section: null },
   { label: 'SERP Tracker', href: '/dashboard/serp', section: null },
   { label: 'Page Speed', href: '/dashboard/pagespeed', section: null },
