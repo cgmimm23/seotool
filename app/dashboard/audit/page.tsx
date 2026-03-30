@@ -1,12 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function AuditPage() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [audit, setAudit] = useState<any>(null)
   const [error, setError] = useState('')
+
+  useEffect(() => { loadLastAudit() }, [])
+
+  async function loadLastAudit() {
+    try {
+      const res = await fetch('/api/audit')
+      const data = await res.json()
+      if (data.reports?.[0]) {
+        const r = data.reports[0]
+        setUrl(r.url || '')
+        setAudit({ url: r.url, overall_score: r.overall_score, grade: r.grade, summary: r.summary, categories: r.categories, checks: r.checks })
+      }
+    } catch {}
+  }
 
   async function runAudit() {
     if (!url) return

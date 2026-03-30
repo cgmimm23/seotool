@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 interface PageResult {
   url: string
@@ -34,6 +34,32 @@ export default function SiteCrawlerPage() {
   const [aiSummary, setAiSummary] = useState('')
   const [generatingSummary, setGeneratingSummary] = useState(false)
   const stopRef = useRef(false)
+
+  useEffect(() => { loadLastReport() }, [])
+
+  async function loadLastReport() {
+    try {
+      const res = await fetch('/api/crawl-report?full=true')
+      const data = await res.json()
+      if (data.reports?.[0]?.pages?.length > 0) {
+        const r = data.reports[0]
+        setPages(r.pages)
+        setUrl(r.url)
+        setAiSummary(r.summary || '')
+        setDone(true)
+      }
+    } catch {}
+  }
+
+  async function saveCrawlReport(crawledPages: any[], crawlUrl: string, summary: string) {
+    try {
+      await fetch('/api/crawl-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: crawlUrl, pages: crawledPages, summary }),
+      })
+    } catch {}
+  }
 
   async function startCrawl() {
     if (!url) return
@@ -90,6 +116,7 @@ export default function SiteCrawlerPage() {
       setCrawling(false)
       setDone(true)
       setCurrentUrl('')
+      saveCrawlReport(results, baseUrl, '')
     }
   }
 
@@ -133,6 +160,7 @@ export default function SiteCrawlerPage() {
       const data = await res.json()
       const text = data.content?.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('') || ''
       setAiSummary(text)
+      saveCrawlReport(pages, url, text)
     } catch (err: any) { setError(err.message) }
     finally { setGeneratingSummary(false) }
   }
