@@ -129,7 +129,7 @@ export default function PageSpeedPage() {
           {/* Tab switcher */}
           <div style={{ display: 'flex', borderBottom: '1px solid rgba(0,0,0,0.08)', marginBottom: '1rem' }}>
             {(['mobile', 'desktop'] as const).map(t => (
-              <button key={t} onClick={() => setActiveTab(t)} style={{ padding: '0.5rem 1rem', fontSize: '13px', color: activeTab === t ? '#1e90ff' : '#7a8fa8', cursor: 'pointer', borderBottom: `2px solid ${activeTab === t ? '#1e90ff' : 'transparent'}`, marginBottom: '-1px', fontWeight: activeTab === t ? 600 : 400, background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === t ? '#1e90ff' : 'transparent'}`, fontFamily: 'Open Sans, sans-serif', textTransform: 'capitalize' as const }}>{t}</button>
+              <button key={t} onClick={() => setActiveTab(t)} style={{ padding: '0.5rem 1rem', fontSize: '13px', color: activeTab === t ? '#1e90ff' : '#7a8fa8', cursor: 'pointer', borderBottom: `2px solid ${activeTab === t ? '#1e90ff' : 'transparent'}`, marginBottom: '-1px', fontWeight: activeTab === t ? 600 : 400, background: 'none', border: 'none', fontFamily: 'Open Sans, sans-serif', textTransform: 'capitalize' as const }}>{t}</button>
             ))}
           </div>
 
