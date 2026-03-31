@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase'
 
 export default function SettingsPage() {
   const [serpKey, setSerpKey] = useState('')
-  const [anthropicKey, setAnthropicKey] = useState('')
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
@@ -14,9 +13,8 @@ export default function SettingsPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data } = await supabase.from('profiles').select('serp_api_key, anthropic_api_key').eq('id', user.id).single()
+      const { data } = await supabase.from('profiles').select('serp_api_key').eq('id', user.id).single()
       if (data?.serp_api_key) setSerpKey(data.serp_api_key)
-      if (data?.anthropic_api_key) setAnthropicKey(data.anthropic_api_key)
     }
     load()
   }, [])
@@ -25,7 +23,7 @@ export default function SettingsPage() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    await supabase.from('profiles').update({ serp_api_key: serpKey, anthropic_api_key: anthropicKey }).eq('id', user.id)
+    await supabase.from('profiles').update({ serp_api_key: serpKey }).eq('id', user.id)
     setSaved(true)
     setLoading(false)
     setTimeout(() => setSaved(false), 3000)
@@ -44,17 +42,14 @@ export default function SettingsPage() {
       <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.5rem', marginBottom: '1rem' }}>
         <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem', paddingBottom: '0.6rem', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>API Keys</div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-          <div>
-            <label style={labelStyle}>SerpAPI Key</label>
-            <input type="password" style={inputStyle} placeholder="Your SerpAPI key" value={serpKey} onChange={e => setSerpKey(e.target.value)} />
-            <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '4px' }}>Powers live SERP tracking. <a href="https://serpapi.com" target="_blank" style={{ color: '#1e90ff' }}>Get key →</a></div>
-          </div>
-          <div>
-            <label style={labelStyle}>Anthropic API Key</label>
-            <input type="password" style={inputStyle} placeholder="sk-ant-..." value={anthropicKey} onChange={e => setAnthropicKey(e.target.value)} />
-            <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '4px' }}>Powers AI audits. <a href="https://console.anthropic.com" target="_blank" style={{ color: '#1e90ff' }}>Get key →</a></div>
-          </div>
+        <div style={{ maxWidth: '400px', marginBottom: '1rem' }}>
+          <label style={labelStyle}>SerpAPI Key</label>
+          <input type="password" style={inputStyle} placeholder="Your SerpAPI key" value={serpKey} onChange={e => setSerpKey(e.target.value)} />
+          <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '4px' }}>Powers live SERP tracking. <a href="https://serpapi.com" target="_blank" style={{ color: '#1e90ff' }}>Get key →</a></div>
+        </div>
+
+        <div style={{ padding: '0.75rem 1rem', background: 'rgba(30,144,255,0.05)', border: '1px solid rgba(30,144,255,0.15)', borderRadius: '8px', fontSize: '12px', color: '#4a6080', marginBottom: '1rem' }}>
+          AI features are powered by a server-side Anthropic key — no setup required.
         </div>
 
         <button className="btn btn-accent" onClick={saveKeys} disabled={loading}>
