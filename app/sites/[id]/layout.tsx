@@ -33,7 +33,6 @@ export default function SiteLayout({
   }
 
   const id = params.id
-  const siteUrl = site?.url ? encodeURIComponent(site.url) : ''
 
   const navSections = [
     {
@@ -45,38 +44,38 @@ export default function SiteLayout({
     {
       section: 'SEO Tools',
       items: [
-        { label: 'Site Audit', href: `/dashboard/audit?site=${siteUrl}` },
-        { label: 'Site Crawler', href: `/dashboard/site-crawler?site=${siteUrl}` },
-        { label: 'Keywords', href: `/dashboard/keywords?site=${siteUrl}` },
-        { label: 'SERP Tracker', href: `/dashboard/serp?site=${siteUrl}` },
-        { label: 'Rank History', href: `/dashboard/rank-history?site=${siteUrl}` },
-        { label: 'Page Speed', href: `/dashboard/pagespeed?site=${siteUrl}` },
-        { label: 'AI Visibility', href: `/dashboard/ai-visibility?site=${siteUrl}` },
-        { label: 'Backlinks', href: `/dashboard/backlinks?site=${siteUrl}` },
+        { label: 'Site Audit', href: `/sites/${id}/audit` },
+        { label: 'Site Crawler', href: `/sites/${id}/site-crawler` },
+        { label: 'Keywords', href: `/sites/${id}/keywords` },
+        { label: 'SERP Tracker', href: `/sites/${id}/serp` },
+        { label: 'Rank History', href: `/sites/${id}/rank-history` },
+        { label: 'Page Speed', href: `/sites/${id}/pagespeed` },
+        { label: 'AI Visibility', href: `/sites/${id}/ai-visibility` },
+        { label: 'Backlinks', href: `/sites/${id}/backlinks` },
       ]
     },
     {
       section: 'Google Data',
       items: [
-        { label: 'Analytics', href: `/dashboard/analytics?site=${siteUrl}` },
-        { label: 'Search Console', href: `/dashboard/search-console?site=${siteUrl}` },
-        { label: 'Google Ads', href: `/dashboard/google-ads?site=${siteUrl}` },
+        { label: 'Analytics', href: `/sites/${id}/analytics` },
+        { label: 'Search Console', href: `/sites/${id}/search-console` },
+        { label: 'Google Ads', href: `/sites/${id}/google-ads` },
       ]
     },
     {
       section: 'Local',
       items: [
-        { label: 'Local SEO', href: `/dashboard/local-seo?site=${siteUrl}` },
-        { label: 'Google Reviews', href: `/dashboard/reviews?site=${siteUrl}` },
-        { label: 'Aggregators', href: `/dashboard/aggregators?site=${siteUrl}` },
+        { label: 'Local SEO', href: `/sites/${id}/local-seo` },
+        { label: 'Google Reviews', href: `/sites/${id}/reviews` },
+        { label: 'Aggregators', href: `/sites/${id}/aggregators` },
       ]
     },
     {
       section: 'Tools',
       items: [
-        { label: 'Schema Builder', href: `/dashboard/schema?site=${siteUrl}` },
-        { label: 'Image Tool', href: `/dashboard/tools/image` },
-        { label: 'GBP Creator', href: `/dashboard/tools/gbp-creator` },
+        { label: 'Schema Builder', href: `/sites/${id}/schema` },
+        { label: 'Image Tool', href: `/sites/${id}/tools/image` },
+        { label: 'GBP Creator', href: `/sites/${id}/tools/gbp-creator` },
       ]
     },
   ]
@@ -96,7 +95,6 @@ export default function SiteLayout({
         zIndex: 50,
         overflowY: 'auto',
       }}>
-        {/* Back to all sites + site name */}
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', marginBottom: '10px' }}>
             <span style={{ color: '#7a8fa8', fontSize: '11px', fontFamily: 'Roboto Mono, monospace' }}>← All Sites</span>
@@ -111,7 +109,6 @@ export default function SiteLayout({
           )}
         </div>
 
-        {/* Nav */}
         <nav style={{ flex: 1, padding: '0.5rem 0' }}>
           {navSections.map((section, si) => (
             <div key={si}>
@@ -121,7 +118,7 @@ export default function SiteLayout({
                 </div>
               )}
               {section.items.map(item => {
-                const active = pathname === item.href || pathname === item.href.split('?')[0]
+                const active = pathname === item.href
                 return (
                   <a key={item.href} href={item.href} style={{
                     display: 'flex',
@@ -143,7 +140,6 @@ export default function SiteLayout({
           ))}
         </nav>
 
-        {/* User */}
         <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
           <button onClick={signOut} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '0.4rem', fontSize: '12px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif' }}>Sign Out</button>
