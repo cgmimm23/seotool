@@ -10,12 +10,26 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
   const [desktopData, setDesktopData] = useState<any>(null)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<'mobile' | 'desktop'>('mobile')
+  const [lastTested, setLastTested] = useState<string | null>(null)
   const supabase = createClient()
+
+  const storageKey = `pagespeed_${params.id}`
 
   useEffect(() => {
     async function load() {
       const { data } = await supabase.from('sites').select('url').eq('id', params.id).single()
       if (data?.url) setUrl(data.url)
+
+      // Load last results from localStorage
+      try {
+        const saved = localStorage.getItem(storageKey)
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed.mobileData) setMobileData(parsed.mobileData)
+          if (parsed.desktopData) setDesktopData(parsed.desktopData)
+          if (parsed.lastTested) setLastTested(parsed.lastTested)
+        }
+      } catch {}
     }
     load()
   }, [params.id])
@@ -39,6 +53,10 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
       await new Promise(r => setTimeout(r, 1500))
       const desktop = await fetchStrategy('desktop')
       setDesktopData(desktop)
+      const now = new Date().toISOString()
+      setLastTested(now)
+      // Save to localStorage
+      localStorage.setItem(storageKey, JSON.stringify({ mobileData: mobile, desktopData: desktop, lastTested: now }))
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
   }
@@ -47,6 +65,15 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
     if (s >= 90) return '#00d084'
     if (s >= 50) return '#ffa500'
     return '#ff4444'
+  }
+
+  function timeAgo(date: string) {
+    const diff = Date.now() - new Date(date).getTime()
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(hours / 24)
+    if (days > 0) return `${days}d ago`
+    if (hours > 0) return `${hours}h ago`
+    return 'Just now'
   }
 
   const data = activeTab === 'mobile' ? mobileData : desktopData
@@ -61,7 +88,9 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
     { key: 'interactive', label: 'Time to Interactive' },
   ].map(a => ({ ...a, data: data.audits[a.key] })).filter(a => a.data) : []
 
-  const opportunities = data?.audits ? Object.values(data.audits).filter((a: any) => a.details?.type === 'opportunity' && a.score !== null && a.score < 0.9).sort((a: any, b: any) => (a.score || 0) - (b.score || 0)).slice(0, 6) : []
+  const opportunities = data?.audits ? Object.values(data.audits).filter((a: any) =>
+    a.details?.type === 'opportunity' && a.score !== null && a.score < 0.9
+  ).sort((a: any, b: any) => (a.score || 0) - (b.score || 0)).slice(0, 6) : []
 
   return (
     <div>
@@ -69,13 +98,20 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
         <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Page Speed</h2>
         <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Core Web Vitals and performance via Google PageSpeed Insights</p>
       </div>
+
       <div style={card}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px' }}>
-          <input type="text" className="form-input" placeholder="https://yoursite.com" value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && runPageSpeed()} />
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input type="text" className="form-input" placeholder="https://yoursite.com" value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && runPageSpeed()} style={{ flex: 1 }} />
           <button className="btn btn-accent" onClick={runPageSpeed} disabled={loading || !url}>{loading ? 'Analyzing...' : 'Run Test'}</button>
+          {lastTested && !loading && (
+            <span style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', whiteSpace: 'nowrap' }}>Last test: {timeAgo(lastTested)}</span>
+          )}
         </div>
+        {loading && <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '8px', fontFamily: 'Roboto Mono, monospace' }}>Running mobile and desktop tests...</div>}
       </div>
+
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}
+
       {(mobileData || desktopData) && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
@@ -93,13 +129,34 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
                       {!d && <div style={{ fontSize: '12px', color: '#7a8fa8' }}>Loading...</div>}
                     </div>
                   </div>
+                  {d && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '6px', marginTop: '12px' }}>
+                      {['performance', 'accessibility', 'best-practices', 'seo'].map(cat => {
+                        const s = Math.round((d.cats?.[cat]?.score || 0) * 100)
+                        return (
+                          <div key={cat} style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: scoreColor(s) }}>{s}</div>
+                            <div style={{ fontSize: '9px', color: '#7a8fa8', textTransform: 'capitalize' }}>{cat.replace('-', ' ')}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
+
+          {/* Tab switcher */}
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(0,0,0,0.08)', marginBottom: '1rem' }}>
+            {(['mobile', 'desktop'] as const).map(t => (
+              <button key={t} onClick={() => setActiveTab(t)} style={{ padding: '0.5rem 1rem', fontSize: '13px', color: activeTab === t ? '#1e90ff' : '#7a8fa8', cursor: 'pointer', borderBottom: `2px solid ${activeTab === t ? '#1e90ff' : 'transparent'}`, marginBottom: '-1px', fontWeight: activeTab === t ? 600 : 400, background: 'none', border: 'none', fontFamily: 'Open Sans, sans-serif', textTransform: 'capitalize' }}>{t}</button>
+            ))}
+          </div>
+
           {data && keyAudits.length > 0 && (
             <div style={card}>
-              <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Core Web Vitals</div>
+              <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Core Web Vitals — {activeTab === 'mobile' ? 'Mobile' : 'Desktop'}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
                 {keyAudits.map(a => (
                   <div key={a.key} style={{ background: '#f8f9fb', borderRadius: '10px', padding: '12px' }}>
@@ -110,12 +167,31 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
               </div>
             </div>
           )}
+
+          {opportunities.length > 0 && (
+            <div style={card}>
+              <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Opportunities to Improve</div>
+              {(opportunities as any[]).map((a, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px', padding: '10px 0', borderBottom: i < opportunities.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: scoreColor(Math.round((a.score || 0) * 100)) + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: scoreColor(Math.round((a.score || 0) * 100)) }}>{Math.round((a.score || 0) * 100)}</span>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>{a.title}</div>
+                    <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>{a.description?.split('.')[0]}.</div>
+                    {a.details?.overallSavingsMs && <div style={{ fontSize: '11px', color: '#00d084', marginTop: '2px', fontFamily: 'Roboto Mono, monospace' }}>Potential savings: {Math.round(a.details.overallSavingsMs)}ms</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
+
       {!loading && !mobileData && !desktopData && !error && (
         <div style={{ ...card, textAlign: 'center', padding: '3rem', color: '#7a8fa8' }}>
-          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', color: '#4a6080', marginBottom: '4px' }}>Enter a URL and click Run Test</div>
-          <div style={{ fontSize: '13px' }}>Tests mobile and desktop simultaneously</div>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', color: '#4a6080', marginBottom: '4px' }}>No test run yet</div>
+          <div style={{ fontSize: '13px' }}>Click Run Test to check your Core Web Vitals</div>
         </div>
       )}
     </div>
