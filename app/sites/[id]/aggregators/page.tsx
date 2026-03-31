@@ -3,9 +3,6 @@
 import { useState, useEffect } from 'react'
 
 const AGGREGATORS = [
-  { id: 'yext', name: 'Yext', description: 'Pushes your business data to 200+ directories, maps, apps, and search engines simultaneously.', coverage: '200+ directories', highlights: ['Google', 'Apple Maps', 'Bing', 'Yelp', 'Facebook', 'Amazon Alexa', 'Siri', 'TripAdvisor'], pricing: 'Starting at $199/year per location', signupUrl: 'https://www.yext.com', color: '#0a3dff', keyField: 'YEXT_API_KEY', keyPlaceholder: 'yext_api_key_...' },
-  { id: 'brightlocal', name: 'BrightLocal', description: 'Citation building, tracking, and cleanup tool. Great for agencies managing multiple clients.', coverage: '1,400+ directories', highlights: ['Yelp', 'YellowPages', 'Foursquare', 'Citysearch', 'Manta', 'Superpages', 'MapQuest'], pricing: 'Starting at $29/month', signupUrl: 'https://www.brightlocal.com', color: '#00b386', keyField: 'BRIGHTLOCAL_API_KEY', keyPlaceholder: 'bl_api_key_...' },
-  { id: 'uberall', name: 'Uberall', description: 'Enterprise-grade location marketing platform. Strong in Europe and international markets.', coverage: '125+ directories', highlights: ['Google', 'Facebook', 'Apple Maps', 'HERE Maps', 'TomTom', 'Navmii', 'Cylex'], pricing: 'Custom enterprise pricing', signupUrl: 'https://uberall.com', color: '#6b4fbb', keyField: 'UBERALL_API_KEY', keyPlaceholder: 'uberall_key_...' },
   { id: 'dataaxle', name: 'Localeze / Data Axle', description: 'One of the original data aggregators. Feeds core data to GPS devices and navigation systems.', coverage: '300+ data consumers', highlights: ['GPS/Navigation', 'Infogroup', 'Acxiom', 'Neustar', 'TomTom', 'Garmin', 'HERE Maps'], pricing: 'Starting at $299/year', signupUrl: 'https://www.data-axle.com', color: '#e85d04', keyField: 'DATAAXLE_API_KEY', keyPlaceholder: 'dax_api_key_...' },
 ]
 
