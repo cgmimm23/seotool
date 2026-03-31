@@ -7,13 +7,37 @@ function AuditPageInner({ params }: { params: { id: string } }) {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [audit, setAudit] = useState<any>(null)
+  const [lastScanned, setLastScanned] = useState<string | null>(null)
   const [error, setError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('sites').select('url').eq('id', params.id).single()
-      if (data?.url) setUrl(data.url)
+      // Load site URL
+      const { data: site } = await supabase.from('sites').select('url').eq('id', params.id).single()
+      if (site?.url) setUrl(site.url)
+
+      // Load last audit report
+      const { data: reports } = await supabase
+        .from('audit_reports')
+        .select('*')
+        .eq('site_id', params.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (reports?.[0]) {
+        const r = reports[0]
+        setLastScanned(r.created_at)
+        setAudit({
+          url: r.url,
+          overall: r.overall_score,
+          overall_score: r.overall_score,
+          grade: r.grade,
+          summary: r.summary,
+          categories: r.categories,
+          checks: r.checks,
+        })
+      }
     }
     load()
   }, [params.id])
@@ -22,7 +46,6 @@ function AuditPageInner({ params }: { params: { id: string } }) {
     if (!url) return
     setLoading(true)
     setError('')
-    setAudit(null)
     try {
       const res = await fetch('/api/audit', {
         method: 'POST',
@@ -32,6 +55,7 @@ function AuditPageInner({ params }: { params: { id: string } }) {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setAudit(data.audit)
+      setLastScanned(new Date().toISOString())
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -45,6 +69,17 @@ function AuditPageInner({ params }: { params: { id: string } }) {
     return '#ff4444'
   }
 
+  function timeAgo(date: string) {
+    const diff = Date.now() - new Date(date).getTime()
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(hours / 24)
+    if (days > 0) return `${days}d ago`
+    if (hours > 0) return `${hours}h ago`
+    return 'Just now'
+  }
+
+  const score = audit?.overall || audit?.overall_score
+
   return (
     <div>
       <div style={{ marginBottom: '1.5rem' }}>
@@ -53,9 +88,12 @@ function AuditPageInner({ params }: { params: { id: string } }) {
       </div>
 
       <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <input type="text" className="form-input" placeholder="https://yoursite.com" value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && runAudit()} style={{ flex: 1 }} />
           <button className="btn btn-accent" onClick={runAudit} disabled={loading}>{loading ? 'Scanning...' : 'Scan Now'}</button>
+          {lastScanned && !loading && (
+            <span style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', whiteSpace: 'nowrap' }}>Last scan: {timeAgo(lastScanned)}</span>
+          )}
         </div>
       </div>
 
@@ -63,11 +101,11 @@ function AuditPageInner({ params }: { params: { id: string } }) {
 
       {loading && <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '3rem', textAlign: 'center', color: '#7a8fa8', fontSize: '14px', fontFamily: 'Roboto Mono, monospace' }}>Analyzing {url}...</div>}
 
-      {audit && (
+      {!loading && audit && (
         <>
           <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem 1.5rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: `3px solid ${scoreColor(audit.overall)}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span style={{ fontSize: '26px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: scoreColor(audit.overall), lineHeight: 1 }}>{audit.overall}</span>
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: `3px solid ${scoreColor(score)}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span style={{ fontSize: '26px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: scoreColor(score), lineHeight: 1 }}>{score}</span>
               <span style={{ fontSize: '10px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>{audit.grade}</span>
             </div>
             <div>
@@ -118,6 +156,13 @@ function AuditPageInner({ params }: { params: { id: string } }) {
             })}
           </div>
         </>
+      )}
+
+      {!loading && !audit && (
+        <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '3rem', textAlign: 'center', color: '#7a8fa8' }}>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', color: '#4a6080', marginBottom: '4px' }}>No audit run yet</div>
+          <div style={{ fontSize: '13px' }}>Click Scan Now to run your first SEO audit</div>
+        </div>
       )}
     </div>
   )

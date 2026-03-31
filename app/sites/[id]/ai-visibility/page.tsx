@@ -5,15 +5,24 @@ import { createClient } from '@/lib/supabase'
 
 export default function AIVisibilityPage({ params }: { params: { id: string } }) {
   const [url, setUrl] = useState('')
+  const [siteName, setSiteName] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
+  const [bingKey, setBingKey] = useState('')
+  const [bingSubmitting, setBingSubmitting] = useState(false)
+  const [bingResult, setBingResult] = useState<'success' | 'error' | null>(null)
+  const [copiedLlms, setCopiedLlms] = useState(false)
+  const [copiedRobots, setCopiedRobots] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('sites').select('url').eq('id', params.id).single()
+      const { data } = await supabase.from('sites').select('url, name').eq('id', params.id).single()
       if (data?.url) setUrl(data.url)
+      if (data?.name) setSiteName(data.name)
+      const saved = localStorage.getItem('riq_bing_key')
+      if (saved) setBingKey(saved)
     }
     load()
   }, [params.id])
@@ -23,16 +32,12 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
     setLoading(true)
     setError('')
     setResult(null)
-
     try {
-      // Fetch robots.txt, llms.txt, ai.txt server-side to avoid CORS
       const filesRes = await fetch(`/api/ai-visibility?siteUrl=${encodeURIComponent(url)}`)
       const filesData = await filesRes.json()
       if (filesData.error) throw new Error(filesData.error)
-
       const { base, llms, aiTxt, robots } = filesData
       const robotsText = robots.content
-
       const aiBots = [
         { name: 'GPTBot', company: 'OpenAI' },
         { name: 'ClaudeBot', company: 'Anthropic' },
@@ -42,19 +47,15 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
         { name: 'cohere-ai', company: 'Cohere' },
         { name: 'Bytespider', company: 'ByteDance' },
       ]
-
       const botStatus = aiBots.map(bot => {
         if (!robotsText) return { ...bot, status: 'unknown' }
         const lower = robotsText.toLowerCase()
         const botLower = bot.name.toLowerCase()
-        const hasDisallow = lower.includes(`user-agent: ${botLower}`) &&
-          lower.split(`user-agent: ${botLower}`)[1]?.includes('disallow: /')
+        const hasDisallow = lower.includes(`user-agent: ${botLower}`) && lower.split(`user-agent: ${botLower}`)[1]?.includes('disallow: /')
         if (hasDisallow) return { ...bot, status: 'blocked' }
         if (lower.includes(`user-agent: ${botLower}`)) return { ...bot, status: 'allowed' }
         return { ...bot, status: 'not mentioned' }
       })
-
-      // AI analysis
       let aiAnalysis = null
       const aiRes = await fetch('/api/ai', {
         method: 'POST',
@@ -63,71 +64,76 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          system: `You are an AI search optimization expert. Analyze the given URL for AI visibility signals. Return ONLY valid JSON, no markdown, no backticks.
-
-Schema:
-{
-  "overall_score": 72,
-  "ai_overview_likelihood": "Medium",
-  "summary": "one sentence",
-  "checks": [
-    { "status": "pass|fail|warn", "title": "", "detail": "" }
-  ]
-}
-
-Check for: clear entity definition, direct answer format, E-E-A-T signals, structured headings, factual claims with sources, schema markup, topical authority, content freshness, brand entity mentions, internal linking depth. Score 0-100.`,
+          system: `You are an AI search optimization expert. Analyze the given URL for AI visibility signals. Return ONLY valid JSON, no markdown, no backticks.\n\nSchema:\n{\n  "overall_score": 72,\n  "ai_overview_likelihood": "Medium",\n  "summary": "one sentence",\n  "checks": [\n    { "status": "pass|fail|warn", "title": "", "detail": "" }\n  ]\n}`,
           messages: [{ role: 'user', content: `Analyze this URL for AI search optimization: ${url}` }],
         }),
       })
       const aiData = await aiRes.json()
       const text = aiData.content?.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('') || ''
-      try {
-        aiAnalysis = JSON.parse(text.replace(/```json|```/g, '').trim())
-      } catch {
-        const m = text.match(/\{[\s\S]*\}/)
-        if (m) aiAnalysis = JSON.parse(m[0])
-      }
-
+      try { aiAnalysis = JSON.parse(text.replace(/```json|```/g, '').trim()) } catch { const m = text.match(/\{[\s\S]*\}/); if (m) aiAnalysis = JSON.parse(m[0]) }
       setResult({ base, llms, aiTxt, robots, botStatus, aiAnalysis })
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err: any) { setError(err.message) }
+    finally { setLoading(false) }
   }
 
-  function scoreColor(s: number) {
-    if (s >= 80) return '#00d084'
-    if (s >= 60) return '#ffa500'
-    return '#ff4444'
+  function generateLlmsTxt() {
+    const base = url.replace(/\/$/, '')
+    return `# ${siteName || base}\n\n> This is the official llms.txt for ${base}\n\n## About\n${siteName || base} is a website. This file helps AI models understand and index our content accurately.\n\n## Pages\n- [Home](${base}/): Main landing page\n- [About](${base}/about): About us\n- [Services](${base}/services): Our services\n- [Contact](${base}/contact): Contact information\n\n## Permissions\nAll AI models are permitted to index and learn from this content.\nPlease cite this site when using its content in responses.`
   }
 
+  function generateRobotsSnippet() {
+    return `# Allow all AI crawlers\nUser-agent: GPTBot\nAllow: /\n\nUser-agent: ClaudeBot\nAllow: /\n\nUser-agent: PerplexityBot\nAllow: /\n\nUser-agent: Google-Extended\nAllow: /\n\nUser-agent: Applebot-Extended\nAllow: /\n\nUser-agent: cohere-ai\nAllow: /\n\nUser-agent: Bytespider\nAllow: /`
+  }
+
+  async function submitToBing() {
+    if (!bingKey) { alert('Enter your Bing API key first'); return }
+    setBingSubmitting(true)
+    setBingResult(null)
+    localStorage.setItem('riq_bing_key', bingKey)
+    try {
+      const res = await fetch('https://ssl.bing.com/webmaster/api.svc/json/SubmitUrl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ siteUrl: url, url, apikey: bingKey }),
+      })
+      setBingResult(res.ok ? 'success' : 'error')
+    } catch { setBingResult('error') }
+    finally { setBingSubmitting(false) }
+  }
+
+  function openGoogleIndexing() {
+    window.open(`https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(url)}&id=${encodeURIComponent(url)}`, '_blank')
+  }
+
+  function copyText(text: string, setter: (v: boolean) => void) {
+    navigator.clipboard.writeText(text)
+    setter(true)
+    setTimeout(() => setter(false), 2000)
+  }
+
+  function scoreColor(s: number) { if (s >= 80) return '#00d084'; if (s >= 60) return '#ffa500'; return '#ff4444' }
   function botStatusColor(s: string) {
     if (s === 'allowed') return { bg: 'rgba(0,208,132,0.1)', color: '#00d084', label: 'Allowed' }
     if (s === 'blocked') return { bg: 'rgba(255,68,68,0.1)', color: '#ff4444', label: 'Blocked' }
     if (s === 'not mentioned') return { bg: 'rgba(255,165,0,0.1)', color: '#ffa500', label: 'Not mentioned' }
     return { bg: 'rgba(0,0,0,0.05)', color: '#7a8fa8', label: 'Unknown' }
   }
-
   const cardStyle = { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }
 
   return (
     <div>
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>AI Visibility</h2>
-        <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Check how visible your site is to AI search engines</p>
+        <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Check and improve how visible your site is to AI search engines</p>
       </div>
-
       <div style={cardStyle}>
         <div style={{ display: 'flex', gap: '8px' }}>
           <input type="text" className="form-input" placeholder="https://yoursite.com" value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && analyze()} style={{ flex: 1 }} />
           <button className="btn btn-accent" onClick={analyze} disabled={loading}>{loading ? 'Analyzing...' : 'Analyze'}</button>
         </div>
       </div>
-
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}
       {loading && <div style={{ ...cardStyle, textAlign: 'center', padding: '3rem', color: '#7a8fa8', fontSize: '13px' }}>Checking AI visibility signals for {url}...</div>}
-
       {result && (
         <>
           {result.aiAnalysis && (
@@ -142,8 +148,6 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals, struc
               </div>
             </div>
           )}
-
-          {/* File checks */}
           <div style={cardStyle}>
             <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>AI Crawler Files</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -166,8 +170,6 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals, struc
               ))}
             </div>
           </div>
-
-          {/* Bot status */}
           <div style={cardStyle}>
             <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>AI Bot Access (robots.txt)</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px' }}>
@@ -184,8 +186,6 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals, struc
             </div>
             {!result.robots.exists && <div style={{ fontSize: '12px', color: '#ffa500', marginTop: '8px' }}>! No robots.txt found — AI bots will use default crawl behavior</div>}
           </div>
-
-          {/* AI checks */}
           {result.aiAnalysis?.checks?.length > 0 && (
             <div style={cardStyle}>
               <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>AI Optimization Checks</div>
@@ -207,6 +207,87 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals, struc
               </div>
             </div>
           )}
+
+          {/* Submit to AI Section */}
+          <div style={{ ...cardStyle, border: '1px solid rgba(30,144,255,0.2)', background: 'rgba(30,144,255,0.02)' }}>
+            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 700, marginBottom: '4px', color: '#0d1b2e' }}>Submit to AI Search Engines</div>
+            <p style={{ fontSize: '13px', color: '#7a8fa8', marginBottom: '1.25rem', lineHeight: 1.6 }}>Complete these steps to maximize your site's visibility to AI crawlers and search engines.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+              {/* Step 1 llms.txt */}
+              <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', padding: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: result.llms.exists ? 'rgba(0,208,132,0.1)' : 'rgba(30,144,255,0.1)', color: result.llms.exists ? '#00d084' : '#1e90ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>{result.llms.exists ? '✓' : '1'}</div>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Add llms.txt to your site</div>
+                      <div style={{ fontSize: '11px', color: '#7a8fa8' }}>Tells AI models what your site is about and how to use it</div>
+                    </div>
+                  </div>
+                  <button onClick={() => copyText(generateLlmsTxt(), setCopiedLlms)} style={{ padding: '5px 12px', borderRadius: '8px', fontSize: '12px', border: '1px solid rgba(30,144,255,0.3)', background: 'rgba(30,144,255,0.06)', color: '#1e90ff', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif', whiteSpace: 'nowrap' }}>
+                    {copiedLlms ? '✓ Copied!' : 'Copy llms.txt'}
+                  </button>
+                </div>
+                <pre style={{ background: '#f8f9fb', borderRadius: '6px', padding: '0.75rem', fontSize: '10px', fontFamily: 'Roboto Mono, monospace', color: '#4a6080', maxHeight: '100px', overflowY: 'auto', whiteSpace: 'pre-wrap', margin: 0 }}>{generateLlmsTxt()}</pre>
+                <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '6px' }}>Copy this, create a file called <code style={{ background: '#f0f4f8', padding: '1px 4px', borderRadius: '3px' }}>llms.txt</code> and upload it to your site root.</div>
+              </div>
+
+              {/* Step 2 robots.txt */}
+              <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', padding: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(30,144,255,0.1)', color: '#1e90ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>2</div>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Allow AI bots in robots.txt</div>
+                      <div style={{ fontSize: '11px', color: '#7a8fa8' }}>Add this to your robots.txt to explicitly allow all AI crawlers</div>
+                    </div>
+                  </div>
+                  <button onClick={() => copyText(generateRobotsSnippet(), setCopiedRobots)} style={{ padding: '5px 12px', borderRadius: '8px', fontSize: '12px', border: '1px solid rgba(30,144,255,0.3)', background: 'rgba(30,144,255,0.06)', color: '#1e90ff', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif', whiteSpace: 'nowrap' }}>
+                    {copiedRobots ? '✓ Copied!' : 'Copy snippet'}
+                  </button>
+                </div>
+                <pre style={{ background: '#f8f9fb', borderRadius: '6px', padding: '0.75rem', fontSize: '10px', fontFamily: 'Roboto Mono, monospace', color: '#4a6080', maxHeight: '100px', overflowY: 'auto', whiteSpace: 'pre-wrap', margin: 0 }}>{generateRobotsSnippet()}</pre>
+                <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '6px' }}>Paste this into your existing robots.txt file on your server.</div>
+              </div>
+
+              {/* Step 3 Bing */}
+              <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', padding: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: bingResult === 'success' ? 'rgba(0,208,132,0.1)' : 'rgba(30,144,255,0.1)', color: bingResult === 'success' ? '#00d084' : '#1e90ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>{bingResult === 'success' ? '✓' : '3'}</div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Submit to Bing / Microsoft Copilot</div>
+                    <div style={{ fontSize: '11px', color: '#7a8fa8' }}>Bing powers Copilot and multiple AI engines. <a href="https://www.bing.com/webmasters" target="_blank" style={{ color: '#1e90ff', textDecoration: 'none' }}>Get your API key →</a></div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="password" placeholder="Bing Webmaster API key" value={bingKey} onChange={e => setBingKey(e.target.value)} style={{ flex: 1, background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', padding: '0.5rem 0.75rem', fontSize: '12px', color: '#0d1b2e', outline: 'none', fontFamily: 'Roboto Mono, monospace' }} />
+                  <button onClick={submitToBing} disabled={bingSubmitting || !bingKey} style={{ padding: '0 14px', borderRadius: '8px', fontSize: '12px', border: 'none', background: bingResult === 'success' ? '#00d084' : '#1e90ff', color: '#fff', cursor: bingSubmitting || !bingKey ? 'not-allowed' : 'pointer', fontFamily: 'Open Sans, sans-serif', fontWeight: 600, opacity: bingSubmitting || !bingKey ? 0.6 : 1, whiteSpace: 'nowrap' }}>
+                    {bingSubmitting ? 'Submitting...' : bingResult === 'success' ? '✓ Submitted!' : bingResult === 'error' ? 'Try Again' : 'Submit to Bing'}
+                  </button>
+                </div>
+                {bingResult === 'error' && <div style={{ fontSize: '11px', color: '#ff4444', marginTop: '6px' }}>Submission failed. Check your API key and try again.</div>}
+              </div>
+
+              {/* Step 4 Google */}
+              <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', padding: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(30,144,255,0.1)', color: '#1e90ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>4</div>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Submit to Google Search Console</div>
+                      <div style={{ fontSize: '11px', color: '#7a8fa8' }}>Request indexing — powers Google AI Overviews</div>
+                    </div>
+                  </div>
+                  <button onClick={openGoogleIndexing} style={{ padding: '5px 12px', borderRadius: '8px', fontSize: '12px', border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#4a6080', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                    Open Google Search Console
+                  </button>
+                </div>
+                <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '8px', paddingLeft: '34px' }}>Click the button, paste your URL in the inspection box, and click "Request Indexing".</div>
+              </div>
+
+            </div>
+          </div>
         </>
       )}
     </div>
