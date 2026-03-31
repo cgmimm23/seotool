@@ -63,6 +63,13 @@ export default function SiteLayout({
       ]
     },
     {
+      section: 'Bing Tools',
+      items: [
+        { label: 'Bing Webmaster', href: `/sites/${id}/bing-webmaster` },
+        { label: 'Bing Places', href: `/sites/${id}/bing-places` },
+      ]
+    },
+    {
       section: 'Local',
       items: [
         { label: 'Local SEO', href: `/sites/${id}/local-seo` },
