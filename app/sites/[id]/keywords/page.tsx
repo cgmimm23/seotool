@@ -21,7 +21,8 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
       const { data: site } = await supabase.from('sites').select('url').eq('id', params.id).single()
       if (site?.url) setSiteUrl(site.url)
 
-      const res = await fetch('/api/keywords')
+      // Pass siteId so we only load keywords for this site
+      const res = await fetch(`/api/keywords?siteId=${params.id}`)
       const data = await res.json()
       const pageMap: any = {}
       for (const kw of data.keywords || []) {
@@ -56,12 +57,15 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
   async function saveKeywords() {
     if (!keywords.length) return
     setSaving(true)
+    setError('')
     try {
-      await fetch('/api/keywords', {
+      const res = await fetch('/api/keywords', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ siteId: params.id, siteUrl, pagePath: selectedPage, keywords, action: 'save' }),
       })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
       setPages(prev => {
