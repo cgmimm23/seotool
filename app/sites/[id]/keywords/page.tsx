@@ -255,8 +255,8 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
         <div>
-          <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Keywords</h2>
-          <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Track and optimize your target keywords</p>
+          <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Page Optimizer</h2>
+          <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Optimize every page for your target keywords</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button className="btn btn-ghost" onClick={() => { setShowImport(!showImport); setImportKeywords([]); setImportError('') }} style={{ fontSize: '13px' }}>
