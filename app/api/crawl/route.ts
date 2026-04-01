@@ -43,7 +43,21 @@ function extractCanonical(html: string): string | null {
 
 function countImages(html: string): { total: number; noAlt: number } {
   const imgs = html.match(/<img[^>]+>/gi) || []
-  const noAlt = imgs.filter((img: string) => !img.match(/alt=["'][^"']+["']/i)).length
+  const noAlt = imgs.filter((img: string) => {
+    // Has standard alt with non-empty value — OK
+    if (img.match(/\balt=["'][^"']+["']/i)) return false
+    // Has data-alt (used by some CMSs like WordPress) — OK
+    if (img.match(/\bdata-alt=["'][^"']+["']/i)) return false
+    // Has aria-label — OK
+    if (img.match(/\baria-label=["'][^"']+["']/i)) return false
+    // Has title attribute as accessible fallback — OK
+    if (img.match(/\btitle=["'][^"']+["']/i)) return false
+    // Intentionally empty alt (decorative image) — OK, not an error
+    if (img.match(/\balt=["']["']/i)) return false
+    // Tracking pixel (1x1) — skip
+    if (img.match(/width=["']1["']/i) && img.match(/height=["']1["']/i)) return false
+    return true
+  }).length
   return { total: imgs.length, noAlt }
 }
 
