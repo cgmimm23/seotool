@@ -7,7 +7,20 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = createServerSupabase()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data } = await supabase.auth.exchangeCodeForSession(code)
+
+    // Save Google tokens to profiles so they persist across sessions
+    if (data?.session?.user && data.session.provider_token) {
+      const expiresAt = new Date()
+      expiresAt.setSeconds(expiresAt.getSeconds() + (data.session.expires_in || 3600))
+
+      await supabase.from('profiles').upsert({
+        id: data.session.user.id,
+        google_access_token: data.session.provider_token,
+        google_refresh_token: data.session.provider_refresh_token || null,
+        google_token_expires_at: expiresAt.toISOString(),
+      }, { onConflict: 'id' })
+    }
   }
 
   return NextResponse.redirect('https://seotool-34nk9.ondigitalocean.app/dashboard')
