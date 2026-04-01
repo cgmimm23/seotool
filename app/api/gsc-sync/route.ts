@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create keywords in the keywords table
-    const uniqueKeywords = [...new Set(rows.map((r: any) => r.keys[0]))] as string[]
+    const uniqueKeywords = Array.from(new Set(rows.map((r: any) => r.keys[0]))) as string[]
 
     // Upsert keywords
     const keywordUpserts = uniqueKeywords.map(kw => ({
