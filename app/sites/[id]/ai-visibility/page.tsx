@@ -14,6 +14,7 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
   const [bingResult, setBingResult] = useState<'success' | 'error' | null>(null)
   const [copiedLlms, setCopiedLlms] = useState(false)
   const [copiedRobots, setCopiedRobots] = useState(false)
+  const [lastScanned, setLastScanned] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -23,6 +24,31 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
       if (data?.name) setSiteName(data.name)
       const saved = localStorage.getItem('riq_bing_key')
       if (saved) setBingKey(saved)
+
+      // Load last report from Supabase
+      const { data: report } = await supabase
+        .from('ai_visibility_reports')
+        .select('*')
+        .eq('site_id', params.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (report) {
+        setLastScanned(report.created_at)
+        setResult({
+          llms: { exists: report.llms_exists },
+          aiTxt: { exists: false },
+          robots: { exists: report.robots_exists },
+          botStatus: report.bot_status,
+          aiAnalysis: {
+            overall_score: report.overall_score,
+            ai_overview_likelihood: report.ai_overview_likelihood,
+            summary: report.summary,
+            checks: report.checks,
+          },
+        })
+      }
     }
     load()
   }, [params.id])
@@ -71,7 +97,28 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
       const aiData = await aiRes.json()
       const text = aiData.content?.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('') || ''
       try { aiAnalysis = JSON.parse(text.replace(/```json|```/g, '').trim()) } catch { const m = text.match(/\{[\s\S]*\}/); if (m) aiAnalysis = JSON.parse(m[0]) }
-      setResult({ base, llms, aiTxt, robots, botStatus, aiAnalysis })
+      const newResult = { base, llms, aiTxt, robots, botStatus, aiAnalysis }
+      setResult(newResult)
+      setLastScanned(new Date().toISOString())
+
+      // Save to Supabase
+      if (aiAnalysis) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase.from('ai_visibility_reports').insert({
+            site_id: params.id,
+            user_id: user.id,
+            url,
+            overall_score: aiAnalysis.overall_score,
+            ai_overview_likelihood: aiAnalysis.ai_overview_likelihood,
+            summary: aiAnalysis.summary,
+            checks: aiAnalysis.checks,
+            bot_status: botStatus,
+            llms_exists: llms.exists,
+            robots_exists: robots.exists,
+          })
+        }
+      }
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
   }
@@ -130,6 +177,11 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
         <div style={{ display: 'flex', gap: '8px' }}>
           <input type="text" className="form-input" placeholder="https://yoursite.com" value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && analyze()} style={{ flex: 1 }} />
           <button className="btn btn-accent" onClick={analyze} disabled={loading}>{loading ? 'Analyzing...' : 'Analyze'}</button>
+          {lastScanned && !loading && (
+            <span style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', whiteSpace: 'nowrap' }}>
+              Last scan: {(() => { const diff = Date.now() - new Date(lastScanned).getTime(); const days = Math.floor(diff / 86400000); const hours = Math.floor(diff / 3600000); return days > 0 ? days + 'd ago' : hours > 0 ? hours + 'h ago' : 'Just now' })()}
+            </span>
+          )}
         </div>
       </div>
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}

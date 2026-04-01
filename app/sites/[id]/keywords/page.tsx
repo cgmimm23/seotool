@@ -29,6 +29,8 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
   const [manualImport, setManualImport] = useState('')
   const [gscSiteUrl, setGscSiteUrl] = useState('')
   const [gscSites, setGscSites] = useState<string[]>([])
+  const [lastScanned, setLastScanned] = useState<string | null>(null)
+  const [analysisPage, setAnalysisPage] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -49,6 +51,21 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
       setPages(pageList)
       setSelectedPage(pageList[0].path)
       setKeywords(pageList[0].keywords)
+
+      // Load last analysis report
+      const { data: lastReport } = await supabase
+        .from('keyword_analyses')
+        .select('*')
+        .eq('site_id', params.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (lastReport) {
+        setAnalysis({ score: lastReport.score, verdict: lastReport.verdict, fixes: lastReport.fixes })
+        setLastScanned(lastReport.created_at)
+        setAnalysisPage(lastReport.page_path)
+      }
     }
     load()
   }, [params.id])
@@ -219,6 +236,8 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setAnalysis(data.analysis)
+      setLastScanned(new Date().toISOString())
+      setAnalysisPage(selectedPage)
     } catch (err: any) { setError(err.message) }
     finally { setAnalyzing(false) }
   }
@@ -410,6 +429,11 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
             <div style={{ display: 'flex', gap: '8px' }}>
               <button className="btn btn-ghost" onClick={saveKeywords} disabled={saving} style={{ fontSize: '13px' }}>{saved ? '✓ Saved' : saving ? 'Saving...' : 'Save Keywords'}</button>
               <button className="btn btn-accent" onClick={analyze} disabled={analyzing || !keywords.length} style={{ fontSize: '13px' }}>{analyzing ? 'Analyzing...' : 'Analyze Page'}</button>
+              {lastScanned && !analyzing && (
+                <span style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>
+                  Last: {(() => { const diff = Date.now() - new Date(lastScanned).getTime(); const days = Math.floor(diff / 86400000); const hours = Math.floor(diff / 3600000); return days > 0 ? days + 'd ago' : hours > 0 ? hours + 'h ago' : 'Just now' })()}{analysisPage && analysisPage !== selectedPage ? ' (different page)' : ''}
+                </span>
+              )}
             </div>
           </div>
 
