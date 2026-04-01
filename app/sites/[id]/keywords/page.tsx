@@ -147,14 +147,14 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
           siteId: params.id,
           siteUrl,
           pagePath: selectedPage,
-          keywords: [...new Set([...keywords, ...toImport])],
+          keywords: Array.from(new Set([...keywords, ...toImport])),
           action: 'save',
         }),
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
 
-      const merged = [...new Set([...keywords, ...toImport])]
+      const merged = Array.from(new Set([...keywords, ...toImport]))
       setKeywords(merged)
       setPages(prev => {
         const exists = prev.find(p => p.path === selectedPage)
