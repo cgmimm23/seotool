@@ -78,7 +78,7 @@ export default function SiteLayout({
       items: [
         { label: 'Site Audit', href: `/sites/${id}/audit` },
         { label: 'Site Crawler', href: `/sites/${id}/site-crawler` },
-        { label: 'Keywords', href: `/sites/${id}/keywords` },
+        { label: 'Page Optimizer', href: `/sites/${id}/keywords` },
         { label: 'SERP Tracker', href: `/sites/${id}/serp` },
         { label: 'Rank History', href: `/sites/${id}/rank-history` },
         { label: 'Page Speed', href: `/sites/${id}/pagespeed` },
