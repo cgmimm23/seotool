@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     'email',
     'offline_access',
     'https://webmaster.bing.com/api.readwrite',
+    'https://ads.microsoft.com/msads.manage',
   ].join(' ')
 
   const params = new URLSearchParams({
