@@ -417,23 +417,65 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
 
           {analysis && (
             <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.25rem' }}>
-                <div style={{ fontSize: '36px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: scoreColor(analysis.score) }}>{analysis.score}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                <div style={{ width: '72px', height: '72px', borderRadius: '50%', border: `3px solid ${scoreColor(analysis.score)}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: '24px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: scoreColor(analysis.score), lineHeight: 1 }}>{analysis.score}</span>
+                  <span style={{ fontSize: '9px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', marginTop: '2px' }}>SCORE</span>
+                </div>
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#0d1b2e' }}>Keyword Optimization Score</div>
-                  <div style={{ fontSize: '13px', color: '#7a8fa8', marginTop: '2px' }}>{analysis.verdict}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#0d1b2e', marginBottom: '4px' }}>Page Optimization Score</div>
+                  <div style={{ fontSize: '13px', color: '#7a8fa8', lineHeight: 1.5 }}>{analysis.verdict}</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {analysis.fixes?.map((fix: any) => (
-                  <div key={fix.priority} style={{ display: 'flex', gap: '10px', padding: '0.75rem 0', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(30,144,255,0.1)', border: '1px solid rgba(30,144,255,0.2)', color: '#1e90ff', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px', fontFamily: 'Roboto Mono, monospace', fontWeight: 600 }}>{fix.priority}</div>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>{fix.title}</div>
-                      <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '3px', lineHeight: 1.5 }}>{fix.action}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {analysis.fixes?.map((fix: any, i: number) => {
+                  const statusColors: any = { fail: '#ff4444', warn: '#ffa500', pass: '#00d084' }
+                  const statusIcons: any = { fail: '✕', warn: '!', pass: '✓' }
+                  const color = statusColors[fix.status] || '#7a8fa8'
+                  return (
+                    <div key={i} style={{ borderRadius: '10px', border: `1px solid ${color}30`, borderLeft: `3px solid ${color}`, overflow: 'hidden' }}>
+                      {/* Issue header */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: `${color}08` }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: `${color}18`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>{statusIcons[fix.status] || fix.priority}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>{fix.title}</div>
+                        </div>
+                        <div style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: `${color}18`, color, fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase', flexShrink: 0 }}>{fix.status || 'issue'}</div>
+                      </div>
+                      {/* Problem description */}
+                      {fix.problem && (
+                        <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(0,0,0,0.06)', background: '#fff' }}>
+                          <div style={{ fontSize: '11px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Roboto Mono, monospace', marginBottom: '4px' }}>What's Wrong</div>
+                          <div style={{ fontSize: '13px', color: '#4a6080', lineHeight: 1.6 }}>{fix.problem}</div>
+                        </div>
+                      )}
+                      {/* Impact */}
+                      {fix.impact && (
+                        <div style={{ padding: '8px 14px', borderBottom: '1px solid rgba(0,0,0,0.06)', background: '#fafbfc' }}>
+                          <div style={{ fontSize: '11px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Roboto Mono, monospace', marginBottom: '4px' }}>SEO Impact</div>
+                          <div style={{ fontSize: '12px', color: '#7a8fa8', lineHeight: 1.5 }}>{fix.impact}</div>
+                        </div>
+                      )}
+                      {/* Steps */}
+                      {fix.steps?.length > 0 && (
+                        <div style={{ padding: '10px 14px', background: '#fff' }}>
+                          <div style={{ fontSize: '11px', color: '#1e90ff', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Roboto Mono, monospace', marginBottom: '8px' }}>How to Fix</div>
+                          <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            {fix.steps.map((step: string, j: number) => (
+                              <li key={j} style={{ fontSize: '12px', color: '#4a6080', lineHeight: 1.6 }}>{step}</li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                      {/* Fallback for old format */}
+                      {!fix.problem && !fix.steps && fix.action && (
+                        <div style={{ padding: '10px 14px' }}>
+                          <div style={{ fontSize: '12px', color: '#4a6080', lineHeight: 1.6 }}>{fix.action}</div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
