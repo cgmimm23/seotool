@@ -13,6 +13,8 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
   const [days, setDays] = useState(30)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [sortBy, setSortBy] = useState<'clicks'|'impressions'|'position'>('clicks')
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => { checkConnection() }, [])
@@ -25,7 +27,14 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
   }
 
   async function connectGoogle() {
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback`, scopes: 'https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly', queryParams: { access_type: 'offline', prompt: 'consent' } } })
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: 'https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly',
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      }
+    })
   }
 
   async function fetchSites(token: string) {
@@ -51,17 +60,47 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
     finally { setLoading(false) }
   }
 
+  async function syncToRankHistory() {
+    if (!siteUrl) return
+    setSyncing(true)
+    setSyncResult(null)
+    setError('')
+    try {
+      const res = await fetch('/api/gsc-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteUrl, siteId: params.id, days: 90 }),
+      })
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      setSyncResult(json.message || `Synced ${json.synced} data points`)
+    } catch (err: any) { setError(err.message) }
+    finally { setSyncing(false) }
+  }
+
   useEffect(() => { if (connected && siteUrl) fetchData() }, [siteUrl, days, connected])
 
-  function positionColor(pos: number) { if (pos <= 3) return '#00d084'; if (pos <= 10) return '#ffa500'; return '#ff4444' }
-  const sortedKeywords = data?.keywords ? [...data.keywords].sort((a: any, b: any) => { if (sortBy === 'position') return parseFloat(a.position) - parseFloat(b.position); return b[sortBy] - a[sortBy] }) : []
+  function positionColor(pos: number) {
+    if (pos <= 3) return '#00d084'
+    if (pos <= 10) return '#ffa500'
+    return '#ff4444'
+  }
+
+  const sortedKeywords = data?.keywords ? [...data.keywords].sort((a: any, b: any) => {
+    if (sortBy === 'position') return parseFloat(a.position) - parseFloat(b.position)
+    return b[sortBy] - a[sortBy]
+  }) : []
+
   const card = { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }
 
   if (checkingAuth) return <div style={{ textAlign: 'center', padding: '3rem', color: '#7a8fa8', fontSize: '13px', fontFamily: 'Roboto Mono, monospace' }}>Checking Google connection...</div>
 
   if (!connected) return (
     <div>
-      <div style={{ marginBottom: '1.5rem' }}><h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Search Console</h2><p style={{ fontSize: '13px', color: '#7a8fa8' }}>Keyword rankings and search performance from Google</p></div>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Search Console</h2>
+        <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Keyword rankings and search performance from Google</p>
+      </div>
       <div style={{ ...card, textAlign: 'center', padding: '3rem' }}>
         <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Connect Google Search Console</div>
         <p style={{ fontSize: '14px', color: '#7a8fa8', marginBottom: '1.5rem', maxWidth: '440px', margin: '0 auto 1.5rem' }}>Connect your Google account to see every keyword your site ranks for, impressions, clicks, CTR, and position data.</p>
@@ -76,15 +115,40 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '12px' }}>
-        <div><h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Search Console</h2><p style={{ fontSize: '13px', color: '#7a8fa8' }}>Keyword rankings and search performance from Google</p></div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {sites.length > 0 && <select value={siteUrl} onChange={e => setSiteUrl(e.target.value)} className="form-input" style={{ width: 'auto', fontFamily: 'Roboto Mono, monospace', fontSize: '12px' }}>{sites.map(s => <option key={s} value={s}>{s.replace(/^https?:\/\//, '').replace(/\/$/, '')}</option>)}</select>}
-          <select value={days} onChange={e => setDays(+e.target.value)} className="form-input" style={{ width: 'auto' }}><option value={7}>Last 7 days</option><option value={28}>Last 28 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option></select>
+        <div>
+          <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Search Console</h2>
+          <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Keyword rankings and search performance from Google</p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {sites.length > 0 && (
+            <select value={siteUrl} onChange={e => setSiteUrl(e.target.value)} className="form-input" style={{ width: 'auto', fontFamily: 'Roboto Mono, monospace', fontSize: '12px' }}>
+              {sites.map(s => <option key={s} value={s}>{s.replace(/^https?:\/\//, '').replace(/\/$/, '')}</option>)}
+            </select>
+          )}
+          <select value={days} onChange={e => setDays(+e.target.value)} className="form-input" style={{ width: 'auto' }}>
+            <option value={7}>Last 7 days</option>
+            <option value={28}>Last 28 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
           <button onClick={fetchData} className="btn btn-ghost" style={{ fontSize: '12px' }}>Refresh</button>
+          <button onClick={syncToRankHistory} disabled={syncing || !siteUrl} className="btn btn-accent" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+            {syncing ? 'Syncing...' : '↑ Sync to Rank History'}
+          </button>
         </div>
       </div>
+
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}
+
+      {syncResult && (
+        <div style={{ background: 'rgba(0,208,132,0.08)', border: '1px solid rgba(0,208,132,0.2)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#00d084', fontSize: '13px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>✓ {syncResult}</span>
+          <a href={`/sites/${params.id}/rank-history`} style={{ fontSize: '12px', color: '#00d084', textDecoration: 'underline' }}>View Rank History →</a>
+        </div>
+      )}
+
       {loading && <div style={{ textAlign: 'center', padding: '3rem', color: '#7a8fa8', fontSize: '13px', fontFamily: 'Roboto Mono, monospace' }}>Loading Search Console data...</div>}
+
       {data && !loading && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '12px' }}>
@@ -100,6 +164,7 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
               </div>
             ))}
           </div>
+
           <div style={card}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600 }}>All Keywords ({data.keywords.length})</div>
@@ -110,7 +175,11 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
               </div>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr>{['Keyword', 'Clicks', 'Impressions', 'CTR', 'Position'].map(h => <th key={h} style={{ fontSize: '11px', color: '#7a8fa8', textTransform: 'uppercase', fontWeight: 400, padding: '0.4rem 0.75rem', borderBottom: '1px solid rgba(0,0,0,0.08)', textAlign: 'left', fontFamily: 'Roboto Mono, monospace' }}>{h}</th>)}</tr></thead>
+              <thead>
+                <tr>{['Keyword', 'Clicks', 'Impressions', 'CTR', 'Position'].map(h => (
+                  <th key={h} style={{ fontSize: '11px', color: '#7a8fa8', textTransform: 'uppercase', fontWeight: 400, padding: '0.4rem 0.75rem', borderBottom: '1px solid rgba(0,0,0,0.08)', textAlign: 'left', fontFamily: 'Roboto Mono, monospace' }}>{h}</th>
+                ))}</tr>
+              </thead>
               <tbody>
                 {sortedKeywords.map((k: any, i: number) => (
                   <tr key={i} style={{ borderBottom: i < sortedKeywords.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none' }}>
