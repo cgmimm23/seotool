@@ -2,15 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
 type Tab = 'overview' | 'keywords' | 'crawl' | 'submit'
 
 function BingWebmasterInner({ params }: { params: { id: string } }) {
   const [siteUrl, setSiteUrl] = useState('')
-  const [connected, setConnected] = useState(false)
-  const [checkingAuth, setCheckingAuth] = useState(true)
   const [tab, setTab] = useState<Tab>('overview')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -18,33 +15,15 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
   const [submitUrl, setSubmitUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitResult, setSubmitResult] = useState<'success' | 'error' | null>(null)
-  const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
     async function load() {
       const { data: site } = await supabase.from('sites').select('url').eq('id', params.id).single()
       if (site?.url) { setSiteUrl(site.url); setSubmitUrl(site.url) }
-
-      // Check if connected via cookie by making a test API call
-      const res = await fetch(`/api/bing-webmaster?endpoint=sites&siteUrl=test`)
-      if (res.status !== 401) setConnected(true)
-      setCheckingAuth(false)
-
-      // Handle redirect back from OAuth
-      if (searchParams.get('microsoft_connected') === 'true') {
-        setConnected(true)
-      }
-      if (searchParams.get('error')) {
-        setError('Microsoft connection failed. Please try again.')
-      }
     }
     load()
   }, [params.id])
-
-  function connectMicrosoft() {
-    window.location.href = `/auth/microsoft?siteId=${params.id}&returnTo=/sites/${params.id}/bing-webmaster`
-  }
 
   async function fetchData() {
     if (!siteUrl) return
@@ -60,9 +39,6 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
       const stats = statsRes.status === 'fulfilled' ? await statsRes.value.json() : null
       const keywords = keywordsRes.status === 'fulfilled' ? await keywordsRes.value.json() : null
       const errors = errorsRes.status === 'fulfilled' ? await errorsRes.value.json() : null
-
-      // Check if any returned 401
-      if (stats?.error === 'not_connected') { setConnected(false); return }
 
       setData({ stats, keywords, errors })
     } catch (err: any) {
@@ -93,27 +69,6 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
   const card = { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }
   const tabBtn = (t: Tab) => ({ padding: '0.5rem 1rem', fontSize: '13px', color: tab === t ? '#1e90ff' : '#7a8fa8', cursor: 'pointer', borderBottom: `2px solid ${tab === t ? '#1e90ff' : 'transparent'}`, marginBottom: '-1px', fontWeight: tab === t ? 600 : 400, background: 'none', border: 'none', fontFamily: 'Open Sans, sans-serif' } as any)
 
-  if (checkingAuth) return <div style={{ textAlign: 'center', padding: '3rem', color: '#7a8fa8', fontSize: '13px', fontFamily: 'Roboto Mono, monospace' }}>Checking Microsoft connection...</div>
-
-  if (!connected) return (
-    <div>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Bing Webmaster Tools</h2>
-        <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Crawl stats, keyword data, and URL submission</p>
-      </div>
-      {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}
-      <div style={{ ...card, textAlign: 'center', padding: '3rem' }}>
-        <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Connect Microsoft Account</div>
-        <p style={{ fontSize: '14px', color: '#7a8fa8', marginBottom: '1.5rem', maxWidth: '440px', margin: '0 auto 1.5rem' }}>Connect your Microsoft account to access Bing Webmaster Tools — crawl stats, keyword data, crawl errors, and URL submission.</p>
-        <button onClick={connectMicrosoft} style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: '#0078d4', border: 'none', borderRadius: '8px', padding: '0.75rem 1.5rem', fontSize: '14px', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif', color: '#fff', fontWeight: 600 }}>
-          <svg width="18" height="18" viewBox="0 0 21 21" fill="none"><path fill="#f25022" d="M0 0h10v10H0z"/><path fill="#00a4ef" d="M11 0h10v10H11z"/><path fill="#7fba00" d="M0 11h10v10H0z"/><path fill="#ffb900" d="M11 11h10v10H11z"/></svg>
-          Connect with Microsoft
-        </button>
-        <p style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '1rem' }}>You'll be redirected to Microsoft to sign in with your account.</p>
-      </div>
-    </div>
-  )
-
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
@@ -121,13 +76,9 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
           <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Bing Webmaster Tools</h2>
           <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Crawl stats, keyword data, and URL submission</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ fontSize: '12px', color: '#00d084', fontFamily: 'Roboto Mono, monospace' }}>● Connected</span>
-          <button onClick={fetchData} disabled={loading} className="btn btn-accent" style={{ fontSize: '12px' }}>
-            {loading ? 'Loading...' : 'Load Data'}
-          </button>
-          <button onClick={connectMicrosoft} style={{ fontSize: '12px', padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', background: 'transparent', color: '#7a8fa8', cursor: 'pointer' }}>Reconnect</button>
-        </div>
+        <button onClick={fetchData} disabled={loading} className="btn btn-accent" style={{ fontSize: '12px' }}>
+          {loading ? 'Loading...' : 'Load Data'}
+        </button>
       </div>
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}

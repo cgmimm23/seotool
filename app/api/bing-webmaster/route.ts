@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+const BING_API_KEY = process.env.BING_WEBMASTER_API_KEY
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const endpoint = searchParams.get('endpoint')
   const siteUrl = searchParams.get('siteUrl')
 
-  const accessToken = req.cookies.get('ms_access_token')?.value
-
-  if (!accessToken) {
-    return NextResponse.json({ error: 'not_connected', message: 'Microsoft account not connected' }, { status: 401 })
+  if (!BING_API_KEY) {
+    return NextResponse.json({ error: 'Bing Webmaster API not configured' }, { status: 500 })
   }
 
   if (!endpoint || !siteUrl) {
@@ -23,24 +23,22 @@ export async function GET(req: NextRequest) {
 
     switch (endpoint) {
       case 'crawl-stats':
-        apiUrl = `https://ssl.bing.com/webmaster/api.svc/json/GetCrawlStats?siteUrl=${encodeURIComponent(cleanUrl)}`
+        apiUrl = `https://ssl.bing.com/webmaster/api.svc/json/GetCrawlStats?apikey=${BING_API_KEY}&siteUrl=${encodeURIComponent(cleanUrl)}`
         break
       case 'keywords':
-        apiUrl = `https://ssl.bing.com/webmaster/api.svc/json/GetKeywordStats?siteUrl=${encodeURIComponent(cleanUrl)}&query=&country=US&language=en-US`
+        apiUrl = `https://ssl.bing.com/webmaster/api.svc/json/GetKeywordStats?apikey=${BING_API_KEY}&siteUrl=${encodeURIComponent(cleanUrl)}&query=&country=US&language=en-US`
         break
       case 'crawl-issues':
-        apiUrl = `https://ssl.bing.com/webmaster/api.svc/json/GetCrawlIssues?siteUrl=${encodeURIComponent(cleanUrl)}`
+        apiUrl = `https://ssl.bing.com/webmaster/api.svc/json/GetCrawlIssues?apikey=${BING_API_KEY}&siteUrl=${encodeURIComponent(cleanUrl)}`
         break
       case 'sites':
-        apiUrl = `https://ssl.bing.com/webmaster/api.svc/json/GetUserSites`
+        apiUrl = `https://ssl.bing.com/webmaster/api.svc/json/GetUserSites?apikey=${BING_API_KEY}`
         break
       default:
         return NextResponse.json({ error: 'Unknown endpoint' }, { status: 400 })
     }
 
-    const res = await fetch(apiUrl, {
-      headers: { 'Authorization': `Bearer ${accessToken}` },
-    })
+    const res = await fetch(apiUrl)
 
     if (!res.ok) {
       const err = await res.text()
@@ -55,10 +53,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const accessToken = req.cookies.get('ms_access_token')?.value
-
-  if (!accessToken) {
-    return NextResponse.json({ error: 'not_connected', message: 'Microsoft account not connected' }, { status: 401 })
+  if (!BING_API_KEY) {
+    return NextResponse.json({ error: 'Bing Webmaster API not configured' }, { status: 500 })
   }
 
   try {
@@ -66,12 +62,9 @@ export async function POST(req: NextRequest) {
     const cleanSiteUrl = siteUrl?.replace(/\/$/, '')
 
     if (endpoint === 'submit-url') {
-      const res = await fetch(`https://ssl.bing.com/webmaster/api.svc/json/SubmitUrl`, {
+      const res = await fetch(`https://ssl.bing.com/webmaster/api.svc/json/SubmitUrl?apikey=${BING_API_KEY}`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json; charset=utf-8',
-        },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify({ siteUrl: cleanSiteUrl, url }),
       })
       if (!res.ok) {
