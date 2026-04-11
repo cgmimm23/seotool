@@ -36,22 +36,22 @@ export default function LandingPage() {
           fontWeight: 600, color: '#68ccd1', background: 'rgba(104,204,209,0.1)',
           marginBottom: '1.5rem', fontFamily: 'Montserrat, sans-serif',
         }}>
-          ALL-IN-ONE SEO PLATFORM
+          AI-POWERED SEO PLATFORM
         </div>
         <h1 style={{
           fontFamily: 'Montserrat, sans-serif', fontSize: '48px', fontWeight: 800,
           color: '#2367a0', lineHeight: 1.1, marginBottom: '1.5rem',
         }}>
-          Dominate Search Rankings.<br />
-          <span style={{ color: '#68ccd1' }}>Grow Your Business.</span>
+          AI That Finds, Fixes, and<br />
+          <span style={{ color: '#68ccd1' }}>Ranks Your Site Higher.</span>
         </h1>
         <p style={{
           fontSize: '18px', color: '#939393', lineHeight: 1.7, maxWidth: '650px',
           margin: '0 auto 2.5rem',
         }}>
-          Stop guessing and start growing. Marketing Machine SEO gives you AI-powered audits,
-          real-time rank tracking, competitor insights, and actionable fixes — everything you need
-          to climb to page one.
+          Marketing Machine SEO uses artificial intelligence to audit your site, diagnose issues,
+          write your fix list, and track your climb to page one — automatically. Stop paying
+          consultants for answers AI delivers in seconds.
         </p>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
           <Link href="/login" style={{
@@ -78,10 +78,10 @@ export default function LandingPage() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '3rem', flexWrap: 'wrap', maxWidth: '800px', margin: '0 auto' }}>
           {[
-            { num: '22+', label: 'SEO Tools' },
-            { num: 'AI', label: 'Powered Audits' },
-            { num: 'Live', label: 'SERP Tracking' },
-            { num: '0', label: 'Setup Required' },
+            { num: '100%', label: 'AI Driven' },
+            { num: '22+', label: 'AI Tools' },
+            { num: 'Real-Time', label: 'AI Analysis' },
+            { num: '0', label: 'SEO Expertise Needed' },
           ].map(item => (
             <div key={item.label}>
               <div style={{ fontSize: '28px', fontWeight: 800, color: '#2367a0', fontFamily: 'Montserrat, sans-serif' }}>{item.num}</div>
@@ -95,10 +95,11 @@ export default function LandingPage() {
       <section id="features" style={{ padding: '5rem 2rem', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
           <h2 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '36px', color: '#2367a0', marginBottom: '1rem' }}>
-            Everything You Need to <span style={{ color: '#68ccd1' }}>Rank Higher</span>
+            AI Does the Work. <span style={{ color: '#68ccd1' }}>You Get the Results.</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#939393', maxWidth: '600px', margin: '0 auto' }}>
-            From technical audits to local SEO, from keyword research to AI visibility — one platform, zero guesswork.
+            Every feature is powered by AI. It analyzes your site, writes your action plan, tracks your rankings,
+            and tells you exactly what to do next — no SEO expertise required.
           </p>
         </div>
 
@@ -132,17 +133,17 @@ export default function LandingPage() {
       <section style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '36px', color: '#2367a0', marginBottom: '1rem' }}>
-            Up and Running in <span style={{ color: '#68ccd1' }}>3 Minutes</span>
+            Your AI SEO Team in <span style={{ color: '#68ccd1' }}>3 Minutes</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#939393', marginBottom: '3rem' }}>
-            No complex setup. No code. Just results.
+            No consultants. No learning curve. AI handles everything.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
             {[
-              { step: '1', title: 'Add Your Site', desc: 'Enter your URL and we instantly start analyzing your SEO health across dozens of factors.' },
-              { step: '2', title: 'Get AI Insights', desc: 'Our AI engine audits your site, identifies issues, and gives you prioritized fixes with clear instructions.' },
-              { step: '3', title: 'Track & Grow', desc: 'Monitor your rankings, watch your score improve, and stay ahead of competitors with automated tracking.' },
+              { step: '1', title: 'Add Your Site', desc: 'Enter your URL. AI immediately crawls your site and begins a deep analysis across dozens of ranking factors.' },
+              { step: '2', title: 'AI Diagnoses Everything', desc: 'AI audits your technical SEO, content quality, page speed, keywords, and backlinks — then writes your fix list in plain English.' },
+              { step: '3', title: 'AI Tracks Your Growth', desc: 'AI continuously monitors your rankings, alerts you to changes, runs scheduled audits, and tells you what to do next.' },
             ].map(s => (
               <div key={s.step}>
                 <div style={{
@@ -273,11 +274,11 @@ export default function LandingPage() {
       <section style={{ padding: '5rem 2rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h2 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '36px', color: '#2367a0', marginBottom: '1rem' }}>
-            Ready to Outrank Your <span style={{ color: '#68ccd1' }}>Competition</span>?
+            Let AI Handle Your <span style={{ color: '#68ccd1' }}>SEO</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#939393', marginBottom: '2rem' }}>
-            Join businesses that use Marketing Machine SEO to find and fix SEO issues,
-            track their rankings, and grow organic traffic — all from one dashboard.
+            Stop spending hours on SEO you don&apos;t fully understand. Let AI audit your site,
+            write your fix list, track your rankings, and tell you what to do next — automatically.
           </p>
           <Link href="/login" style={{
             display: 'inline-block', padding: '0.85rem 2.5rem', background: '#e4b34f',
@@ -318,72 +319,72 @@ export default function LandingPage() {
 /* ─── DATA ─── */
 
 const features = [
-  { icon: '🔍', title: 'AI Site Audit', desc: 'Get a comprehensive SEO health check powered by AI. Scores across technical, content, on-page, performance, and mobile — with clear fixes for every issue.', color: '#2367a0' },
-  { icon: '📈', title: 'SERP Tracker', desc: 'See exactly where you rank on Google in real time. Track any keyword and watch your position change over time.', color: '#68ccd1' },
-  { icon: '🕷️', title: 'Site Crawler', desc: 'Crawl every page on your site to find broken links, missing meta tags, thin content, image issues, and redirect chains before Google does.', color: '#e4b34f' },
-  { icon: '🎯', title: 'Page Optimizer', desc: 'Get AI-powered optimization scores for each page against your target keywords. Receive prioritized fixes with exact instructions.', color: '#2367a0' },
-  { icon: '⚡', title: 'Core Web Vitals', desc: 'Measure page speed, LCP, FID, and CLS for both mobile and desktop. Know exactly what\'s slowing you down and how to fix it.', color: '#68ccd1' },
-  { icon: '📊', title: 'Google Analytics', desc: 'Pull GA4 data directly into your dashboard. See traffic by source, sessions, users, and bounce rate without leaving the platform.', color: '#e4b34f' },
-  { icon: '🔗', title: 'Backlink Analysis', desc: 'View your backlink profile with domain authority, page authority, link type, and spam scores. Know which links help and which hurt.', color: '#2367a0' },
-  { icon: '🔎', title: 'Search Console', desc: 'Connect Google Search Console to see your real keyword rankings, impressions, clicks, and CTR — synced to your rank history.', color: '#68ccd1' },
-  { icon: '🤖', title: 'AI Visibility', desc: 'Check if AI search engines can find and reference your site. Detect llms.txt, robots.txt, and AI bot access status.', color: '#e4b34f' },
-  { icon: '📍', title: 'Local SEO', desc: 'Check your Google Business Profile presence, track local keyword rankings, and monitor your citations across directories.', color: '#2367a0' },
-  { icon: '⭐', title: 'Review Management', desc: 'View and respond to Google reviews from your dashboard. Manage multiple locations and keep your reputation strong.', color: '#68ccd1' },
-  { icon: '🏗️', title: 'Schema Builder', desc: 'Generate structured data markup for your pages. Organization, FAQ, Product, Review — copy and paste directly into your site.', color: '#e4b34f' },
-  { icon: '📢', title: 'Google Ads', desc: 'Track your Google Ads campaign performance, keywords, search terms, and ROAS alongside your organic data.', color: '#2367a0' },
-  { icon: '🅱️', title: 'Bing Webmaster', desc: 'Crawl stats, keyword data, and URL submission for Bing. Don\'t ignore the second-largest search engine.', color: '#68ccd1' },
-  { icon: '🖼️', title: 'Image Optimizer', desc: 'Compress, resize, and convert images to WebP. Faster images mean faster pages and better rankings.', color: '#e4b34f' },
-  { icon: '📡', title: 'Citation Aggregators', desc: 'Push your business NAP data to hundreds of directories at once. Consistent citations boost local rankings.', color: '#2367a0' },
-  { icon: '📋', title: 'GBP Creator', desc: 'Create or claim your Google Business Profile with a guided step-by-step wizard. AI-generated descriptions included.', color: '#68ccd1' },
-  { icon: '📉', title: 'Rank History', desc: 'Track keyword positions over time across Google, Bing, and Search Console. Spot trends and measure the impact of your changes.', color: '#e4b34f' },
+  { icon: '🔍', title: 'AI Site Audit', desc: 'AI crawls your entire site, scores it across technical SEO, content, performance, and mobile — then writes your personalized fix list in plain English. No expertise needed.', color: '#2367a0' },
+  { icon: '📈', title: 'AI Rank Tracker', desc: 'AI monitors your Google rankings in real time, detects position changes, and explains why you moved up or down so you always know your next move.', color: '#68ccd1' },
+  { icon: '🕷️', title: 'AI Site Crawler', desc: 'AI crawls every page on your site, finds broken links, missing tags, thin content, and redirect chains — then summarizes the critical issues to fix first.', color: '#e4b34f' },
+  { icon: '🎯', title: 'AI Page Optimizer', desc: 'AI reads your actual page HTML, analyzes it against your target keywords, and delivers a scored report with specific fixes ranked by impact.', color: '#2367a0' },
+  { icon: '⚡', title: 'AI Speed Analysis', desc: 'AI measures your Core Web Vitals — LCP, FID, CLS — for mobile and desktop, then tells you exactly what\'s slowing you down and how to fix it.', color: '#68ccd1' },
+  { icon: '📊', title: 'AI Analytics', desc: 'AI pulls your GA4 data and interprets it for you — traffic trends, source breakdowns, bounce rates — surfacing insights you\'d miss reading raw numbers.', color: '#e4b34f' },
+  { icon: '🔗', title: 'AI Backlink Analysis', desc: 'AI evaluates your backlink profile — domain authority, spam scores, link types — and identifies which links are helping your rankings and which are hurting them.', color: '#2367a0' },
+  { icon: '🔎', title: 'AI Search Console', desc: 'AI connects to Google Search Console, syncs your real ranking data, and highlights the keywords where you\'re closest to page one — your biggest quick wins.', color: '#68ccd1' },
+  { icon: '🤖', title: 'AI Visibility Check', desc: 'AI checks if ChatGPT, Perplexity, and other AI search engines can find your site. Stay visible in the new era of AI-powered search.', color: '#e4b34f' },
+  { icon: '📍', title: 'AI Local SEO', desc: 'AI audits your local presence — Google Business Profile, citations, local keywords — and tells you exactly how to outrank nearby competitors.', color: '#2367a0' },
+  { icon: '⭐', title: 'AI Review Manager', desc: 'AI surfaces your Google reviews across locations, helps you respond professionally, and monitors your reputation so nothing slips through.', color: '#68ccd1' },
+  { icon: '🏗️', title: 'AI Schema Generator', desc: 'AI generates structured data markup for your pages — Organization, FAQ, Product, Review — perfectly formatted and ready to paste into your site.', color: '#e4b34f' },
+  { icon: '📢', title: 'AI Ads Intelligence', desc: 'AI pulls your Google Ads data alongside organic performance, giving you a unified view of paid and organic so you can optimize total search spend.', color: '#2367a0' },
+  { icon: '🅱️', title: 'AI Bing Optimization', desc: 'AI manages your Bing presence — crawl stats, keyword data, URL submissions — so you capture traffic from the second-largest search engine automatically.', color: '#68ccd1' },
+  { icon: '🖼️', title: 'AI Image Optimizer', desc: 'AI compresses, resizes, and converts your images to WebP in one click. Faster images mean faster pages, better rankings, and happier visitors.', color: '#e4b34f' },
+  { icon: '📡', title: 'AI Citation Builder', desc: 'AI pushes your business data to hundreds of directories at once, ensuring consistent NAP citations that boost your local search authority.', color: '#2367a0' },
+  { icon: '📋', title: 'AI GBP Creator', desc: 'AI walks you through creating your Google Business Profile step by step and auto-generates optimized business descriptions that attract customers.', color: '#68ccd1' },
+  { icon: '📉', title: 'AI Trend Analysis', desc: 'AI tracks your keyword positions over time across Google, Bing, and Search Console — spotting trends and measuring the real impact of every change you make.', color: '#e4b34f' },
 ]
 
 const detailedFeatures = [
   {
-    tag: 'AI-Powered',
-    title: 'Site Audits That Actually Tell You What to Fix',
-    desc: 'Most audit tools give you a score and a wall of jargon. Ours gives you a score, a grade, and a prioritized list of exactly what to fix — written in plain English by AI that understands SEO.',
+    tag: 'AI Intelligence',
+    title: 'AI Audits Your Site and Writes Your Fix List',
+    desc: 'Other tools dump raw data on you and expect you to figure it out. Our AI reads your site like a senior SEO consultant — then writes a prioritized action plan in plain English that anyone on your team can execute.',
     bullets: [
-      'Checks across Technical, Content, On-Page, Performance, and Mobile',
-      'Severity-ranked issues so you fix what matters first',
-      'AI-written explanations — no SEO expertise needed',
-      'Automated scheduled scans so you never miss a regression',
+      'AI checks Technical, Content, On-Page, Performance, and Mobile factors',
+      'Issues ranked by severity — fix what moves the needle first',
+      'AI explains every issue and writes the exact fix in plain English',
+      'Scheduled AI scans run automatically so you catch regressions instantly',
     ],
     visual: '🔍',
   },
   {
-    tag: 'Rankings',
-    title: 'Know Exactly Where You Stand on Google',
-    desc: 'Real-time SERP tracking powered by SerpAPI. See your actual position for every keyword you care about, track changes over time, and know immediately when you gain or lose ground.',
+    tag: 'AI Monitoring',
+    title: 'AI Watches Your Rankings 24/7',
+    desc: 'AI tracks your Google position for every keyword in real time, detects when you move up or down, and cross-references Search Console data to show you verified rankings — not estimates.',
     bullets: [
-      'Live Google SERP lookups for any keyword',
-      'Position history charts to visualize trends',
-      'Google Search Console integration for verified data',
-      'Track competitors in the same results',
+      'AI-powered live SERP lookups for any keyword',
+      'AI detects ranking changes and surfaces trends you\'d miss',
+      'Google Search Console integration for verified click and impression data',
+      'AI identifies your closest-to-page-one keywords — your biggest quick wins',
     ],
     visual: '📈',
   },
   {
-    tag: 'Optimization',
-    title: 'AI Tells You Exactly How to Optimize Each Page',
-    desc: 'Enter your target keywords and our AI fetches your actual page HTML, analyzes every element, and returns a scored report with specific, actionable fixes ranked by priority.',
+    tag: 'AI Optimization',
+    title: 'AI Reads Your Page and Tells You Exactly What to Change',
+    desc: 'AI fetches your actual page HTML, reads every title tag, heading, image, and paragraph — then scores it against your target keywords and delivers specific fixes ranked by impact. It\'s like having an SEO expert review every page.',
     bullets: [
-      'Analyzes title tags, meta descriptions, H1-H3, images, and content',
-      'Keyword density and placement scoring',
-      'Prioritized fix list — highest impact first',
-      'Import keywords directly from Search Console or Bing',
+      'AI analyzes title tags, meta descriptions, H1-H3, images, content depth',
+      'AI scores keyword placement, density, and semantic relevance',
+      'Prioritized fix list — AI puts the highest-impact changes first',
+      'AI imports keywords from Search Console and Bing automatically',
     ],
     visual: '🎯',
   },
   {
-    tag: 'Local SEO',
-    title: 'Dominate Your Local Market',
-    desc: 'From Google Business Profile management to citation tracking to review monitoring — everything you need to show up when nearby customers search for what you offer.',
+    tag: 'AI Local',
+    title: 'AI Dominates Your Local Market For You',
+    desc: 'AI manages your entire local SEO presence — auditing your Google Business Profile, monitoring reviews, pushing citations to directories, and tracking local keyword rankings — so nearby customers always find you first.',
     bullets: [
-      'Google Business Profile checker and creator wizard',
-      'Review management — read and respond from your dashboard',
-      'Citation aggregator pushes your NAP to hundreds of directories',
-      'Local keyword rank tracking',
+      'AI checks and creates your Google Business Profile with optimized descriptions',
+      'AI monitors reviews and helps you respond professionally',
+      'AI pushes your business data to hundreds of directories at once',
+      'AI tracks your local keyword rankings against nearby competitors',
     ],
     visual: '📍',
   },

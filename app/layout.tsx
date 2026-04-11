@@ -2,8 +2,22 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Marketing Machine SEO',
-  description: 'SEO intelligence platform by Marketing Machine',
+  title: 'Marketing Machine SEO — AI-Powered SEO Platform',
+  description: 'AI audits your site, writes your fix list, tracks your rankings, and tells you what to do next. 22+ AI-powered SEO tools in one platform. Start free today.',
+  metadataBase: new URL('https://seo.cgmimm.com'),
+  openGraph: {
+    title: 'Marketing Machine SEO — AI-Powered SEO Platform',
+    description: 'AI audits your site, writes your fix list, tracks your rankings, and tells you what to do next. 22+ AI-powered SEO tools in one platform.',
+    siteName: 'Marketing Machine SEO',
+    type: 'website',
+    url: 'https://seo.cgmimm.com',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Marketing Machine SEO — AI-Powered SEO Platform',
+    description: 'AI audits your site, writes your fix list, tracks your rankings, and tells you what to do next.',
+  },
+  keywords: 'SEO tool, AI SEO, site audit, rank tracker, keyword optimization, local SEO, backlink analysis, page speed, schema markup, Google Search Console',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
