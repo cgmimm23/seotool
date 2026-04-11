@@ -5,12 +5,19 @@ import { createClient } from '@/lib/supabase'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState('')
+  const [unread, setUnread] = useState(0)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [showNotifs, setShowNotifs] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) setEmail(session.user.email || '')
     })
+    fetch('/api/notifications').then(r => r.json()).then(d => {
+      setUnread(d.unread || 0)
+      setNotifications(d.notifications || [])
+    }).catch(() => {})
   }, [])
 
   async function signOut() {
@@ -37,7 +44,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <div style={{ marginLeft: '220px', flex: 1 }}>
-        <div style={{ padding: '2rem 1.5rem', maxWidth: '1200px' }}>{children}</div>
+        {/* Top bar with notification bell */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.75rem 1.5rem', position: 'relative' }}>
+          <button onClick={() => { setShowNotifs(!showNotifs); if (!showNotifs) { fetch('/api/notifications', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) }).then(() => setUnread(0)) } }} style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '4px' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7a8fa8" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            {unread > 0 && (
+              <span style={{ position: 'absolute', top: 0, right: 0, width: '16px', height: '16px', borderRadius: '50%', background: '#ff4444', color: '#fff', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unread}</span>
+            )}
+          </button>
+
+          {showNotifs && (
+            <div style={{ position: 'absolute', top: '40px', right: '1.5rem', width: '340px', background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '12px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)', zIndex: 100, maxHeight: '400px', overflow: 'auto' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(0,0,0,0.08)', fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '14px', color: '#2367a0' }}>Notifications</div>
+              {notifications.length === 0 ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: '#939393', fontSize: '13px' }}>No notifications</div>
+              ) : notifications.map(n => (
+                <div key={n.id} style={{ padding: '10px 16px', borderBottom: '1px solid rgba(0,0,0,0.04)', background: n.read ? 'transparent' : 'rgba(30,144,255,0.03)' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#000' }}>{n.title}</div>
+                  <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px' }}>{n.message.substring(0, 100)}</div>
+                  <div style={{ fontSize: '10px', color: '#939393', marginTop: '4px' }}>{new Date(n.created_at).toLocaleDateString()}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '0 1.5rem 2rem', maxWidth: '1200px' }}>{children}</div>
       </div>
     </div>
   )
