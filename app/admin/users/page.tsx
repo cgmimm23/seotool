@@ -15,7 +15,7 @@ interface User {
 }
 
 const planColors: Record<string, string> = {
-  free: '#939393', starter: '#68ccd1', pro: '#e4b34f', agency: '#2367a0',
+  starter: '#68ccd1', pro: '#e4b34f', enterprise: '#2367a0',
 }
 
 export default function AdminUsersPage() {
@@ -112,10 +112,9 @@ export default function AdminUsersPage() {
         />
         <select value={planFilter} onChange={e => { setPlanFilter(e.target.value); setPage(1) }} style={inputStyle}>
           <option value="">All Plans</option>
-          <option value="free">Free</option>
           <option value="starter">Starter</option>
           <option value="pro">Pro</option>
-          <option value="agency">Agency</option>
+          <option value="enterprise">Enterprise</option>
         </select>
         <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1) }} style={inputStyle}>
           <option value="">All Status</option>
@@ -158,10 +157,9 @@ export default function AdminUsersPage() {
                         color: planColors[user.plan] || '#939393', cursor: 'pointer', outline: 'none',
                       }}
                     >
-                      <option value="free">Free</option>
                       <option value="starter">Starter</option>
                       <option value="pro">Pro</option>
-                      <option value="agency">Agency</option>
+                      <option value="enterprise">Enterprise</option>
                     </select>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
@@ -285,10 +283,9 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'block', fontSize: '12px', color: '#2367a0', marginBottom: '4px', fontWeight: 600 }}>Plan</label>
             <select value={plan} onChange={e => setPlan(e.target.value)} style={inputStyle}>
-              <option value="free">Free</option>
-              <option value="starter">Starter ($29/mo)</option>
-              <option value="pro">Pro ($79/mo)</option>
-              <option value="agency">Agency ($199/mo)</option>
+              <option value="starter">Starter ($59.95/mo)</option>
+              <option value="pro">Pro ($149/mo)</option>
+              <option value="enterprise">Enterprise (Custom)</option>
             </select>
           </div>
 

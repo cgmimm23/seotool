@@ -18,7 +18,7 @@ const cardStyle = {
 }
 
 const planColors: Record<string, string> = {
-  free: '#939393', starter: '#68ccd1', pro: '#e4b34f', agency: '#2367a0',
+  starter: '#68ccd1', pro: '#e4b34f', enterprise: '#2367a0',
 }
 
 export default function AdminStatsPage() {

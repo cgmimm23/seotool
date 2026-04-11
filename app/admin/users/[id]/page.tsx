@@ -95,10 +95,9 @@ export default function AdminUserDetailPage() {
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Plan</label>
             <select value={editPlan} onChange={e => setEditPlan(e.target.value)} style={inputStyle}>
-              <option value="free">Free</option>
-              <option value="starter">Starter ($29/mo)</option>
-              <option value="pro">Pro ($79/mo)</option>
-              <option value="agency">Agency ($199/mo)</option>
+              <option value="starter">Starter ($59.95/mo)</option>
+              <option value="pro">Pro ($149/mo)</option>
+              <option value="enterprise">Enterprise (Custom)</option>
             </select>
           </div>
 

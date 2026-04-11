@@ -81,7 +81,6 @@ export default function AdminNotificationsPage() {
             <label style={{ display: 'block', fontSize: '12px', color: '#939393', marginBottom: '4px' }}>Recipients</label>
             <select value={filter} onChange={e => setFilter(e.target.value)} style={inputStyle}>
               <option value="all">All Users</option>
-              <option value="free">Free Users</option>
               <option value="starter">Starter Users</option>
               <option value="pro">Pro Users</option>
               <option value="enterprise">Enterprise Users</option>
