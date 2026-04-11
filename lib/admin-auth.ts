@@ -10,19 +10,18 @@ export async function requireAdmin() {
     return { error: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }), user: null, supabase: null as any }
   }
 
-  // admin_session cookie contains the user ID, set by /api/admin/login
-  const userId = adminSession
   const supabase = createAdminSupabase()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
+  // Look up in admin_accounts — completely separate from customer profiles
+  const { data: admin } = await supabase
+    .from('admin_accounts')
+    .select('id, email, name')
+    .eq('id', adminSession)
     .single()
 
-  if (!profile || profile.role !== 'admin') {
+  if (!admin) {
     return { error: NextResponse.json({ error: 'Not authorized' }, { status: 403 }), user: null, supabase: null as any }
   }
 
-  return { error: null, user: { id: userId, email: profile.email }, supabase }
+  return { error: null, user: { id: admin.id, email: admin.email }, supabase }
 }

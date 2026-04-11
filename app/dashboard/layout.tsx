@@ -5,16 +5,11 @@ import { createClient } from '@/lib/supabase'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState('')
-  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setEmail(session.user.email || '')
-        const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
-        if (data?.role === 'admin') setIsAdmin(true)
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) setEmail(session.user.email || '')
     })
   }, [])
 
@@ -35,12 +30,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: '#1e90ff', background: 'rgba(30,144,255,0.08)', fontWeight: 600, textDecoration: 'none' }}>Dashboard</a>
           <div style={{ fontSize: '10px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0.75rem 1rem 0.25rem', fontFamily: 'Roboto Mono, monospace' }}>Account</div>
           <a href="/dashboard/settings" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: '#4a6080', textDecoration: 'none' }}>Settings</a>
-          {isAdmin && (
-            <>
-              <div style={{ fontSize: '10px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0.75rem 1rem 0.25rem', fontFamily: 'Roboto Mono, monospace' }}>Owner</div>
-              <a href="/admin/login" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: '#e4b34f', textDecoration: 'none', fontWeight: 600 }}>Admin Portal</a>
-            </>
-          )}
         </nav>
         <div style={{ padding: '1rem', borderTop: '1px solid rgba(0,0,0,0.08)' }}>
           <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>

@@ -1,6 +1,6 @@
 import { createAdminSupabase } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,56 +11,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'All fields required' }, { status: 400 })
   }
 
-  // Check passkey first
+  // Check passkey
   const validPasskey = process.env.ADMIN_PASSKEY
   if (!validPasskey || passkey !== validPasskey) {
     return NextResponse.json({ error: 'Invalid passkey' }, { status: 403 })
   }
 
-  // Verify credentials via Supabase Auth REST API
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-  const authRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': supabaseAnonKey,
-    },
-    body: JSON.stringify({ email, password }),
-  })
-
-  if (!authRes.ok) {
-    return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
-  }
-
-  const authData = await authRes.json()
-  const userId = authData.user?.id
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Auth failed' }, { status: 401 })
-  }
-
-  // Check admin role using service role key (no RLS issues)
-  const adminSupabase = createAdminSupabase()
-  const { data: profile } = await adminSupabase
-    .from('profiles')
-    .select('role')
-    .eq('id', userId)
+  // Look up admin in admin_accounts table — completely separate from customer auth
+  const supabase = createAdminSupabase()
+  const { data: admin, error } = await supabase
+    .from('admin_accounts')
+    .select('id, email, password_hash, name')
+    .eq('email', email)
     .single()
 
-  if (!profile || profile.role !== 'admin') {
-    return NextResponse.json({ error: 'Not an admin account' }, { status: 403 })
+  if (error || !admin) {
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
   }
 
-  // Store user ID in cookie so admin API routes can identify the user
-  const response = NextResponse.json({
-    success: true,
-    access_token: authData.access_token,
-    refresh_token: authData.refresh_token,
-  })
+  // Verify password
+  const valid = await bcrypt.compare(password, admin.password_hash)
+  if (!valid) {
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+  }
 
-  response.cookies.set('admin_session', userId, {
+  // Set admin session cookie with admin account ID
+  const response = NextResponse.json({ success: true })
+  response.cookies.set('admin_session', admin.id, {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',

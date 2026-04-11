@@ -13,14 +13,15 @@ export async function GET() {
   }
 
   const supabase = createAdminSupabase()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, email')
+  const { data: admin } = await supabase
+    .from('admin_accounts')
+    .select('email, name')
     .eq('id', adminSession)
     .single()
 
-  return NextResponse.json({
-    role: profile?.role || 'user',
-    email: profile?.email || '',
-  })
+  if (!admin) {
+    return NextResponse.json({ role: null }, { status: 401 })
+  }
+
+  return NextResponse.json({ role: 'admin', email: admin.email, name: admin.name })
 }
