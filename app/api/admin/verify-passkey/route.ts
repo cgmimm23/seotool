@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
-  // Get user from session
   const supabase = createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -13,7 +12,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  // Use admin client to check role (bypasses RLS timing issues)
   const adminSupabase = createAdminSupabase()
   const { data: profile } = await adminSupabase
     .from('profiles')
@@ -36,5 +34,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid passkey' }, { status: 403 })
   }
 
-  return NextResponse.json({ success: true })
+  // Set admin session cookie — this is what the middleware checks
+  const response = NextResponse.json({ success: true })
+  response.cookies.set('admin_session', 'verified', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 8, // 8 hours
+  })
+
+  return response
 }

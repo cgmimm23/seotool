@@ -22,6 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   async function signOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
+    document.cookie = 'admin_session=; path=/; max-age=0'
     window.location.href = '/admin/login'
   }
 

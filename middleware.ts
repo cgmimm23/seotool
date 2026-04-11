@@ -36,11 +36,19 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/analytics') ||
     request.nextUrl.pathname.startsWith('/settings')
 
-  // Admin routes protection
+  // Admin routes protection — requires BOTH admin role AND passkey verification
   if (isAdminPage && !isAdminLogin) {
+    const adminSession = request.cookies.get('admin_session')?.value
+
+    if (!adminSession || adminSession !== 'verified') {
+      // No admin session cookie — must go through admin login + passkey
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+
     if (!user) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -48,7 +56,7 @@ export async function middleware(request: NextRequest) {
       .single()
 
     if (profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
 
