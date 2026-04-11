@@ -1,0 +1,12 @@
+{
+  "name": "seo-autofix-duda",
+  "version": "1.0.0",
+  "description": "AI-powered SEO auto-fixer for Duda websites",
+  "main": "index.js",
+  "scripts": {
+    "fix": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0"
+  }
+}

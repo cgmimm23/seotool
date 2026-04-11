@@ -129,12 +129,18 @@ export default function AutoFixPage() {
           Install a plugin on your site to automatically apply fixes. The plugin connects to this dashboard via your API key.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
           <div style={{ background: '#f8f9fb', borderRadius: '10px', padding: '1.25rem', textAlign: 'center' }}>
             <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔧</div>
             <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>WordPress</div>
             <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '12px' }}>Auto-applies meta, schema, alt text, OG tags. Works with Yoast & RankMath.</div>
             <a href="https://github.com/cgmimm23/seotool/tree/main/plugins/wordpress/seo-autofix" target="_blank" style={{ fontSize: '12px', color: '#1e90ff', textDecoration: 'none', fontWeight: 600 }}>Download Plugin →</a>
+          </div>
+          <div style={{ background: '#f8f9fb', borderRadius: '10px', padding: '1.25rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '28px', marginBottom: '8px' }}>🅳</div>
+            <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>Duda</div>
+            <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '12px' }}>Auto-applies meta, schema, OG tags via Duda API. Auto-republishes site.</div>
+            <a href="https://github.com/cgmimm23/seotool/tree/main/plugins/duda/seo-autofix" target="_blank" style={{ fontSize: '12px', color: '#1e90ff', textDecoration: 'none', fontWeight: 600 }}>Download Plugin →</a>
           </div>
           <div style={{ background: '#f8f9fb', borderRadius: '10px', padding: '1.25rem', textAlign: 'center' }}>
             <div style={{ fontSize: '28px', marginBottom: '8px' }}>🛒</div>
