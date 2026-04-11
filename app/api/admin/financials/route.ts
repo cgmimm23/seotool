@@ -5,9 +5,9 @@ export const dynamic = 'force-dynamic'
 
 const PLAN_PRICES: Record<string, number> = {
   free: 0,
-  starter: 29,
-  pro: 79,
-  agency: 199,
+  starter: 59.95,
+  pro: 149,
+  enterprise: 0,
 }
 
 export async function GET() {

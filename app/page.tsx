@@ -59,7 +59,7 @@ export default function LandingPage() {
             borderRadius: '50px', fontSize: '16px', fontWeight: 700, textDecoration: 'none',
             fontFamily: 'Montserrat, sans-serif', boxShadow: '0 4px 15px rgba(228,179,79,0.3)',
           }}>
-            Start Free Today
+            Get Started Today
           </Link>
           <a href="#features" style={{
             padding: '0.75rem 2rem', background: 'transparent', color: '#2367a0',
@@ -217,7 +217,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem', maxWidth: '900px', margin: '0 auto' }}>
             {plans.map((plan, i) => (
               <div key={i} style={{
                 background: '#fff', borderRadius: '16px', padding: '2rem',
@@ -245,17 +245,30 @@ export default function LandingPage() {
                 <p style={{ fontSize: '13px', color: '#939393', marginBottom: '1.5rem', lineHeight: 1.5 }}>
                   {plan.desc}
                 </p>
-                <Link href="/login" style={{
-                  display: 'block', textAlign: 'center', padding: '0.6rem',
-                  background: plan.popular ? '#e4b34f' : 'transparent',
-                  color: plan.popular ? '#fff' : '#2367a0',
-                  border: plan.popular ? 'none' : '1px solid rgba(35,103,160,0.2)',
-                  borderRadius: '50px', fontSize: '14px', fontWeight: 700,
-                  textDecoration: 'none', fontFamily: 'Montserrat, sans-serif',
-                  marginBottom: '1.5rem',
-                }}>
-                  {plan.cta}
-                </Link>
+                {(plan as any).contactLink ? (
+                  <a href="mailto:jonathan@cgmimm.com?subject=Enterprise%20Pricing%20Inquiry" style={{
+                    display: 'block', textAlign: 'center', padding: '0.6rem',
+                    background: 'transparent', color: '#2367a0',
+                    border: '1px solid rgba(35,103,160,0.2)',
+                    borderRadius: '50px', fontSize: '14px', fontWeight: 700,
+                    textDecoration: 'none', fontFamily: 'Montserrat, sans-serif',
+                    marginBottom: '1.5rem',
+                  }}>
+                    {plan.cta}
+                  </a>
+                ) : (
+                  <Link href="/login" style={{
+                    display: 'block', textAlign: 'center', padding: '0.6rem',
+                    background: plan.popular ? '#e4b34f' : 'transparent',
+                    color: plan.popular ? '#fff' : '#2367a0',
+                    border: plan.popular ? 'none' : '1px solid rgba(35,103,160,0.2)',
+                    borderRadius: '50px', fontSize: '14px', fontWeight: 700,
+                    textDecoration: 'none', fontFamily: 'Montserrat, sans-serif',
+                    marginBottom: '1.5rem',
+                  }}>
+                    {plan.cta}
+                  </Link>
+                )}
                 <ul style={{ listStyle: 'none', padding: 0 }}>
                   {plan.features.map((f, j) => (
                     <li key={j} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#000', marginBottom: '8px', alignItems: 'flex-start' }}>
@@ -286,7 +299,7 @@ export default function LandingPage() {
             textDecoration: 'none', fontFamily: 'Montserrat, sans-serif',
             boxShadow: '0 4px 15px rgba(228,179,79,0.3)',
           }}>
-            Start Free — No Credit Card
+            Get Started Today
           </Link>
         </div>
       </section>
@@ -392,48 +405,36 @@ const detailedFeatures = [
 
 const plans = [
   {
-    name: 'Free',
-    price: '$0',
-    period: '',
-    desc: 'Get started with essential SEO tools. Perfect for personal sites and small projects.',
-    cta: 'Start Free',
+    name: 'Starter',
+    price: '$59.95',
+    period: '/mo',
+    desc: 'Everything you need to rank one site higher. AI handles the audits, tracking, and optimization for you.',
+    cta: 'Get Started',
     popular: false,
     features: [
       '1 site',
       'AI site audits',
-      'Page optimizer',
-      'Schema builder',
-      'Image optimizer',
-      'Weekly auto-scans',
-    ],
-  },
-  {
-    name: 'Starter',
-    price: '$29',
-    period: '/mo',
-    desc: 'For growing businesses ready to take SEO seriously and start climbing rankings.',
-    cta: 'Get Starter',
-    popular: false,
-    features: [
-      '5 sites',
-      'Everything in Free',
-      'SERP tracking',
+      'AI page optimizer',
+      'AI rank tracker',
+      'AI site crawler',
+      'Core Web Vitals',
       'Backlink analysis',
       'Google Search Console',
       'Google Analytics',
-      'Core Web Vitals',
+      'Schema builder',
+      'Image optimizer',
       'Daily auto-scans',
     ],
   },
   {
     name: 'Pro',
-    price: '$79',
+    price: '$149',
     period: '/mo',
-    desc: 'For businesses and marketers who want the full competitive edge. Our most popular plan.',
+    desc: 'For businesses and marketers managing multiple sites. Our most popular plan — full AI power across 5 sites.',
     cta: 'Get Pro',
     popular: true,
     features: [
-      '15 sites',
+      '5 sites',
       'Everything in Starter',
       'AI visibility checker',
       'Google Ads integration',
@@ -441,26 +442,28 @@ const plans = [
       'Local SEO suite',
       'Review management',
       'GBP Creator',
-      'Site crawler',
+      'Citation aggregators',
       'Hourly auto-scans',
+      'Priority support',
     ],
   },
   {
-    name: 'Agency',
-    price: '$199',
-    period: '/mo',
-    desc: 'For agencies managing multiple clients. Unlimited power, unlimited growth.',
-    cta: 'Get Agency',
+    name: 'Enterprise',
+    price: 'Custom',
+    period: '',
+    desc: 'For agencies and large teams managing many sites. Custom pricing, dedicated support, and unlimited scale.',
+    cta: 'Contact Us',
     popular: false,
+    contactLink: true,
     features: [
       'Unlimited sites',
       'Everything in Pro',
-      'Citation aggregators',
+      'Dedicated account manager',
+      'Custom AI scan frequency',
       'White-label reports',
-      'Priority support',
       'API access',
-      'Custom scan frequency',
       'Team collaboration',
+      'Custom integrations',
     ],
   },
 ]
