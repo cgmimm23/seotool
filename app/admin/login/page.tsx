@@ -28,23 +28,21 @@ export default function AdminLoginPage() {
       return
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .single()
+    // Verify admin role via server-side API (avoids RLS timing issues)
+    const roleRes = await fetch('/api/admin/check-role')
+    const roleData = await roleRes.json()
 
-    if (profile?.role !== 'admin') {
+    if (roleData.role !== 'admin') {
       await supabase.auth.signOut()
       setError('Access denied. Admin credentials required.')
       setLoading(false)
       return
     }
 
-    // Move to passkey step
-    setMode('passkey')
-    setError('')
+    // Move to passkey step - use callback to ensure state updates
     setLoading(false)
+    setError('')
+    setTimeout(() => setMode('passkey'), 100)
   }
 
   async function handlePasskey(e: React.FormEvent) {
