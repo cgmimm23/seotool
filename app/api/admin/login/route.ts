@@ -53,18 +53,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Not an admin account' }, { status: 403 })
   }
 
-  // Generate a signed admin token
-  const token = crypto.randomBytes(32).toString('hex')
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
-
-  // Store token hash in a cookie and return the access token for Supabase client
+  // Store user ID in cookie so admin API routes can identify the user
   const response = NextResponse.json({
     success: true,
     access_token: authData.access_token,
     refresh_token: authData.refresh_token,
   })
 
-  response.cookies.set('admin_session', tokenHash, {
+  response.cookies.set('admin_session', userId, {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
