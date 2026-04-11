@@ -26,6 +26,8 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/login')
+  const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
+  const isAdminLogin = request.nextUrl.pathname === '/admin/login'
   const isDashboard = request.nextUrl.pathname.startsWith('/dashboard') ||
     request.nextUrl.pathname.startsWith('/audit') ||
     request.nextUrl.pathname.startsWith('/keywords') ||
@@ -33,6 +35,22 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/backlinks') ||
     request.nextUrl.pathname.startsWith('/analytics') ||
     request.nextUrl.pathname.startsWith('/settings')
+
+  // Admin routes protection
+  if (isAdminPage && !isAdminLogin) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
 
   // Redirect unauthenticated users trying to access dashboard
   if (!user && isDashboard) {
