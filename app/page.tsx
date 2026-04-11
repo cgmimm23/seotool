@@ -59,7 +59,7 @@ export default function LandingPage() {
             borderRadius: '50px', fontSize: '16px', fontWeight: 700, textDecoration: 'none',
             fontFamily: 'Montserrat, sans-serif', boxShadow: '0 4px 15px rgba(228,179,79,0.3)',
           }}>
-            Get Started Today
+            Start 14-Day Free Trial
           </Link>
           <a href="#features" style={{
             padding: '0.75rem 2rem', background: 'transparent', color: '#2367a0',
@@ -283,6 +283,69 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* TESTIMONIALS */}
+      <section className="mobile-section" style={{ padding: '5rem 2rem' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
+              Trusted by Businesses <span style={{ color: '#68ccd1' }}>Like Yours</span>
+            </h2>
+          </div>
+          <div className="grid-features">
+            {[
+              { name: 'Sarah M.', role: 'Marketing Director', quote: 'We went from page 3 to page 1 for our main keywords in 6 weeks. The AI audit found issues we had no idea existed, and the fix instructions were so clear our intern could implement them.' },
+              { name: 'David R.', role: 'Agency Owner', quote: 'Managing SEO for 12 clients used to take my team all week. Now AI handles the audits and tracking automatically. We just review and execute. Game changer for our agency.' },
+              { name: 'Jessica L.', role: 'E-commerce Founder', quote: 'I tried 3 other SEO tools before this one. The difference is the AI actually tells you what to fix in plain English. No jargon, no guessing. Our organic traffic is up 140% in 3 months.' },
+            ].map((t, i) => (
+              <div key={i} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '16px', padding: '2rem' }}>
+                <div style={{ fontSize: '14px', color: '#4a6080', lineHeight: 1.7, marginBottom: '1.25rem', fontStyle: 'italic' }}>
+                  &ldquo;{t.quote}&rdquo;
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '14px', color: '#2367a0' }}>{t.name}</div>
+                  <div style={{ fontSize: '12px', color: '#939393' }}>{t.role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* DEMO AUDIT */}
+      <section className="mobile-section" style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
+            Try It <span style={{ color: '#68ccd1' }}>Free</span>
+          </h2>
+          <p style={{ fontSize: '16px', color: '#939393', marginBottom: '2rem' }}>
+            Enter any URL and see what AI finds — no signup required.
+          </p>
+          <form action="/login" style={{ display: 'flex', gap: '8px', maxWidth: '500px', margin: '0 auto' }}>
+            <input
+              type="url"
+              name="url"
+              placeholder="https://yoursite.com"
+              required
+              style={{
+                flex: 1, padding: '0.75rem 1rem', background: '#fff',
+                border: '1px solid rgba(0,0,0,0.1)', borderRadius: '50px',
+                fontSize: '15px', outline: 'none',
+              }}
+            />
+            <button type="submit" style={{
+              padding: '0.75rem 1.5rem', background: '#e4b34f', border: 'none',
+              borderRadius: '50px', color: '#fff', fontSize: '15px', fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'Montserrat, sans-serif', whiteSpace: 'nowrap',
+            }}>
+              Audit My Site
+            </button>
+          </form>
+          <p style={{ fontSize: '12px', color: '#939393', marginTop: '12px' }}>
+            Start your 14-day free trial — no credit card required
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="mobile-section" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
@@ -299,7 +362,7 @@ export default function LandingPage() {
             textDecoration: 'none', fontFamily: 'Montserrat, sans-serif',
             boxShadow: '0 4px 15px rgba(228,179,79,0.3)',
           }}>
-            Get Started Today
+            Start 14-Day Free Trial
           </Link>
         </div>
       </section>

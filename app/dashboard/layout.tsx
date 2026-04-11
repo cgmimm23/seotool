@@ -2,17 +2,24 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import AiChat from '@/app/components/AiChat'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState('')
   const [unread, setUnread] = useState(0)
   const [notifications, setNotifications] = useState<any[]>([])
   const [showNotifs, setShowNotifs] = useState(false)
+  const [firstSiteId, setFirstSiteId] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) setEmail(session.user.email || '')
+      if (session?.user) {
+        setEmail(session.user.email || '')
+        supabase.from('sites').select('id').eq('user_id', session.user.id).limit(1).single().then(({ data }) => {
+          if (data) setFirstSiteId(data.id)
+        })
+      }
     })
     fetch('/api/notifications').then(r => r.json()).then(d => {
       setUnread(d.unread || 0)
@@ -70,6 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <div style={{ padding: '0 1.5rem 2rem', maxWidth: '1200px' }}>{children}</div>
       </div>
+      {firstSiteId && <AiChat siteId={firstSiteId} />}
     </div>
   )
 }

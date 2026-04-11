@@ -11,9 +11,26 @@ export default function Dashboard() {
   const [newSiteName, setNewSiteName] = useState('')
   const [addingsite, setAddingSite] = useState(false)
   const [scanningId, setScanningId] = useState<string | null>(null)
+  const [trialDays, setTrialDays] = useState<number | null>(null)
   const supabase = createClient()
 
-  useEffect(() => { loadSites() }, [])
+  useEffect(() => {
+    loadSites()
+    // Check trial and onboarding
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return
+      supabase.from('profiles').select('trial_ends_at, onboarding_completed, plan, stripe_subscription_id').eq('id', session.user.id).single().then(({ data }) => {
+        if (data && !data.onboarding_completed && !data.stripe_subscription_id) {
+          window.location.href = '/dashboard/onboarding'
+          return
+        }
+        if (data?.trial_ends_at && !data.stripe_subscription_id) {
+          const days = Math.ceil((new Date(data.trial_ends_at).getTime() - Date.now()) / 86400000)
+          if (days > 0) setTrialDays(days)
+        }
+      })
+    })
+  }, [])
 
   async function loadSites() {
     setLoading(true)
@@ -143,6 +160,16 @@ export default function Dashboard() {
 
   return (
     <div>
+      {/* Trial Banner */}
+      {trialDays !== null && (
+        <div style={{ background: 'rgba(104,204,209,0.1)', border: '1px solid rgba(104,204,209,0.3)', borderRadius: '10px', padding: '12px 16px', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '13px', color: '#2367a0' }}>
+            <strong>Free trial:</strong> {trialDays} day{trialDays !== 1 ? 's' : ''} remaining. Upgrade to keep your data.
+          </span>
+          <a href="/dashboard/settings" style={{ fontSize: '12px', color: '#fff', background: '#e4b34f', padding: '6px 16px', borderRadius: '50px', textDecoration: 'none', fontWeight: 700 }}>Upgrade Now</a>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
         <div>
