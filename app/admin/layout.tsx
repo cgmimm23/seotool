@@ -7,21 +7,23 @@ import { createClient } from '@/lib/supabase'
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState('')
   const pathname = usePathname()
-
-  if (pathname === '/admin/login') {
-    return <>{children}</>
-  }
+  const isLoginPage = pathname === '/admin/login'
 
   useEffect(() => {
+    if (isLoginPage) return
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) setEmail(session.user.email || '')
     })
-  }, [])
+  }, [isLoginPage])
 
-  async function signOut() {
+  if (isLoginPage) {
+    return <>{children}</>
+  }
+
+  function signOut() {
     const supabase = createClient()
-    await supabase.auth.signOut()
+    supabase.auth.signOut()
     document.cookie = 'admin_session=; path=/; max-age=0'
     window.location.href = '/admin/login'
   }
