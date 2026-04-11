@@ -2,22 +2,74 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SEO by CGMIMM — AI-Powered SEO Platform',
-  description: 'AI audits your site, writes your fix list, tracks your rankings, and tells you what to do next. 22+ AI-powered SEO tools in one platform. Start free today.',
+  title: 'AI SEO powered by CGMIMM — AI-Powered SEO Platform',
+  description: 'AI audits your site, writes your fix list, tracks your rankings, and tells you exactly what to do next. 22+ AI-powered SEO tools — site audits, rank tracking, backlinks, local SEO, and more. Try it today.',
   metadataBase: new URL('https://seo.cgmimm.com'),
   openGraph: {
-    title: 'SEO by CGMIMM — AI-Powered SEO Platform',
-    description: 'AI audits your site, writes your fix list, tracks your rankings, and tells you what to do next. 22+ AI-powered SEO tools in one platform.',
-    siteName: 'SEO by CGMIMM',
+    title: 'AI SEO powered by CGMIMM — AI-Powered SEO Platform',
+    description: 'AI audits your site, writes your fix list, tracks your rankings, and tells you exactly what to do next. 22+ AI-powered SEO tools in one platform.',
+    siteName: 'AI SEO powered by CGMIMM',
     type: 'website',
     url: 'https://seo.cgmimm.com',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SEO by CGMIMM — AI-Powered SEO Platform',
-    description: 'AI audits your site, writes your fix list, tracks your rankings, and tells you what to do next.',
+    title: 'AI SEO powered by CGMIMM',
+    description: 'AI audits your site, writes your fix list, tracks your rankings, and tells you exactly what to do next.',
   },
-  keywords: 'SEO tool, AI SEO, site audit, rank tracker, keyword optimization, local SEO, backlink analysis, page speed, schema markup, Google Search Console',
+  keywords: 'AI SEO, SEO tool, AI site audit, rank tracker, keyword optimization, local SEO, backlink analysis, page speed, schema markup, Google Search Console, CGMIMM',
+  robots: 'index, follow',
+  alternates: {
+    canonical: 'https://seo.cgmimm.com',
+  },
+}
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'AI SEO powered by CGMIMM',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  url: 'https://seo.cgmimm.com',
+  description: 'AI-powered SEO platform that audits your site, tracks rankings, optimizes pages, and manages local SEO — all automatically.',
+  offers: [
+    {
+      '@type': 'Offer',
+      name: 'Starter',
+      price: '59.95',
+      priceCurrency: 'USD',
+      description: '1 site, all AI tools, daily auto-scans',
+      url: 'https://seo.cgmimm.com/#pricing',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Pro',
+      price: '149.00',
+      priceCurrency: 'USD',
+      description: '5 sites, all AI tools, hourly auto-scans, local SEO suite',
+      url: 'https://seo.cgmimm.com/#pricing',
+    },
+  ],
+  provider: {
+    '@type': 'Organization',
+    name: 'CGMIMM',
+    url: 'https://cgmimm.com',
+  },
+  featureList: 'AI Site Audit, AI Rank Tracker, AI Page Optimizer, AI Site Crawler, Core Web Vitals, Backlink Analysis, Google Search Console, Google Analytics, AI Visibility Check, Local SEO, Review Management, Schema Builder, Google Ads, Bing Webmaster, Image Optimizer, Citation Aggregators, GBP Creator, Rank History',
+}
+
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'CGMIMM',
+  url: 'https://cgmimm.com',
+  logo: 'https://seo.cgmimm.com/icon.svg',
+  sameAs: [],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'jonathan@cgmimm.com',
+    contactType: 'sales',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +80,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@300;400;500;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
       </head>
       <body>{children}</body>
     </html>
