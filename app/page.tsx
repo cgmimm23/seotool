@@ -223,6 +223,7 @@ export default function LandingPage() {
                 background: '#fff', borderRadius: '16px', padding: '2rem',
                 border: plan.popular ? '2px solid #68ccd1' : '1px solid rgba(0,0,0,0.06)',
                 position: 'relative', boxShadow: plan.popular ? '0 8px 30px rgba(104,204,209,0.15)' : '0 2px 8px rgba(0,0,0,0.03)',
+                display: 'flex', flexDirection: 'column',
               }}>
                 {plan.popular && (
                   <div style={{
@@ -269,7 +270,7 @@ export default function LandingPage() {
                     {plan.cta}
                   </Link>
                 )}
-                <ul style={{ listStyle: 'none', padding: 0 }}>
+                <ul style={{ listStyle: 'none', padding: 0, flex: 1 }}>
                   {plan.features.map((f, j) => (
                     <li key={j} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#000', marginBottom: '8px', alignItems: 'flex-start' }}>
                       <span style={{ color: '#68ccd1', fontWeight: 700 }}>&#10003;</span>
@@ -444,6 +445,7 @@ const plans = [
       'GBP Creator',
       'Citation aggregators',
       'Hourly auto-scans',
+      'AI trend analysis',
       'Priority support',
     ],
   },
