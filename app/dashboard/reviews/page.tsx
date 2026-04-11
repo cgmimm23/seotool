@@ -46,28 +46,27 @@ export default function ReviewsPage() {
     })
   }
 
-  async function fetchAccounts(token: string) {
+  async function fetchAccounts(token?: string) {
     try {
-      const res = await fetch('https://mybusinessaccountmanagement.googleapis.com/v1/accounts', {
-        headers: { 'Authorization': `Bearer ${token}` },
+      const res = await fetch('/api/reviews', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'accounts' }),
       })
       const data = await res.json()
       const accs = data.accounts || []
       setAccounts(accs)
       if (accs.length > 0) {
         setSelectedAccount(accs[0].name)
-        fetchLocations(accs[0].name, token)
+        fetchLocations(accs[0].name)
       }
     } catch { setError('Could not fetch accounts') }
   }
 
-  async function fetchLocations(accountName: string, token?: string) {
+  async function fetchLocations(accountName: string) {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const t = token || session?.provider_token
-      if (!t) return
-      const res = await fetch(`https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name,title`, {
-        headers: { 'Authorization': `Bearer ${t}` },
+      const res = await fetch('/api/reviews', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'locations', accountName }),
       })
       const data = await res.json()
       const locs = data.locations || []
@@ -81,13 +80,12 @@ export default function ReviewsPage() {
     setLoading(true)
     setError('')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.provider_token) throw new Error('No access token')
-      const res = await fetch(`https://mybusiness.googleapis.com/v4/${selectedLocation}/reviews?pageSize=50`, {
-        headers: { 'Authorization': `Bearer ${session.provider_token}` },
+      const res = await fetch('/api/reviews', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reviews', locationName: selectedLocation }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error?.message || 'Could not fetch reviews')
+      if (!res.ok) throw new Error(data.error || 'Could not fetch reviews')
       setReviews(data.reviews || [])
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
@@ -97,18 +95,11 @@ export default function ReviewsPage() {
     if (!replyText.trim()) return
     setSubmittingReply(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.provider_token) throw new Error('No access token')
-      const method = existingReply ? 'PUT' : 'PUT'
-      const res = await fetch(`https://mybusiness.googleapis.com/v4/${reviewName}/reply`, {
-        method,
-        headers: { 'Authorization': `Bearer ${session.provider_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comment: replyText }),
+      const res = await fetch('/api/reviews', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reply', reviewName, comment: replyText }),
       })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error?.message || 'Could not post reply')
-      }
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error || 'Could not post reply') }
       setReplyingTo(null)
       setReplyText('')
       fetchReviews()
@@ -119,11 +110,9 @@ export default function ReviewsPage() {
   async function deleteReply(reviewName: string) {
     if (!confirm('Delete your reply to this review?')) return
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.provider_token) throw new Error('No access token')
-      await fetch(`https://mybusiness.googleapis.com/v4/${reviewName}/reply`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session.provider_token}` },
+      await fetch('/api/reviews', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'deleteReply', reviewName }),
       })
       fetchReviews()
     } catch (err: any) { setError(err.message) }
@@ -133,17 +122,11 @@ export default function ReviewsPage() {
     if (!flagReason) return
     setFlaggingId(reviewName)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.provider_token) throw new Error('No access token')
-      const res = await fetch(`https://mybusiness.googleapis.com/v4/${reviewName}:flag`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${session.provider_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ flagType: flagReason }),
+      const res = await fetch('/api/reviews', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'flag', reviewName, flagType: flagReason }),
       })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error?.message || 'Could not flag review')
-      }
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error || 'Could not flag review') }
       setShowFlagModal(null)
       setFlagReason('')
       alert('Review has been flagged and submitted to Google for review. This may take several days to process.')

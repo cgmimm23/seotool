@@ -26,18 +26,18 @@ export default function ReviewsPage({ params }: { params: { id: string } }) {
     await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback`, scopes: 'https://www.googleapis.com/auth/business.manage', queryParams: { access_type: 'offline', prompt: 'consent' } } })
   }
 
-  async function fetchAccounts(token: string) {
+  async function fetchAccounts(token?: string) {
     try {
-      const res = await fetch('https://mybusinessaccountmanagement.googleapis.com/v1/accounts', { headers: { 'Authorization': `Bearer ${token}` } })
+      const res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'accounts' }) })
       const data = await res.json()
       const accs = data.accounts || []
-      if (accs.length > 0) fetchLocations(accs[0].name, token)
+      if (accs.length > 0) fetchLocations(accs[0].name)
     } catch {}
   }
 
-  async function fetchLocations(accountName: string, token: string) {
+  async function fetchLocations(accountName: string) {
     try {
-      const res = await fetch(`https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name,title`, { headers: { 'Authorization': `Bearer ${token}` } })
+      const res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'locations', accountName }) })
       const data = await res.json()
       const locs = data.locations || []
       setLocations(locs)
@@ -50,11 +50,9 @@ export default function ReviewsPage({ params }: { params: { id: string } }) {
     setLoading(true)
     setError('')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.provider_token) throw new Error('No access token')
-      const res = await fetch(`https://mybusiness.googleapis.com/v4/${selectedLocation}/reviews?pageSize=50`, { headers: { 'Authorization': `Bearer ${session.provider_token}` } })
+      const res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reviews', locationName: selectedLocation }) })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error?.message || 'Could not fetch reviews')
+      if (!res.ok) throw new Error(data.error || 'Could not fetch reviews')
       setReviews(data.reviews || [])
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
