@@ -390,6 +390,9 @@ export default function LandingPage() {
             <a href="https://linkmart.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>LinkMart</a>
             <a href="https://crm.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>AI CRM</a>
             <a href="https://www.livecustomer.co" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>AI Bot & Live Chat</a>
+            <a href="https://www.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>Find Local Business</a>
+            <a href="https://marketingmachine.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>Marketing Machine</a>
+            <a href="https://local.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>Local SEO</a>
           </div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
             &copy; {new Date().getFullYear()} CGMIMM. All rights reserved.
