@@ -260,7 +260,7 @@ export default function SchemaPage() {
                   </select>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>{field('Business Name', orgName, setOrgName, 'Marketing Machine')}</div>
+                  <div>{field('Business Name', orgName, setOrgName, 'CGMIMM')}</div>
                   <div>{field('Website URL', orgUrl, setOrgUrl, 'https://yoursite.com', true)}</div>
                   <div>{field('Logo URL', orgLogo, setOrgLogo, 'https://yoursite.com/logo.png', true)}</div>
                   <div>{field('Phone', orgPhone, setOrgPhone, '+1-555-555-5555')}</div>
@@ -275,7 +275,7 @@ export default function SchemaPage() {
 
             {activeType === 'website' && (
               <>
-                {field('Site Name', siteName, setSiteName, 'Marketing Machine SEO')}
+                {field('Site Name', siteName, setSiteName, 'CGMIMM SEO')}
                 {field('Site URL', siteUrl, setSiteUrl, 'https://yoursite.com', true)}
                 {field('Search URL (optional)', siteSearch, setSiteSearch, 'https://yoursite.com/search', true)}
                 <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '-0.5rem' }}>Adding a search URL enables Google Sitelinks Searchbox</div>
@@ -330,7 +330,7 @@ export default function SchemaPage() {
             {activeType === 'product' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>{field('Product Name', prodName, setProdName, 'SEO Audit Tool')}</div>
-                <div>{field('Brand', prodBrand, setProdBrand, 'Marketing Machine')}</div>
+                <div>{field('Brand', prodBrand, setProdBrand, 'CGMIMM')}</div>
                 <div style={{ gridColumn: '1 / -1' }}>{field('Description', prodDesc, setProdDesc, 'AI-powered SEO analysis platform')}</div>
                 <div>{field('Product URL', prodUrl, setProdUrl, 'https://yoursite.com/product', true)}</div>
                 <div>{field('Image URL', prodImage, setProdImage, 'https://yoursite.com/img.jpg', true)}</div>
@@ -354,7 +354,7 @@ export default function SchemaPage() {
 
             {activeType === 'review' && (
               <>
-                {field('Product / Service Name', revItemName, setRevItemName, 'Marketing Machine SEO')}
+                {field('Product / Service Name', revItemName, setRevItemName, 'CGMIMM SEO')}
                 {field('URL', revItemUrl, setRevItemUrl, 'https://yoursite.com', true)}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                   <div>{field('Avg Rating', revRating, setRevRating, '4.8')}</div>

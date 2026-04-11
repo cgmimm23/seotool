@@ -23,8 +23,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f9fb' }}>
       <aside style={{ width: '220px', flexShrink: 0, background: '#fff', borderRight: '1px solid rgba(0,0,0,0.08)', borderTop: '3px solid #1e90ff', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 50 }}>
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-          <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '13px', color: '#0d1b2e', lineHeight: 1.2 }}>Marketing Machine</div>
-          <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#1e90ff', letterSpacing: '0.05em' }}>by CGMIMM</div>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '13px', color: '#0d1b2e', lineHeight: 1.2 }}>SEO by CGMIMM</div>
+          <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#1e90ff', letterSpacing: '0.05em' }}>AI-Powered Platform</div>
         </div>
         <nav style={{ flex: 1, padding: '0.5rem 0' }}>
           <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: '#1e90ff', background: 'rgba(30,144,255,0.08)', fontWeight: 600, textDecoration: 'none' }}>Dashboard</a>

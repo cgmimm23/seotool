@@ -57,7 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Admin Portal
           </div>
           <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#68ccd1', letterSpacing: '0.05em' }}>
-            Marketing Machine
+            SEO by CGMIMM
           </div>
         </div>
 

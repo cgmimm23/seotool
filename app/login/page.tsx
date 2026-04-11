@@ -64,9 +64,9 @@ export default function LoginPage() {
             justifyContent: 'center', margin: '0 auto 12px',
             fontFamily: 'Montserrat, sans-serif', fontWeight: 800,
             fontSize: '20px', color: '#fff',
-          }}>M</div>
+          }}>C</div>
           <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '22px', color: '#0d1b2e' }}>
-            Marketing Machine <span style={{ color: '#1e90ff' }}>SEO</span>
+            SEO <span style={{ color: '#1e90ff' }}>by CGMIMM</span>
           </h1>
           <p style={{ fontSize: '13px', color: '#7a8fa8', marginTop: '4px' }}>
             {mode === 'signin' ? 'Sign in to your account' : 'Create your account'}

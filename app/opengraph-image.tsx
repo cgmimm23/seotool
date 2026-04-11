@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'Marketing Machine SEO — AI-Powered SEO Platform'
+export const alt = 'SEO by CGMIMM — AI-Powered SEO Platform'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -35,7 +35,7 @@ export default async function Image() {
             marginBottom: 24,
           }}
         >
-          M
+          C
         </div>
         <div
           style={{
@@ -45,7 +45,7 @@ export default async function Image() {
             marginBottom: 8,
           }}
         >
-          Marketing Machine SEO
+          SEO by CGMIMM
         </div>
         <div
           style={{

@@ -90,7 +90,7 @@ export default function SchemaPage({ params }: { params: { id: string } }) {
               <>
                 <div style={{ marginBottom: '0.75rem' }}>{label('Business Type')}<select value={orgType} onChange={e => setOrgType(e.target.value)} style={{ ...inputStyle }}><option value="LocalBusiness">Local Business</option><option value="Organization">Organization</option><option value="Corporation">Corporation</option><option value="Restaurant">Restaurant</option></select></div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>{field('Business Name', orgName, setOrgName, 'Marketing Machine')}</div>
+                  <div>{field('Business Name', orgName, setOrgName, 'CGMIMM')}</div>
                   <div>{field('Website URL', orgUrl, setOrgUrl, 'https://yoursite.com')}</div>
                   <div>{field('Phone', orgPhone, setOrgPhone, '+1-555-555-5555')}</div>
                   <div>{field('Email', orgEmail, setOrgEmail, 'info@yoursite.com')}</div>
@@ -101,7 +101,7 @@ export default function SchemaPage({ params }: { params: { id: string } }) {
                 </div>
               </>
             )}
-            {activeType === 'website' && (<>{field('Site Name', siteName, setSiteName, 'Marketing Machine SEO')}{field('Site URL', siteUrl, setSiteUrl, 'https://yoursite.com')}</>)}
+            {activeType === 'website' && (<>{field('Site Name', siteName, setSiteName, 'CGMIMM SEO')}{field('Site URL', siteUrl, setSiteUrl, 'https://yoursite.com')}</>)}
             {activeType === 'webpage' && (<>{field('Page URL', pageUrl, setPageUrl, 'https://yoursite.com/page')}{field('Title / Headline', pageTitle, setPageTitle, 'Your Page Title')}{field('Description', pageDesc, setPageDesc, 'A brief description')}{field('Author Name', pageAuthor, setPageAuthor, 'John Smith')}{field('Date Published', pageDate, setPageDate, '2025-01-01')}</>)}
             {activeType === 'faq' && (
               <>
@@ -117,13 +117,13 @@ export default function SchemaPage({ params }: { params: { id: string } }) {
             {activeType === 'product' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>{field('Product Name', prodName, setProdName, 'SEO Audit Tool')}</div>
-                <div>{field('Brand', prodBrand, setProdBrand, 'Marketing Machine')}</div>
+                <div>{field('Brand', prodBrand, setProdBrand, 'CGMIMM')}</div>
                 <div style={{ gridColumn: '1 / -1' }}>{field('Description', prodDesc, setProdDesc, 'AI-powered SEO analysis')}</div>
                 <div>{field('Product URL', prodUrl, setProdUrl, 'https://yoursite.com/product')}</div>
                 <div>{field('Price', prodPrice, setProdPrice, '79.00')}</div>
               </div>
             )}
-            {activeType === 'review' && (<>{field('Product / Service Name', revItemName, setRevItemName, 'Marketing Machine SEO')}{field('URL', revItemUrl, setRevItemUrl, 'https://yoursite.com')}<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}><div>{field('Avg Rating', revRating, setRevRating, '4.8')}</div><div>{field('Review Count', revCount, setRevCount, '124')}</div></div></>)}
+            {activeType === 'review' && (<>{field('Product / Service Name', revItemName, setRevItemName, 'CGMIMM SEO')}{field('URL', revItemUrl, setRevItemUrl, 'https://yoursite.com')}<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}><div>{field('Avg Rating', revRating, setRevRating, '4.8')}</div><div>{field('Review Count', revCount, setRevCount, '124')}</div></div></>)}
           </div>
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>

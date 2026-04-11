@@ -10,9 +10,9 @@ export default function LandingPage() {
       }}>
         <div>
           <span style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '18px', color: '#2367a0' }}>
-            Marketing Machine
+            SEO
           </span>
-          <span style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '11px', color: '#68ccd1', marginLeft: '8px' }}>SEO</span>
+          <span style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '11px', color: '#68ccd1', marginLeft: '8px' }}>by CGMIMM</span>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <a href="#features" style={{ fontSize: '14px', color: '#939393', textDecoration: 'none' }}>Features</a>
@@ -49,7 +49,7 @@ export default function LandingPage() {
           fontSize: '18px', color: '#939393', lineHeight: 1.7, maxWidth: '650px',
           margin: '0 auto 2.5rem',
         }}>
-          Marketing Machine SEO uses artificial intelligence to audit your site, diagnose issues,
+          SEO by CGMIMM uses artificial intelligence to audit your site, diagnose issues,
           write your fix list, and track your climb to page one — automatically. Stop paying
           consultants for answers AI delivers in seconds.
         </p>
@@ -311,7 +311,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '16px', color: '#fff', marginBottom: '4px' }}>
-              Marketing Machine <span style={{ color: '#68ccd1' }}>SEO</span>
+              SEO <span style={{ color: '#68ccd1' }}>by CGMIMM</span>
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>by CGMIMM</div>
           </div>

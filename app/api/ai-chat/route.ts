@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     const serpRankings = serpRes.status === 'fulfilled' ? serpRes.value.data : []
     const crawlReport = crawlRes.status === 'fulfilled' ? crawlRes.value.data?.[0] : null
 
-    const systemPrompt = `You are an expert SEO assistant inside Marketing Machine, an SEO platform. You help users understand their site's SEO performance, fix issues, and use the platform effectively.
+    const systemPrompt = `You are an expert SEO assistant inside SEO by CGMIMM, an SEO platform. You help users understand their site's SEO performance, fix issues, and use the platform effectively.
 
 You have full access to the following data for the site you are helping with:
 
@@ -72,7 +72,7 @@ ${serpRankings && serpRankings.length > 0 ? serpRankings.slice(0, 20).map((r: an
 })}` : '\n- No crawl report yet. Recommend running the Site Crawler.'}
 
 ## Platform Guide
-The Marketing Machine platform has these tools:
+The SEO by CGMIMM platform has these tools:
 - Site Overview: Dashboard with key metrics
 - Site Audit: AI-powered full SEO analysis with score and actionable fixes
 - Site Crawler: Crawls every page and finds technical SEO issues
