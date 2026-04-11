@@ -25,7 +25,6 @@ export default function AdminLoginPage() {
       return
     }
 
-    // Verify admin role
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -49,37 +48,37 @@ export default function AdminLoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#0d1b2e',
+      background: '#f8f9fb',
       padding: '1rem',
     }}>
       <div style={{
-        background: '#1a2942',
-        border: '1px solid rgba(255,180,0,0.2)',
+        background: '#fff',
+        border: '1px solid rgba(104,204,209,0.25)',
         borderRadius: '16px',
         padding: '2.5rem',
         width: '100%',
         maxWidth: '400px',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
+        boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
-            width: '48px', height: '48px', background: '#ffb400',
+            width: '48px', height: '48px', background: '#68ccd1',
             borderRadius: '12px', display: 'flex', alignItems: 'center',
             justifyContent: 'center', margin: '0 auto 12px',
             fontFamily: 'Montserrat, sans-serif', fontWeight: 800,
-            fontSize: '20px', color: '#0d1b2e',
+            fontSize: '20px', color: '#fff',
           }}>A</div>
-          <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '22px', color: '#fff' }}>
-            Admin <span style={{ color: '#ffb400' }}>Portal</span>
+          <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '22px', color: '#2367a0' }}>
+            Admin <span style={{ color: '#68ccd1' }}>Portal</span>
           </h1>
-          <p style={{ fontSize: '13px', color: '#7a8fa8', marginTop: '4px' }}>
+          <p style={{ fontSize: '13px', color: '#939393', marginTop: '4px' }}>
             Authorized personnel only
           </p>
         </div>
 
         <form onSubmit={handleLogin}>
           <div style={{ marginBottom: '0.75rem' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#7a8fa8', marginBottom: '4px' }}>Email</label>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#2367a0', marginBottom: '4px' }}>Email</label>
             <input
               type="email"
               placeholder="admin@cgmimm.com"
@@ -87,14 +86,14 @@ export default function AdminLoginPage() {
               onChange={e => setEmail(e.target.value)}
               required
               style={{
-                width: '100%', padding: '0.6rem 0.75rem', background: '#0d1b2e',
-                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
+                width: '100%', padding: '0.6rem 0.75rem', background: '#f8f9fb',
+                border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px',
+                color: '#000', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
               }}
             />
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#7a8fa8', marginBottom: '4px' }}>Password</label>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#2367a0', marginBottom: '4px' }}>Password</label>
             <input
               type="password"
               placeholder="••••••••"
@@ -102,9 +101,9 @@ export default function AdminLoginPage() {
               onChange={e => setPassword(e.target.value)}
               required
               style={{
-                width: '100%', padding: '0.6rem 0.75rem', background: '#0d1b2e',
-                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
+                width: '100%', padding: '0.6rem 0.75rem', background: '#f8f9fb',
+                border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px',
+                color: '#000', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
               }}
             />
           </div>
@@ -117,8 +116,8 @@ export default function AdminLoginPage() {
             type="submit"
             disabled={loading}
             style={{
-              width: '100%', padding: '0.65rem', background: '#ffb400',
-              border: 'none', borderRadius: '8px', color: '#0d1b2e',
+              width: '100%', padding: '0.65rem', background: '#e4b34f',
+              border: 'none', borderRadius: '50px', color: '#fff',
               fontSize: '14px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
               fontFamily: 'Montserrat, sans-serif', opacity: loading ? 0.7 : 1,
             }}

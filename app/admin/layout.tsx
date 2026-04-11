@@ -8,7 +8,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [email, setEmail] = useState('')
   const pathname = usePathname()
 
-  // Don't wrap login page in admin layout
   if (pathname === '/admin/login') {
     return <>{children}</>
   }
@@ -46,18 +45,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0a1220' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f9fb' }}>
       <aside style={{
-        width: '230px', flexShrink: 0, background: '#0d1b2e',
-        borderRight: '1px solid rgba(255,180,0,0.1)', borderTop: '3px solid #ffb400',
+        width: '230px', flexShrink: 0, background: '#fff',
+        borderRight: '1px solid rgba(0,0,0,0.08)', borderTop: '3px solid #68ccd1',
         display: 'flex', flexDirection: 'column', position: 'fixed',
         top: 0, left: 0, height: '100vh', zIndex: 50,
       }}>
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '14px', color: '#fff', lineHeight: 1.2 }}>
+        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '14px', color: '#2367a0', lineHeight: 1.2 }}>
             Admin Portal
           </div>
-          <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#ffb400', letterSpacing: '0.05em' }}>
+          <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#68ccd1', letterSpacing: '0.05em' }}>
             Marketing Machine
           </div>
         </div>
@@ -71,8 +70,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 display: 'flex', alignItems: 'center', gap: '10px',
                 padding: '0.6rem 1.25rem', margin: '2px 0.5rem', borderRadius: '8px',
                 fontSize: '13px', textDecoration: 'none', transition: 'all 0.15s',
-                color: isActive(item.href) ? '#ffb400' : '#7a8fa8',
-                background: isActive(item.href) ? 'rgba(255,180,0,0.1)' : 'transparent',
+                color: isActive(item.href) ? '#2367a0' : '#939393',
+                background: isActive(item.href) ? 'rgba(104,204,209,0.12)' : 'transparent',
                 fontWeight: isActive(item.href) ? 600 : 400,
               }}
             >
@@ -82,19 +81,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
 
-        <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid rgba(0,0,0,0.08)' }}>
           <a href="/dashboard" style={{
-            display: 'block', fontSize: '12px', color: '#7a8fa8', textDecoration: 'none',
+            display: 'block', fontSize: '12px', color: '#939393', textDecoration: 'none',
             marginBottom: '10px', padding: '0.4rem 0',
           }}>
             &larr; Back to Dashboard
           </a>
-          <div style={{ fontSize: '12px', color: '#5a6f88', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: '12px', color: '#939393', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {email}
           </div>
           <button onClick={signOut} style={{
-            width: '100%', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px', padding: '0.4rem', fontSize: '12px', color: '#7a8fa8',
+            width: '100%', background: 'transparent', border: '1px solid rgba(0,0,0,0.1)',
+            borderRadius: '8px', padding: '0.4rem', fontSize: '12px', color: '#939393',
             cursor: 'pointer', fontFamily: 'Open Sans, sans-serif',
           }}>
             Sign Out

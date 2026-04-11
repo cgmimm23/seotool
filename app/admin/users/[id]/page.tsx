@@ -14,13 +14,9 @@ interface UserDetail {
   totalKeywords: number
 }
 
-const planColors: Record<string, string> = {
-  free: '#7a8fa8', starter: '#1e90ff', pro: '#ffb400', agency: '#22c55e',
-}
-
 const cardStyle = {
-  background: '#1a2942', borderRadius: '12px', padding: '1.5rem',
-  border: '1px solid rgba(255,255,255,0.06)',
+  background: '#fff', borderRadius: '12px', padding: '1.5rem',
+  border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
 }
 
 export default function AdminUserDetailPage() {
@@ -52,7 +48,6 @@ export default function AdminUserDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plan: editPlan, full_name: editName, status: editStatus }),
     })
-    // Refresh data
     const res = await fetch(`/api/admin/users/${params.id}`)
     const d = await res.json()
     setData(d)
@@ -65,41 +60,40 @@ export default function AdminUserDetailPage() {
     router.push('/admin/users')
   }
 
-  if (loading) return <div style={{ color: '#7a8fa8', padding: '2rem' }}>Loading user...</div>
+  if (loading) return <div style={{ color: '#939393', padding: '2rem' }}>Loading user...</div>
   if (!data) return <div style={{ color: '#ef4444', padding: '2rem' }}>User not found</div>
 
   const { user, sites, totalAudits, totalKeywords } = data
   const inputStyle = {
-    padding: '0.5rem 0.75rem', background: '#0d1b2e',
-    border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-    color: '#fff', fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box' as const,
+    padding: '0.5rem 0.75rem', background: '#f8f9fb',
+    border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px',
+    color: '#000', fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box' as const,
   }
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
-        <a href="/admin/users" style={{ color: '#7a8fa8', textDecoration: 'none', fontSize: '13px' }}>&larr; Back to Users</a>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <a href="/admin/users" style={{ color: '#939393', textDecoration: 'none', fontSize: '13px' }}>&larr; Back to Users</a>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        {/* User Info */}
         <div style={cardStyle}>
-          <h2 style={{ fontSize: '18px', color: '#fff', marginBottom: '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
+          <h2 style={{ fontSize: '18px', color: '#2367a0', marginBottom: '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
             User Details
           </h2>
 
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#5a6f88', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Email</label>
-            <div style={{ fontSize: '14px', color: '#fff' }}>{user.email}</div>
+            <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Email</label>
+            <div style={{ fontSize: '14px', color: '#000' }}>{user.email}</div>
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#5a6f88', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Full Name</label>
+            <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Full Name</label>
             <input value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle} />
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#5a6f88', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Plan</label>
+            <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Plan</label>
             <select value={editPlan} onChange={e => setEditPlan(e.target.value)} style={inputStyle}>
               <option value="free">Free</option>
               <option value="starter">Starter ($29/mo)</option>
@@ -109,7 +103,7 @@ export default function AdminUserDetailPage() {
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#5a6f88', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Status</label>
+            <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Status</label>
             <select value={editStatus} onChange={e => setEditStatus(e.target.value)} style={inputStyle}>
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
@@ -117,68 +111,64 @@ export default function AdminUserDetailPage() {
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#5a6f88', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Member Since</label>
-            <div style={{ fontSize: '13px', color: '#7a8fa8' }}>{new Date(user.created_at).toLocaleString()}</div>
+            <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Member Since</label>
+            <div style={{ fontSize: '13px', color: '#939393' }}>{new Date(user.created_at).toLocaleString()}</div>
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#5a6f88', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Last Sign In</label>
-            <div style={{ fontSize: '13px', color: '#7a8fa8' }}>{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Never'}</div>
+            <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Last Sign In</label>
+            <div style={{ fontSize: '13px', color: '#939393' }}>{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Never'}</div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={handleSave} disabled={saving} style={{
-              padding: '0.5rem 1.5rem', background: '#ffb400', border: 'none',
-              borderRadius: '8px', color: '#0d1b2e', fontWeight: 700, cursor: 'pointer',
+              padding: '0.5rem 1.5rem', background: '#e4b34f', border: 'none',
+              borderRadius: '50px', color: '#fff', fontWeight: 700, cursor: 'pointer',
               fontSize: '13px', fontFamily: 'Montserrat, sans-serif',
               opacity: saving ? 0.7 : 1,
             }}>
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
             <button onClick={handleDelete} style={{
-              padding: '0.5rem 1.5rem', background: 'rgba(239,68,68,0.15)', border: 'none',
-              borderRadius: '8px', color: '#ef4444', fontWeight: 700, cursor: 'pointer',
-              fontSize: '13px',
+              padding: '0.5rem 1.5rem', background: 'rgba(239,68,68,0.1)', border: 'none',
+              borderRadius: '50px', color: '#ef4444', fontWeight: 700, cursor: 'pointer', fontSize: '13px',
             }}>
               Delete User
             </button>
           </div>
         </div>
 
-        {/* Usage Stats & Sites */}
         <div>
-          {/* Quick Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
             {[
-              { label: 'Sites', value: sites.length, color: '#1e90ff' },
-              { label: 'Audits', value: totalAudits, color: '#ffb400' },
-              { label: 'Keywords', value: totalKeywords, color: '#22c55e' },
+              { label: 'Sites', value: sites.length, color: '#2367a0' },
+              { label: 'Audits', value: totalAudits, color: '#68ccd1' },
+              { label: 'Keywords', value: totalKeywords, color: '#e4b34f' },
             ].map(s => (
               <div key={s.label} style={cardStyle}>
-                <div style={{ fontSize: '11px', color: '#5a6f88', textTransform: 'uppercase', marginBottom: '4px' }}>{s.label}</div>
+                <div style={{ fontSize: '11px', color: '#939393', textTransform: 'uppercase', marginBottom: '4px' }}>{s.label}</div>
                 <div style={{ fontSize: '24px', fontWeight: 700, color: s.color, fontFamily: 'Montserrat, sans-serif' }}>{s.value}</div>
               </div>
             ))}
           </div>
 
-          {/* Sites List */}
           <div style={cardStyle}>
-            <h2 style={{ fontSize: '16px', color: '#fff', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif' }}>
+            <h2 style={{ fontSize: '16px', color: '#2367a0', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif' }}>
               Sites ({sites.length})
             </h2>
             {sites.length === 0 ? (
-              <div style={{ color: '#5a6f88', fontSize: '13px' }}>No sites added yet</div>
+              <div style={{ color: '#939393', fontSize: '13px' }}>No sites added yet</div>
             ) : (
               sites.map(site => (
-                <div key={site.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <div key={site.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                   <div>
-                    <div style={{ fontSize: '13px', color: '#fff' }}>{site.name || site.url}</div>
-                    <div style={{ fontSize: '11px', color: '#5a6f88' }}>{site.url}</div>
+                    <div style={{ fontSize: '13px', color: '#000' }}>{site.name || site.url}</div>
+                    <div style={{ fontSize: '11px', color: '#939393' }}>{site.url}</div>
                   </div>
                   <span style={{
                     fontSize: '10px', padding: '2px 8px', borderRadius: '4px',
-                    background: site.active ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                    color: site.active ? '#22c55e' : '#ef4444', fontWeight: 600,
+                    background: site.active ? 'rgba(104,204,209,0.15)' : 'rgba(239,68,68,0.15)',
+                    color: site.active ? '#68ccd1' : '#ef4444', fontWeight: 600,
                   }}>
                     {site.active ? 'Active' : 'Inactive'}
                   </span>
