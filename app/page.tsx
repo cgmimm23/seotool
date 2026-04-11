@@ -59,7 +59,7 @@ export default function LandingPage() {
             borderRadius: '50px', fontSize: '16px', fontWeight: 700, textDecoration: 'none',
             fontFamily: 'Montserrat, sans-serif', boxShadow: '0 4px 15px rgba(228,179,79,0.3)',
           }}>
-            Start 14-Day Free Trial
+            Start 48-Hour Free Trial
           </Link>
           <a href="#features" style={{
             padding: '0.75rem 2rem', background: 'transparent', color: '#2367a0',
@@ -341,7 +341,7 @@ export default function LandingPage() {
             </button>
           </form>
           <p style={{ fontSize: '12px', color: '#939393', marginTop: '12px' }}>
-            Start your 14-day free trial — no credit card required
+            Start your 48-hour free trial — no credit card required
           </p>
         </div>
       </section>
@@ -362,7 +362,7 @@ export default function LandingPage() {
             textDecoration: 'none', fontFamily: 'Montserrat, sans-serif',
             boxShadow: '0 4px 15px rgba(228,179,79,0.3)',
           }}>
-            Start 14-Day Free Trial
+            Start 48-Hour Free Trial
           </Link>
         </div>
       </section>

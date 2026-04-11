@@ -1,9 +1,4 @@
--- Free trial support
-ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS trial_ends_at timestamptz,
-  ADD COLUMN IF NOT EXISTS onboarding_completed boolean DEFAULT false;
-
--- Set trial for new users via trigger update
+-- Fix trial duration to 48 hours
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
@@ -19,7 +14,3 @@ BEGIN
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Weekly report preferences
-ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS weekly_report_enabled boolean DEFAULT true;

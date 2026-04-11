@@ -153,7 +153,7 @@ export default function OnboardingPage() {
             </div>
 
             <div style={{ background: 'rgba(104,204,209,0.1)', borderRadius: '10px', padding: '1rem', marginBottom: '1.25rem', fontSize: '13px', color: '#2367a0', lineHeight: 1.6 }}>
-              <strong>Your 14-day free trial is active.</strong> You have full access to all features. No credit card required until your trial ends.
+              <strong>Your 48-hour free trial is active.</strong> You have full access to all features. No credit card required until your trial ends.
             </div>
 
             <button onClick={goToDashboard} style={{
