@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -15,11 +9,11 @@ export async function GET(req: NextRequest) {
   const error = searchParams.get('error')
 
   if (error) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://seotool-34nk9.ondigitalocean.app'}/dashboard?error=microsoft_auth_failed`)
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'}/dashboard?error=microsoft_auth_failed`)
   }
 
   if (!code) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://seotool-34nk9.ondigitalocean.app'}/dashboard?error=no_code`)
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'}/dashboard?error=no_code`)
   }
 
   let state = { siteId: '', returnTo: '/dashboard' }
@@ -30,7 +24,7 @@ export async function GET(req: NextRequest) {
   const clientId = process.env.MICROSOFT_CLIENT_ID!
   const clientSecret = process.env.MICROSOFT_CLIENT_SECRET!
   const tenantId = process.env.MICROSOFT_TENANT_ID || 'common'
-  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://seotool-34nk9.ondigitalocean.app'}/auth/microsoft/callback`
+  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'}/auth/microsoft/callback`
 
   try {
     // Exchange code for tokens
@@ -49,14 +43,14 @@ export async function GET(req: NextRequest) {
     if (!tokenRes.ok) {
       const err = await tokenRes.text()
       console.error('Microsoft token exchange failed:', err)
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://seotool-34nk9.ondigitalocean.app'}${state.returnTo}?error=token_exchange_failed`)
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'}${state.returnTo}?error=token_exchange_failed`)
     }
 
     const tokens = await tokenRes.json()
 
     // Store tokens in a cookie (httpOnly, secure)
     const response = NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://seotool-34nk9.ondigitalocean.app'}${state.returnTo}?microsoft_connected=true`
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'}${state.returnTo}?microsoft_connected=true`
     )
 
     // Store access token and refresh token in cookies
@@ -81,6 +75,6 @@ export async function GET(req: NextRequest) {
     return response
   } catch (err: any) {
     console.error('Microsoft OAuth error:', err)
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://seotool-34nk9.ondigitalocean.app'}${state.returnTo}?error=oauth_failed`)
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'}${state.returnTo}?error=oauth_failed`)
   }
 }

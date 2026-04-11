@@ -4,7 +4,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seotool-34nk9.ondigitalocean.app'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'
 
 export interface AuditResult {
   url: string

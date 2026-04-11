@@ -23,5 +23,6 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect('https://seotool-34nk9.ondigitalocean.app/dashboard')
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'
+  return NextResponse.redirect(`${siteUrl}/dashboard`)
 }

@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
   const clientId = process.env.MICROSOFT_CLIENT_ID!
   const tenantId = process.env.MICROSOFT_TENANT_ID || 'common'
-  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://seotool-34nk9.ondigitalocean.app'}/auth/microsoft/callback`
+  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'}/auth/microsoft/callback`
 
   const scopes = [
     'openid',
