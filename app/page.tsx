@@ -378,12 +378,18 @@ export default function LandingPage() {
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>AI-Powered SEO Platform</div>
           </div>
-          <div style={{ display: 'flex', gap: '2rem', fontSize: '13px' }}>
+          <div style={{ display: 'flex', gap: '2rem', fontSize: '13px', flexWrap: 'wrap' }}>
             <a href="#features" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>Features</a>
             <a href="#pricing" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>Pricing</a>
             <Link href="/login" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>Sign In</Link>
             <Link href="/terms" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>Terms</Link>
             <Link href="/privacy" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>Privacy</Link>
+          </div>
+          <div style={{ display: 'flex', gap: '1.5rem', fontSize: '12px', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+            <span style={{ color: 'rgba(255,255,255,0.4)' }}>Also by CGMIMM:</span>
+            <a href="https://linkmart.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>LinkMart</a>
+            <a href="https://crm.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>AI CRM</a>
+            <a href="https://www.livecustomer.co" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>AI Bot & Live Chat</a>
           </div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
             &copy; {new Date().getFullYear()} CGMIMM. All rights reserved.
