@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState('')
@@ -11,10 +10,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (isLoginPage) return
-    const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) setEmail(session.user.email || '')
-    })
+    fetch('/api/admin/check-role').then(r => r.json()).then(d => {
+      if (d.email) setEmail(d.email)
+    }).catch(() => {})
   }, [isLoginPage])
 
   if (isLoginPage) {
@@ -22,8 +20,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   function signOut() {
-    const supabase = createClient()
-    supabase.auth.signOut()
     document.cookie = 'admin_session=; path=/; max-age=0'
     window.location.href = '/admin/login'
   }

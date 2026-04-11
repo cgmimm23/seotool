@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
@@ -28,17 +27,6 @@ export default function AdminLoginPage() {
       setError(data.error || 'Login failed')
       setLoading(false)
       return
-    }
-
-    // Set the Supabase session client-side, then redirect
-    try {
-      const supabase = createClient()
-      await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-      })
-    } catch (e) {
-      // Session set failed but admin_session cookie is already set — proceed anyway
     }
 
     window.location.href = '/admin'
