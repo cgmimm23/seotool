@@ -40,22 +40,7 @@ export async function middleware(request: NextRequest) {
   if (isAdminPage && !isAdminLogin) {
     const adminSession = request.cookies.get('admin_session')?.value
 
-    if (!adminSession || adminSession !== 'verified') {
-      // No admin session cookie — must go through admin login + passkey
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
-
-    if (!user) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
+    if (!adminSession) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }

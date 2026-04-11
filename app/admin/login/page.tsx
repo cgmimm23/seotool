@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
@@ -10,82 +9,42 @@ export default function AdminLoginPage() {
   const [passkey, setPasskey] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [mode, setMode] = useState<'login' | 'passkey' | 'reset'>('login')
-  const [resetSent, setResetSent] = useState(false)
-  const supabase = createClient()
-  const router = useRouter()
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (authError) {
-      setError(authError.message)
-      setLoading(false)
-      return
-    }
-
-    // Go straight to passkey — middleware + passkey verify will check admin role
-    setLoading(false)
-    setError('')
-    setMode('passkey')
-  }
-
-  async function handlePasskey(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    const res = await fetch('/api/admin/verify-passkey', {
+    // One API call does everything: verify credentials, role, and passkey
+    const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passkey }),
+      body: JSON.stringify({ email, password, passkey }),
     })
+
+    const data = await res.json()
 
     if (!res.ok) {
-      const data = await res.json()
-      setError(data.error || 'Invalid passkey')
+      setError(data.error || 'Login failed')
       setLoading(false)
       return
     }
 
-    router.push('/admin')
-    router.refresh()
-  }
-
-  async function handleReset(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${location.origin}/admin/reset-password`,
+    // Set the Supabase session client-side
+    const supabase = createClient()
+    await supabase.auth.setSession({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
     })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
-
-    setResetSent(true)
-    setLoading(false)
+    // Redirect to admin
+    window.location.href = '/admin'
   }
 
   const inputStyle = {
     width: '100%', padding: '0.6rem 0.75rem', background: '#f8f9fb',
     border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px',
     color: '#000', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const,
-  }
-
-  const btnStyle = {
-    width: '100%', padding: '0.65rem', background: '#e4b34f',
-    border: 'none', borderRadius: '50px', color: '#fff',
-    fontSize: '14px', fontWeight: 700 as const, cursor: loading ? 'not-allowed' : 'pointer',
-    fontFamily: 'Montserrat, sans-serif', opacity: loading ? 0.7 : 1,
   }
 
   return (
@@ -112,114 +71,53 @@ export default function AdminLoginPage() {
             Admin <span style={{ color: '#68ccd1' }}>Portal</span>
           </h1>
           <p style={{ fontSize: '13px', color: '#939393', marginTop: '4px' }}>
-            {mode === 'login' && 'Authorized personnel only'}
-            {mode === 'passkey' && 'Enter your security passkey'}
-            {mode === 'reset' && 'Reset your password'}
+            Authorized personnel only
           </p>
         </div>
 
-        {/* LOGIN STEP */}
-        {mode === 'login' && (
-          <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#2367a0', marginBottom: '4px' }}>Email</label>
-              <input type="email" placeholder="admin@cgmimm.com" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} />
-            </div>
-            <div style={{ marginBottom: '0.5rem' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#2367a0', marginBottom: '4px' }}>Password</label>
-              <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required style={inputStyle} />
-            </div>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '0.75rem' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#2367a0', marginBottom: '4px' }}>Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="admin@cgmimm.com" style={inputStyle} />
+          </div>
 
-            <div style={{ textAlign: 'right', marginBottom: '1rem' }}>
-              <button type="button" onClick={() => { setMode('reset'); setError('') }}
-                style={{ background: 'none', border: 'none', color: '#68ccd1', fontSize: '12px', cursor: 'pointer' }}>
-                Forgot password?
-              </button>
-            </div>
+          <div style={{ marginBottom: '0.75rem' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#2367a0', marginBottom: '4px' }}>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" style={inputStyle} />
+          </div>
 
-            {error && <p style={{ fontSize: '13px', color: '#ff4444', marginBottom: '0.75rem' }}>{error}</p>}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#2367a0', marginBottom: '4px' }}>Passkey</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={passkey}
+              onChange={e => setPasskey(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              required
+              placeholder="6-digit code"
+              style={{ ...inputStyle, letterSpacing: '0.2em', fontFamily: 'Roboto Mono, monospace' }}
+            />
+          </div>
 
-            <button type="submit" disabled={loading} style={btnStyle}>
-              {loading ? 'Verifying...' : 'Sign In'}
-            </button>
-          </form>
-        )}
+          {error && (
+            <p style={{ fontSize: '13px', color: '#ff4444', marginBottom: '0.75rem' }}>{error}</p>
+          )}
 
-        {/* PASSKEY STEP */}
-        {mode === 'passkey' && (
-          <form onSubmit={handlePasskey}>
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#2367a0', marginBottom: '8px', textAlign: 'center' }}>
-                6-Digit Passkey
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="000000"
-                value={passkey}
-                onChange={e => setPasskey(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                required
-                autoFocus
-                style={{
-                  ...inputStyle,
-                  textAlign: 'center',
-                  fontSize: '28px',
-                  fontFamily: 'Roboto Mono, monospace',
-                  letterSpacing: '0.5em',
-                  padding: '0.75rem',
-                }}
-              />
-            </div>
-
-            {error && <p style={{ fontSize: '13px', color: '#ff4444', marginBottom: '0.75rem', textAlign: 'center' }}>{error}</p>}
-
-            <button type="submit" disabled={loading || passkey.length !== 6} style={{ ...btnStyle, opacity: loading || passkey.length !== 6 ? 0.7 : 1 }}>
-              {loading ? 'Verifying...' : 'Verify Passkey'}
-            </button>
-
-            <button type="button" onClick={async () => { await supabase.auth.signOut(); setMode('login'); setPasskey(''); setError('') }}
-              style={{ width: '100%', padding: '0.65rem', background: 'transparent', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '50px', color: '#939393', fontSize: '14px', cursor: 'pointer', marginTop: '0.75rem' }}>
-              Cancel
-            </button>
-          </form>
-        )}
-
-        {/* RESET PASSWORD */}
-        {mode === 'reset' && (
-          <form onSubmit={handleReset}>
-            {resetSent ? (
-              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                <div style={{ fontSize: '32px', marginBottom: '12px' }}>&#9993;</div>
-                <p style={{ fontSize: '14px', color: '#2367a0', fontWeight: 600, marginBottom: '8px' }}>Reset link sent</p>
-                <p style={{ fontSize: '13px', color: '#939393', marginBottom: '1.5rem' }}>
-                  Check your email at <strong style={{ color: '#000' }}>{email}</strong> for a password reset link.
-                </p>
-                <button type="button" onClick={() => { setMode('login'); setResetSent(false); setError('') }} style={btnStyle}>
-                  Back to Sign In
-                </button>
-              </div>
-            ) : (
-              <>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#2367a0', marginBottom: '4px' }}>Email</label>
-                  <input type="email" placeholder="admin@cgmimm.com" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} />
-                </div>
-
-                {error && <p style={{ fontSize: '13px', color: '#ff4444', marginBottom: '0.75rem' }}>{error}</p>}
-
-                <button type="submit" disabled={loading} style={{ ...btnStyle, marginBottom: '0.75rem' }}>
-                  {loading ? 'Sending...' : 'Send Reset Link'}
-                </button>
-
-                <button type="button" onClick={() => { setMode('login'); setError('') }}
-                  style={{ width: '100%', padding: '0.65rem', background: 'transparent', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '50px', color: '#939393', fontSize: '14px', cursor: 'pointer' }}>
-                  Back to Sign In
-                </button>
-              </>
-            )}
-          </form>
-        )}
+          <button
+            type="submit"
+            disabled={loading || passkey.length !== 6}
+            style={{
+              width: '100%', padding: '0.65rem', background: '#e4b34f',
+              border: 'none', borderRadius: '50px', color: '#fff',
+              fontSize: '14px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
+              fontFamily: 'Montserrat, sans-serif',
+              opacity: loading || passkey.length !== 6 ? 0.7 : 1,
+            }}
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
       </div>
     </div>
   )
