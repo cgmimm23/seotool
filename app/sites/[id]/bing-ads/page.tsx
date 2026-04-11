@@ -14,8 +14,6 @@ function BingAdsInner({ params }: { params: { id: string } }) {
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [devToken, setDevToken] = useState('')
-  const [savedToken, setSavedToken] = useState(false)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -28,9 +26,6 @@ function BingAdsInner({ params }: { params: { id: string } }) {
       setCheckingAuth(false)
       if (searchParams.get('microsoft_connected') === 'true') setConnected(true)
       if (searchParams.get('error')) setError('Microsoft connection failed. Please try again.')
-
-      const saved = localStorage.getItem('bing_ads_dev_token')
-      if (saved) { setDevToken(saved); setSavedToken(true) }
     }
     check()
   }, [params.id])
@@ -66,11 +61,6 @@ function BingAdsInner({ params }: { params: { id: string } }) {
       setCampaigns(data.Campaigns || data.campaigns || [])
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
-  }
-
-  function saveDevToken() {
-    localStorage.setItem('bing_ads_dev_token', devToken)
-    setSavedToken(true)
   }
 
   function statusColor(status: string) {
@@ -127,17 +117,12 @@ function BingAdsInner({ params }: { params: { id: string } }) {
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}
 
-      {/* Developer Token Notice */}
-      {!savedToken && (
-        <div style={{ ...card, borderColor: 'rgba(255,165,0,0.3)', background: 'rgba(255,165,0,0.03)' }}>
-          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Developer Token Required</div>
-          <p style={{ fontSize: '13px', color: '#7a8fa8', marginBottom: '10px' }}>Bing Ads API requires a developer token from your Microsoft Advertising account. <a href="https://ads.microsoft.com/cc/settings/developer-token" target="_blank" style={{ color: '#1e90ff', textDecoration: 'none' }}>Get yours here →</a></p>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="password" placeholder="Enter developer token" value={devToken} onChange={e => { setDevToken(e.target.value); setSavedToken(false) }} style={{ flex: 1, background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', padding: '0.5rem 0.75rem', fontSize: '13px', outline: 'none', fontFamily: 'Roboto Mono, monospace' }} />
-            <button onClick={saveDevToken} className="btn btn-accent" style={{ fontSize: '12px' }}>Save Token</button>
-          </div>
+      {/* Developer Token Info */}
+      <div style={{ ...card, borderColor: 'rgba(30,144,255,0.2)', background: 'rgba(30,144,255,0.03)' }}>
+        <div style={{ fontSize: '13px', color: '#4a6080', lineHeight: 1.5 }}>
+          Bing Ads developer token is configured via the <code style={{ background: '#f0f4f8', padding: '1px 4px', borderRadius: '3px', fontSize: '12px', fontFamily: 'Roboto Mono, monospace' }}>BING_ADS_DEVELOPER_TOKEN</code> server environment variable.
         </div>
-      )}
+      </div>
 
       <div style={{ display: 'flex', borderBottom: '1px solid rgba(0,0,0,0.08)', marginBottom: '1.5rem' }}>
         <button style={tabBtn('overview')} onClick={() => setTab('overview')}>Overview</button>
@@ -222,13 +207,10 @@ function BingAdsInner({ params }: { params: { id: string } }) {
           <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Bing Ads Settings</div>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Roboto Mono, monospace' }}>Developer Token</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input type="password" placeholder="Enter developer token" value={devToken} onChange={e => { setDevToken(e.target.value); setSavedToken(false) }} style={{ flex: 1, background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', padding: '0.55rem 0.85rem', fontSize: '13px', outline: 'none', fontFamily: 'Roboto Mono, monospace' }} />
-              <button onClick={saveDevToken} style={{ padding: '0.55rem 1rem', borderRadius: '8px', fontSize: '12px', border: 'none', background: savedToken ? '#00d084' : '#1e90ff', color: '#fff', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {savedToken ? '✓ Saved' : 'Save'}
-              </button>
+            <div style={{ fontSize: '13px', color: '#4a6080', padding: '0.55rem 0.85rem', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }}>
+              Configured via <code style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '12px' }}>BING_ADS_DEVELOPER_TOKEN</code> server environment variable
             </div>
-            <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '6px' }}>Get your developer token at <a href="https://ads.microsoft.com/cc/settings/developer-token" target="_blank" style={{ color: '#1e90ff', textDecoration: 'none' }}>ads.microsoft.com →</a></div>
+            <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '6px' }}>Get your developer token at <a href="https://ads.microsoft.com/cc/settings/developer-token" target="_blank" style={{ color: '#1e90ff', textDecoration: 'none' }}>ads.microsoft.com</a></div>
           </div>
           <div>
             <label style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Roboto Mono, monospace' }}>Microsoft Account</label>

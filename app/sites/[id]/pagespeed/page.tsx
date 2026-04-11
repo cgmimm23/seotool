@@ -13,29 +13,16 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
   const [lastTested, setLastTested] = useState<string | null>(null)
   const supabase = createClient()
 
-  const storageKey = `pagespeed_${params.id}`
-
   useEffect(() => {
     async function load() {
       const { data } = await supabase.from('sites').select('url').eq('id', params.id).single()
       if (data?.url) setUrl(data.url)
-
-      // Load last results from localStorage
-      try {
-        const saved = localStorage.getItem(storageKey)
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          if (parsed.mobileData) setMobileData(parsed.mobileData)
-          if (parsed.desktopData) setDesktopData(parsed.desktopData)
-          if (parsed.lastTested) setLastTested(parsed.lastTested)
-        }
-      } catch {}
     }
     load()
   }, [params.id])
 
   async function fetchStrategy(strategy: 'mobile' | 'desktop') {
-    const res = await fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}&key=${process.env.NEXT_PUBLIC_PAGESPEED_API_KEY || ''}`)
+    const res = await fetch(`/api/pagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}`)
     if (!res.ok) throw new Error('PageSpeed API error ' + res.status)
     const json = await res.json()
     return { cats: json.lighthouseResult?.categories, audits: json.lighthouseResult?.audits, url: json.id }
@@ -48,15 +35,14 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
     setMobileData(null)
     setDesktopData(null)
     try {
-      const mobile = await fetchStrategy('mobile')
+      const [mobile, desktop] = await Promise.all([
+        fetchStrategy('mobile'),
+        fetchStrategy('desktop'),
+      ])
       setMobileData(mobile)
-      await new Promise(r => setTimeout(r, 1500))
-      const desktop = await fetchStrategy('desktop')
       setDesktopData(desktop)
       const now = new Date().toISOString()
       setLastTested(now)
-      // Save to localStorage
-      localStorage.setItem(storageKey, JSON.stringify({ mobileData: mobile, desktopData: desktop, lastTested: now }))
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
   }

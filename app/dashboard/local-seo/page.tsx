@@ -47,41 +47,26 @@ export default function LocalSEOPage() {
     setGbpAnalysis(null)
 
     try {
-      // Use SerpAPI Google Maps search to find the business
-      const serpKey = localStorage.getItem('riq_serp_key')
-      if (!serpKey) throw new Error('Add your SerpAPI key in Settings first')
-
-      const params = new URLSearchParams({
-        engine: 'google_maps',
-        q: gbpQuery,
-        api_key: serpKey,
-        type: 'search',
+      // Use server-side SerpAPI proxy
+      const res = await fetch('/api/local-seo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'gbp', query: gbpQuery }),
       })
-
-      const res = await fetch(`https://serpapi.com/search.json?${params}`)
-      if (!res.ok) throw new Error('SerpAPI error ' + res.status)
+      if (!res.ok) throw new Error('Local SEO API error ' + res.status)
       const data = await res.json()
+      if (data.error) throw new Error(data.error)
       const place = data.local_results?.[0]
       if (!place) throw new Error('No business found. Try a more specific search.')
 
       setGbpData(place)
 
-      // Now use AI to analyze the listing
-      const claudeKey = localStorage.getItem('riq_claude_key')
-      if (!claudeKey) throw new Error('Add your Anthropic API key in Settings for AI analysis')
-
-      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      // Use server-side AI to analyze the listing
+      const aiRes = await fetch('/api/ai-generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': claudeKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: `You are a local SEO expert. Analyze a Google Business Profile listing and score it. Return ONLY valid JSON, no markdown.
+          prompt: `You are a local SEO expert. Analyze a Google Business Profile listing and score it. Return ONLY valid JSON, no markdown.
 
 Schema:
 {
@@ -93,16 +78,15 @@ Schema:
   ]
 }
 
-Check for: business name completeness, category accuracy, address presence, phone number, website link, hours of operation, photos count, review count, review rating, review responses, business description, Q&A section, posts activity, attribute completeness. Score 0-100.`,
-          messages: [{
-            role: 'user',
-            content: `Analyze this Google Business Profile listing:\n${JSON.stringify(place, null, 2)}`,
-          }],
+Check for: business name completeness, category accuracy, address presence, phone number, website link, hours of operation, photos count, review count, review rating, review responses, business description, Q&A section, posts activity, attribute completeness. Score 0-100.
+
+Analyze this Google Business Profile listing:
+${JSON.stringify(place, null, 2)}`,
         }),
       })
 
       const aiData = await aiRes.json()
-      const text = aiData.content?.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('') || ''
+      const text = aiData.text || ''
       let analysis
       try { analysis = JSON.parse(text.replace(/```json|```/g, '').trim()) }
       catch { const m = text.match(/\{[\s\S]*\}/); if (m) analysis = JSON.parse(m[0]) }
@@ -123,56 +107,16 @@ Check for: business name completeness, category accuracy, address presence, phon
     setCitResults([])
 
     try {
-      const serpKey = localStorage.getItem('riq_serp_key')
-      if (!serpKey) throw new Error('Add your SerpAPI key in Settings first')
-
-      // Search for the business on major directories
-      const directories = [
-        { name: 'Yelp', query: `site:yelp.com "${napName}" "${napCity}"` },
-        { name: 'Yellow Pages', query: `site:yellowpages.com "${napName}" "${napCity}"` },
-        { name: 'BBB', query: `site:bbb.org "${napName}" "${napCity}"` },
-        { name: 'Angi', query: `site:angi.com "${napName}" "${napCity}"` },
-        { name: 'Facebook', query: `site:facebook.com "${napName}" "${napCity}"` },
-        { name: 'Apple Maps', query: `site:maps.apple.com "${napName}" "${napCity}"` },
-        { name: 'Bing Places', query: `site:bingplaces.com "${napName}"` },
-        { name: 'Foursquare', query: `site:foursquare.com "${napName}" "${napCity}"` },
-      ]
-
-      const results = await Promise.allSettled(
-        directories.map(async (dir) => {
-          const params = new URLSearchParams({
-            engine: 'google',
-            q: dir.query,
-            api_key: serpKey,
-            num: '3',
-          })
-          const res = await fetch(`https://serpapi.com/search.json?${params}`)
-          const data = await res.json()
-          const found = (data.organic_results?.length || 0) > 0
-          const result = data.organic_results?.[0]
-
-          // Check NAP consistency if found
-          let napMatch = 'unknown'
-          if (found && result) {
-            const snippet = (result.snippet || '').toLowerCase()
-            const title = (result.title || '').toLowerCase()
-            const hasName = title.includes(napName.toLowerCase()) || snippet.includes(napName.toLowerCase())
-            const hasPhone = napPhone ? snippet.includes(napPhone.replace(/\D/g, '').slice(-7)) : true
-            const hasCity = snippet.includes(napCity.toLowerCase()) || title.includes(napCity.toLowerCase())
-            napMatch = hasName && hasCity ? (hasPhone ? 'consistent' : 'partial') : 'inconsistent'
-          }
-
-          return {
-            name: dir.name,
-            found,
-            url: result?.link || null,
-            title: result?.title || null,
-            napMatch,
-          }
-        })
-      )
-
-      setCitResults(results.map((r, i) => r.status === 'fulfilled' ? r.value : { name: directories[i].name, found: false, url: null, napMatch: 'unknown' }))
+      // Use server-side API for citation checks
+      const res = await fetch('/api/local-seo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'citations', napName, napCity, napPhone }),
+      })
+      if (!res.ok) throw new Error('Citation check error ' + res.status)
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setCitResults(data.results || [])
     } catch (err: any) {
       setCitError(err.message)
     } finally {
@@ -188,22 +132,14 @@ Check for: business name completeness, category accuracy, address presence, phon
     setRankResults([])
 
     try {
-      const serpKey = localStorage.getItem('riq_serp_key')
-      if (!serpKey) throw new Error('Add your SerpAPI key in Settings first')
-
-      const params = new URLSearchParams({
-        engine: 'google',
-        q: rankKeyword,
-        location: rankLocation,
-        api_key: serpKey,
-        num: '10',
-        gl: 'us',
-        hl: 'en',
+      const res = await fetch('/api/local-seo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'rankings', keyword: rankKeyword, location: rankLocation }),
       })
-
-      const res = await fetch(`https://serpapi.com/search.json?${params}`)
-      if (!res.ok) throw new Error('SerpAPI error ' + res.status)
+      if (!res.ok) throw new Error('Rankings API error ' + res.status)
       const data = await res.json()
+      if (data.error) throw new Error(data.error)
 
       setRankResults(data.organic_results || [])
       setRankSearched(`"${rankKeyword}" in ${rankLocation}`)

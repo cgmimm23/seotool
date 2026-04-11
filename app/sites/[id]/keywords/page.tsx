@@ -79,10 +79,10 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
 
   async function loadGscSites() {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.provider_token) return
-      const res = await fetch('https://www.googleapis.com/webmasters/v3/sites', {
-        headers: { 'Authorization': `Bearer ${session.provider_token}` }
+      const res = await fetch('/api/search-console/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: '/webmasters/v3/sites' }),
       })
       const data = await res.json()
       const sites = (data.siteEntry || []).map((s: any) => s.siteUrl)

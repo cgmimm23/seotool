@@ -40,7 +40,11 @@ export default function SearchConsolePage() {
 
   async function fetchSites(token: string) {
     try {
-      const res = await fetch('https://www.googleapis.com/webmasters/v3/sites', { headers: { 'Authorization': `Bearer ${token}` } })
+      const res = await fetch('/api/search-console/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: '/webmasters/v3/sites' }),
+      })
       const data = await res.json()
       const siteList = (data.siteEntry || []).map((s: any) => s.siteUrl)
       setSites(siteList)

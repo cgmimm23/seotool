@@ -19,9 +19,7 @@ function PageSpeedPageInner() {
   const [activeTab, setActiveTab] = useState<'mobile' | 'desktop'>('mobile')
 
   async function fetchStrategy(strategy: 'mobile' | 'desktop') {
-    const res = await fetch(
-      `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}&key=${process.env.NEXT_PUBLIC_PAGESPEED_API_KEY || ''}`
-    )
+    const res = await fetch(`/api/pagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}`)
     if (!res.ok) throw new Error('PageSpeed API error ' + res.status)
     const json = await res.json()
     return { cats: json.lighthouseResult?.categories, audits: json.lighthouseResult?.audits, url: json.id }
@@ -34,10 +32,11 @@ function PageSpeedPageInner() {
     setMobileData(null)
     setDesktopData(null)
     try {
-      const mobile = await fetchStrategy('mobile')
+      const [mobile, desktop] = await Promise.all([
+        fetchStrategy('mobile'),
+        fetchStrategy('desktop'),
+      ])
       setMobileData(mobile)
-      await new Promise(r => setTimeout(r, 1500))
-      const desktop = await fetchStrategy('desktop')
       setDesktopData(desktop)
     } catch (err: any) {
       setError(err.message)

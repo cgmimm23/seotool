@@ -9,7 +9,6 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
-  const [bingKey, setBingKey] = useState('')
   const [bingSubmitting, setBingSubmitting] = useState(false)
   const [bingResult, setBingResult] = useState<'success' | 'error' | null>(null)
   const [copiedLlms, setCopiedLlms] = useState(false)
@@ -22,8 +21,6 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
       const { data } = await supabase.from('sites').select('url, name').eq('id', params.id).single()
       if (data?.url) setUrl(data.url)
       if (data?.name) setSiteName(data.name)
-      const saved = localStorage.getItem('riq_bing_key')
-      if (saved) setBingKey(saved)
 
       // Load last report from Supabase
       const { data: report } = await supabase
@@ -133,15 +130,13 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
   }
 
   async function submitToBing() {
-    if (!bingKey) { alert('Enter your Bing API key first'); return }
     setBingSubmitting(true)
     setBingResult(null)
-    localStorage.setItem('riq_bing_key', bingKey)
     try {
-      const res = await fetch('https://ssl.bing.com/webmaster/api.svc/json/SubmitUrl', {
+      const res = await fetch('/api/bing-webmaster', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify({ siteUrl: url, url, apikey: bingKey }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: 'submit-url', siteUrl: url, url }),
       })
       setBingResult(res.ok ? 'success' : 'error')
     } catch { setBingResult('error') }
@@ -312,10 +307,10 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <input type="password" placeholder="Bing Webmaster API key" value={bingKey} onChange={e => setBingKey(e.target.value)} style={{ flex: 1, background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', padding: '0.5rem 0.75rem', fontSize: '12px', color: '#0d1b2e', outline: 'none', fontFamily: 'Roboto Mono, monospace' }} />
-                  <button onClick={submitToBing} disabled={bingSubmitting || !bingKey} style={{ padding: '0 14px', borderRadius: '8px', fontSize: '12px', border: 'none', background: bingResult === 'success' ? '#00d084' : '#1e90ff', color: '#fff', cursor: bingSubmitting || !bingKey ? 'not-allowed' : 'pointer', fontFamily: 'Open Sans, sans-serif', fontWeight: 600, opacity: bingSubmitting || !bingKey ? 0.6 : 1, whiteSpace: 'nowrap' }}>
-                    {bingSubmitting ? 'Submitting...' : bingResult === 'success' ? '✓ Submitted!' : bingResult === 'error' ? 'Try Again' : 'Submit to Bing'}
+                  <button onClick={submitToBing} disabled={bingSubmitting} style={{ padding: '0.5rem 14px', borderRadius: '8px', fontSize: '12px', border: 'none', background: bingResult === 'success' ? '#00d084' : '#1e90ff', color: '#fff', cursor: bingSubmitting ? 'not-allowed' : 'pointer', fontFamily: 'Open Sans, sans-serif', fontWeight: 600, opacity: bingSubmitting ? 0.6 : 1, whiteSpace: 'nowrap' }}>
+                    {bingSubmitting ? 'Submitting...' : bingResult === 'success' ? 'Submitted!' : bingResult === 'error' ? 'Try Again' : 'Submit to Bing'}
                   </button>
+                  <span style={{ fontSize: '11px', color: '#7a8fa8', alignSelf: 'center' }}>Uses BING_WEBMASTER_API_KEY from server environment</span>
                 </div>
                 {bingResult === 'error' && <div style={{ fontSize: '11px', color: '#ff4444', marginTop: '6px' }}>Submission failed. Check your API key and try again.</div>}
               </div>

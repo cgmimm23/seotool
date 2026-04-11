@@ -19,12 +19,14 @@ export default function LocalSEOPage({ params }: { params: { id: string } }) {
     setGbpLoading(true)
     setGbpError('')
     try {
-      const serpKey = localStorage.getItem('riq_serp_key')
-      if (!serpKey) throw new Error('Add your SerpAPI key in Settings first')
-      const params2 = new URLSearchParams({ engine: 'google_maps', q: gbpQuery, api_key: serpKey, type: 'search' })
-      const res = await fetch(`https://serpapi.com/search.json?${params2}`)
-      if (!res.ok) throw new Error('SerpAPI error ' + res.status)
+      const res = await fetch('/api/local-seo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'gbp', query: gbpQuery }),
+      })
+      if (!res.ok) throw new Error('Local SEO API error ' + res.status)
       const data = await res.json()
+      if (data.error) throw new Error(data.error)
       const place = data.local_results?.[0]
       if (!place) throw new Error('No business found.')
       setGbpData(place)

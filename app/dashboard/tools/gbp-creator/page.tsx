@@ -92,22 +92,17 @@ export default function GBPCreatorPage() {
   }
 
   async function generateDescription() {
-    const claudeKey = localStorage.getItem('riq_claude_key')
-    if (!claudeKey) { alert('Add your Anthropic API key in Settings first'); return }
     setAiGenerating(true)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai-generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': claudeKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 400,
-          system: 'You are a local SEO expert. Write an optimized Google Business Profile description under 750 characters. Include business name, city, key services, and a call to action. Plain text only, no hashtags or emojis.',
-          messages: [{ role: 'user', content: `Business: ${bizName}, Category: ${bizCategory}, City: ${bizCity} ${bizState}, Services: ${serviceAreas}` }],
+          prompt: `You are a local SEO expert. Write an optimized Google Business Profile description under 750 characters. Include business name, city, key services, and a call to action. Plain text only, no hashtags or emojis.\n\nBusiness: ${bizName}, Category: ${bizCategory}, City: ${bizCity} ${bizState}, Services: ${serviceAreas}`,
         }),
       })
       const data = await res.json()
-      const text = data.content?.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('') || ''
+      const text = data.text || ''
       setDescription(text.trim())
     } catch { alert('Could not generate description') }
     finally { setAiGenerating(false) }
