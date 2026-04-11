@@ -1,11 +1,29 @@
-import { requireAdmin } from '@/lib/admin-auth'
+import { createServerSupabase } from '@/lib/supabase-server'
+import { createAdminSupabase } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
-  const auth = await requireAdmin()
-  if (auth.error) return auth.error
+  // Get user from session
+  const supabase = createServerSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
+
+  // Use admin client to check role (bypasses RLS timing issues)
+  const adminSupabase = createAdminSupabase()
+  const { data: profile } = await adminSupabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || profile.role !== 'admin') {
+    return NextResponse.json({ error: 'Access denied. Admin credentials required.' }, { status: 403 })
+  }
 
   const { passkey } = await req.json()
   const validPasskey = process.env.ADMIN_PASSKEY
