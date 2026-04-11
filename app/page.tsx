@@ -9,10 +9,10 @@ export default function LandingPage() {
         padding: '1rem 2rem', maxWidth: '1200px', margin: '0 auto',
       }}>
         <div>
-          <span style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '18px', color: '#2367a0' }}>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '18px', color: '#2367a0', lineHeight: 1.2 }}>
             AI SEO
-          </span>
-          <span style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '11px', color: '#68ccd1', marginLeft: '8px' }}>powered by CGMIMM</span>
+          </div>
+          <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#68ccd1', letterSpacing: '0.05em' }}>powered by CGMIMM</div>
         </div>
         <div className="nav-links" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <a href="#features" style={{ fontSize: '14px', color: '#939393', textDecoration: 'none' }}>Features</a>
