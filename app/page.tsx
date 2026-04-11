@@ -92,7 +92,7 @@ export default function LandingPage() {
       </section>
 
       {/* FEATURES */}
-      <section id="features" style={{ padding: '5rem 2rem', maxWidth: '1100px', margin: '0 auto' }}>
+      <section id="features" className="mobile-section" style={{ padding: '5rem 2rem', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
           <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
             AI Does the Work. <span style={{ color: '#68ccd1' }}>You Get the Results.</span>
@@ -130,7 +130,7 @@ export default function LandingPage() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
+      <section className="mobile-section" style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
           <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
             Your AI SEO Team in <span style={{ color: '#68ccd1' }}>3 Minutes</span>
@@ -165,7 +165,7 @@ export default function LandingPage() {
       </section>
 
       {/* DETAILED FEATURE SECTIONS */}
-      <section style={{ padding: '5rem 2rem', maxWidth: '1100px', margin: '0 auto' }}>
+      <section className="mobile-section" style={{ padding: '5rem 2rem', maxWidth: '1100px', margin: '0 auto' }}>
         {detailedFeatures.map((section, i) => (
           <div key={i} className="detail-section" style={{
             marginBottom: '5rem', direction: i % 2 === 1 ? 'rtl' : 'ltr',
@@ -193,7 +193,7 @@ export default function LandingPage() {
                 ))}
               </ul>
             </div>
-            <div style={{
+            <div className="detail-visual" style={{
               direction: 'ltr', background: '#f8f9fb', borderRadius: '20px', padding: '3rem',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: '1px solid rgba(0,0,0,0.05)', minHeight: '300px',
@@ -205,7 +205,7 @@ export default function LandingPage() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
+      <section id="pricing" className="mobile-section" style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
@@ -284,7 +284,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section style={{ padding: '5rem 2rem', textAlign: 'center' }}>
+      <section className="mobile-section" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
             Let AI Handle Your <span style={{ color: '#68ccd1' }}>SEO</span>
