@@ -98,3 +98,33 @@ h1, h2, h3, h4, h5 {
   letter-spacing: 0.06em;
   font-family: 'Roboto Mono', monospace;
 }
+
+/* Responsive grid helpers */
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+.grid-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.hero-title { font-size: 48px; }
+.hero-sub { font-size: 18px; }
+.section-title { font-size: 36px; }
+.nav-links { display: flex; gap: 12px; align-items: center; }
+.detail-section { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+.footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.trust-bar { display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; }
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 900px; margin: 0 auto; }
+.steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+.hero-buttons { display: flex; gap: 12px; justify-content: center; }
+
+@media (max-width: 768px) {
+  .grid-3, .grid-4, .grid-features, .pricing-grid, .steps-grid { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .detail-section { grid-template-columns: 1fr; gap: 2rem; }
+  .detail-section > * { direction: ltr !important; }
+  .hero-title { font-size: 32px; }
+  .hero-sub { font-size: 15px; }
+  .section-title { font-size: 26px; }
+  .nav-links a { display: none; }
+  .hero-buttons { flex-direction: column; align-items: center; }
+  .trust-bar { gap: 1.5rem; }
+  .footer-inner { flex-direction: column; text-align: center; }
+}

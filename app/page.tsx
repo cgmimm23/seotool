@@ -14,7 +14,7 @@ export default function LandingPage() {
           </span>
           <span style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '11px', color: '#68ccd1', marginLeft: '8px' }}>by CGMIMM</span>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div className="nav-links" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <a href="#features" style={{ fontSize: '14px', color: '#939393', textDecoration: 'none' }}>Features</a>
           <a href="#pricing" style={{ fontSize: '14px', color: '#939393', textDecoration: 'none' }}>Pricing</a>
           <Link href="/login" style={{
@@ -29,7 +29,7 @@ export default function LandingPage() {
 
       {/* HERO */}
       <section style={{
-        textAlign: 'center', padding: '5rem 2rem 4rem', maxWidth: '900px', margin: '0 auto',
+        textAlign: 'center', padding: '3rem 1.25rem 2.5rem', maxWidth: '900px', margin: '0 auto',
       }}>
         <div style={{
           display: 'inline-block', padding: '4px 14px', borderRadius: '50px', fontSize: '12px',
@@ -38,22 +38,22 @@ export default function LandingPage() {
         }}>
           AI-POWERED SEO PLATFORM
         </div>
-        <h1 style={{
-          fontFamily: 'Montserrat, sans-serif', fontSize: '48px', fontWeight: 800,
+        <h1 className="hero-title" style={{
+          fontFamily: 'Montserrat, sans-serif', fontWeight: 800,
           color: '#2367a0', lineHeight: 1.1, marginBottom: '1.5rem',
         }}>
           AI That Finds, Fixes, and<br />
           <span style={{ color: '#68ccd1' }}>Ranks Your Site Higher.</span>
         </h1>
-        <p style={{
-          fontSize: '18px', color: '#939393', lineHeight: 1.7, maxWidth: '650px',
+        <p className="hero-sub" style={{
+          color: '#939393', lineHeight: 1.7, maxWidth: '650px',
           margin: '0 auto 2.5rem',
         }}>
           SEO by CGMIMM uses artificial intelligence to audit your site, diagnose issues,
           write your fix list, and track your climb to page one — automatically. Stop paying
           consultants for answers AI delivers in seconds.
         </p>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <div className="hero-buttons">
           <Link href="/login" style={{
             padding: '0.75rem 2rem', background: '#e4b34f', color: '#fff',
             borderRadius: '50px', fontSize: '16px', fontWeight: 700, textDecoration: 'none',
@@ -76,7 +76,7 @@ export default function LandingPage() {
         background: '#f8f9fb', padding: '2rem', textAlign: 'center',
         borderTop: '1px solid rgba(0,0,0,0.05)', borderBottom: '1px solid rgba(0,0,0,0.05)',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '3rem', flexWrap: 'wrap', maxWidth: '800px', margin: '0 auto' }}>
+        <div className="trust-bar" style={{ maxWidth: '800px', margin: '0 auto' }}>
           {[
             { num: '100%', label: 'AI Driven' },
             { num: '22+', label: 'AI Tools' },
@@ -94,7 +94,7 @@ export default function LandingPage() {
       {/* FEATURES */}
       <section id="features" style={{ padding: '5rem 2rem', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-          <h2 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '36px', color: '#2367a0', marginBottom: '1rem' }}>
+          <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
             AI Does the Work. <span style={{ color: '#68ccd1' }}>You Get the Results.</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#939393', maxWidth: '600px', margin: '0 auto' }}>
@@ -104,7 +104,7 @@ export default function LandingPage() {
         </div>
 
         {/* FEATURE CARDS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+        <div className="grid-features">
           {features.map((f, i) => (
             <div key={i} style={{
               background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '16px',
@@ -132,14 +132,14 @@ export default function LandingPage() {
       {/* HOW IT WORKS */}
       <section style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '36px', color: '#2367a0', marginBottom: '1rem' }}>
+          <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
             Your AI SEO Team in <span style={{ color: '#68ccd1' }}>3 Minutes</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#939393', marginBottom: '3rem' }}>
             No consultants. No learning curve. AI handles everything.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
+          <div className="steps-grid">
             {[
               { step: '1', title: 'Add Your Site', desc: 'Enter your URL. AI immediately crawls your site and begins a deep analysis across dozens of ranking factors.' },
               { step: '2', title: 'AI Diagnoses Everything', desc: 'AI audits your technical SEO, content quality, page speed, keywords, and backlinks — then writes your fix list in plain English.' },
@@ -167,8 +167,7 @@ export default function LandingPage() {
       {/* DETAILED FEATURE SECTIONS */}
       <section style={{ padding: '5rem 2rem', maxWidth: '1100px', margin: '0 auto' }}>
         {detailedFeatures.map((section, i) => (
-          <div key={i} style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center',
+          <div key={i} className="detail-section" style={{
             marginBottom: '5rem', direction: i % 2 === 1 ? 'rtl' : 'ltr',
           }}>
             <div style={{ direction: 'ltr' }}>
@@ -209,7 +208,7 @@ export default function LandingPage() {
       <section id="pricing" style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h2 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '36px', color: '#2367a0', marginBottom: '1rem' }}>
+            <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
               Simple, Transparent <span style={{ color: '#68ccd1' }}>Pricing</span>
             </h2>
             <p style={{ fontSize: '16px', color: '#939393' }}>
@@ -217,7 +216,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem', maxWidth: '900px', margin: '0 auto' }}>
+          <div className="pricing-grid">
             {plans.map((plan, i) => (
               <div key={i} style={{
                 background: '#fff', borderRadius: '16px', padding: '2rem',
@@ -287,7 +286,7 @@ export default function LandingPage() {
       {/* CTA */}
       <section style={{ padding: '5rem 2rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '36px', color: '#2367a0', marginBottom: '1rem' }}>
+          <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
             Let AI Handle Your <span style={{ color: '#68ccd1' }}>SEO</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#939393', marginBottom: '2rem' }}>
@@ -309,7 +308,7 @@ export default function LandingPage() {
       <footer style={{
         background: '#2367a0', padding: '3rem 2rem', color: 'rgba(255,255,255,0.7)',
       }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="footer-inner" style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div>
             <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '16px', color: '#fff', marginBottom: '4px' }}>
               SEO <span style={{ color: '#68ccd1' }}>by CGMIMM</span>
