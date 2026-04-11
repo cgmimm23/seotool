@@ -393,6 +393,7 @@ export default function LandingPage() {
             <a href="https://www.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>Find Local Business</a>
             <a href="https://marketingmachine.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>Marketing Machine</a>
             <a href="https://local.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>Local SEO</a>
+            <a href="https://buildapplication.cgmimm.com" target="_blank" style={{ color: '#68ccd1', textDecoration: 'none' }}>AI Application Builder</a>
           </div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
             &copy; {new Date().getFullYear()} CGMIMM. All rights reserved.
