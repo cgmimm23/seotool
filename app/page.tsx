@@ -313,7 +313,7 @@ export default function LandingPage() {
             <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '16px', color: '#fff', marginBottom: '4px' }}>
               SEO <span style={{ color: '#68ccd1' }}>by CGMIMM</span>
             </div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>by CGMIMM</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>AI-Powered SEO Platform</div>
           </div>
           <div style={{ display: 'flex', gap: '2rem', fontSize: '13px' }}>
             <a href="#features" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>Features</a>
