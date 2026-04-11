@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError('')
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (authError) {
       setError(authError.message)
@@ -28,21 +28,10 @@ export default function AdminLoginPage() {
       return
     }
 
-    // Verify admin role via server-side API (avoids RLS timing issues)
-    const roleRes = await fetch('/api/admin/check-role')
-    const roleData = await roleRes.json()
-
-    if (roleData.role !== 'admin') {
-      await supabase.auth.signOut()
-      setError('Access denied. Admin credentials required.')
-      setLoading(false)
-      return
-    }
-
-    // Move to passkey step - use callback to ensure state updates
+    // Go straight to passkey — middleware + passkey verify will check admin role
     setLoading(false)
     setError('')
-    setTimeout(() => setMode('passkey'), 100)
+    setMode('passkey')
   }
 
   async function handlePasskey(e: React.FormEvent) {
