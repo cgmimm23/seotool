@@ -29,13 +29,13 @@ export default async function Image() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 44,
+            fontSize: 36,
             fontWeight: 800,
             color: '#fff',
             marginBottom: 24,
           }}
         >
-          C
+          SEO
         </div>
         <div
           style={{

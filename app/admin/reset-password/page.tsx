@@ -58,13 +58,15 @@ export default function AdminResetPasswordPage() {
         maxWidth: '400px', boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            width: '48px', height: '48px', background: '#68ccd1',
-            borderRadius: '12px', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', margin: '0 auto 12px',
-            fontFamily: 'Montserrat, sans-serif', fontWeight: 800,
-            fontSize: '20px', color: '#fff',
-          }}>A</div>
+          <div style={{ width: '48px', height: '48px', margin: '0 auto 12px' }}>
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" width="48" height="48">
+              <rect width="64" height="64" rx="14" fill="#2367a0"/>
+              <circle cx="27" cy="27" r="11" stroke="#68ccd1" strokeWidth="3.5" fill="none"/>
+              <line x1="35" y1="35" x2="46" y2="46" stroke="#68ccd1" strokeWidth="3.5" strokeLinecap="round"/>
+              <polyline points="21,31 25,25 29,28 33,22" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              <polyline points="30,22 33,22 33,25" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            </svg>
+          </div>
           <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '22px', color: '#2367a0' }}>
             Set New <span style={{ color: '#68ccd1' }}>Password</span>
           </h1>
