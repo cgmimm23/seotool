@@ -57,19 +57,36 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.5rem' }}>
-        <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem', paddingBottom: '0.6rem', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>Plan</div>
+      {/* Enterprise Features */}
+      <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.5rem', marginBottom: '1rem' }}>
+        <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem', paddingBottom: '0.6rem', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>Enterprise Features</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '10px' }}>
           {[
-            { name: 'Free', price: '$0', cadence: 'forever', features: ['Manual scans', '1 site'] },
-            { name: 'Starter', price: '$29', cadence: '/month', features: ['Weekly auto-scan', '3 sites'] },
-            { name: 'Pro', price: '$79', cadence: '/month', features: ['Daily auto-scan', '5 sites', 'SERP tracking'] },
-            { name: 'Agency', price: '$199', cadence: '/month', features: ['Hourly auto-scan', 'Unlimited sites', 'White-label'] },
+            { name: 'API Keys', href: '/dashboard/settings/api-keys', desc: 'Programmatic API access' },
+            { name: 'Team', href: '/dashboard/settings/team', desc: 'Invite & manage members' },
+            { name: 'Webhooks', href: '/dashboard/settings/webhooks', desc: 'Event notifications' },
+            { name: 'White-Label', href: '/dashboard/settings/white-label', desc: 'Branded client reports' },
+          ].map(item => (
+            <a key={item.name} href={item.href} style={{ background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', padding: '1rem', textDecoration: 'none', display: 'block' }}>
+              <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '14px', color: '#2367a0', marginBottom: '4px' }}>{item.name}</div>
+              <div style={{ fontSize: '12px', color: '#939393' }}>{item.desc}</div>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.5rem' }}>
+        <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem', paddingBottom: '0.6rem', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>Plan</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
+          {[
+            { name: 'Starter', price: '$59.95', cadence: '/month', features: ['1 site', 'All AI tools', 'Daily auto-scans'] },
+            { name: 'Pro', price: '$149', cadence: '/month', features: ['5 sites', 'All AI tools', 'Hourly auto-scans', 'Local SEO suite'] },
+            { name: 'Enterprise', price: 'Custom', cadence: 'pricing', features: ['Unlimited sites', 'API access', 'Team collaboration', 'Webhooks', 'White-label reports'] },
           ].map(plan => (
             <div key={plan.name} style={{ background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', padding: '1rem' }}>
               <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '15px', marginBottom: '4px' }}>{plan.name}</div>
-              <div style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Montserrat, sans-serif', color: '#1e90ff' }}>{plan.price}</div>
-              <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '0.75rem' }}>{plan.cadence}</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Montserrat, sans-serif', color: '#2367a0' }}>{plan.price}</div>
+              <div style={{ fontSize: '11px', color: '#939393', marginBottom: '0.75rem' }}>{plan.cadence}</div>
               {plan.features.map(f => (
                 <div key={f} style={{ fontSize: '12px', color: '#4a6080', marginBottom: '3px' }}>· {f}</div>
               ))}

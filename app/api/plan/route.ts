@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase-server'
 
 const PLAN_LIMITS: Record<string, { sites: number; label: string }> = {
-  free:    { sites: 1,         label: 'Free' },
-  starter: { sites: 5,         label: 'Starter' },
-  pro:     { sites: 20,        label: 'Pro' },
-  agency:  { sites: 999,       label: 'Agency' },
+  free:       { sites: 1,    label: 'Free' },
+  starter:    { sites: 1,    label: 'Starter' },
+  pro:        { sites: 5,    label: 'Pro' },
+  agency:     { sites: 999,  label: 'Agency' },
+  enterprise: { sites: 9999, label: 'Enterprise' },
 }
 
 export async function GET(request: NextRequest) {
