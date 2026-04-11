@@ -30,14 +30,17 @@ export default function AdminLoginPage() {
       return
     }
 
-    // Set the Supabase session client-side
-    const supabase = createClient()
-    await supabase.auth.setSession({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-    })
+    // Set the Supabase session client-side, then redirect
+    try {
+      const supabase = createClient()
+      await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      })
+    } catch (e) {
+      // Session set failed but admin_session cookie is already set — proceed anyway
+    }
 
-    // Redirect to admin
     window.location.href = '/admin'
   }
 
