@@ -9,9 +9,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin')
+  const [resetSent, setResetSent] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${location.origin}/reset-password`,
+    })
+    if (error) setError(error.message)
+    else setResetSent(true)
+    setLoading(false)
+  }
 
   async function handleGoogleLogin() {
     await supabase.auth.signInWithOAuth({
@@ -101,53 +114,63 @@ export default function LoginPage() {
           <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.08)' }}/>
         </div>
 
-        <form onSubmit={handleEmailAuth}>
-          <div style={{ marginBottom: '0.75rem' }}>
-            <label className="form-label">Email</label>
-            <input
-              type="email"
-              className="form-input"
-              placeholder="you@company.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label className="form-label">Password</label>
-            <input
-              type="password"
-              className="form-input"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
-          </div>
+        {mode === 'reset' ? (
+          resetSent ? (
+            <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+              <div style={{ fontSize: '32px', marginBottom: '12px' }}>&#9993;</div>
+              <p style={{ fontSize: '14px', color: '#1e90ff', fontWeight: 600, marginBottom: '8px' }}>Check your email</p>
+              <p style={{ fontSize: '13px', color: '#7a8fa8', marginBottom: '1rem' }}>If an account exists for <strong>{email}</strong>, a password reset link has been sent.</p>
+              <button onClick={() => { setMode('signin'); setResetSent(false); setError('') }} className="btn btn-accent" style={{ width: '100%', justifyContent: 'center', padding: '0.65rem' }}>Back to Sign In</button>
+            </div>
+          ) : (
+            <form onSubmit={handleReset}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Email</label>
+                <input type="email" className="form-input" placeholder="you@company.com" value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+              {error && <p style={{ fontSize: '13px', color: '#ff4444', marginBottom: '0.75rem' }}>{error}</p>}
+              <button type="submit" className="btn btn-accent" style={{ width: '100%', justifyContent: 'center', padding: '0.65rem' }} disabled={loading}>
+                {loading ? 'Sending...' : 'Send Reset Link'}
+              </button>
+              <p style={{ fontSize: '12px', color: '#7a8fa8', textAlign: 'center', marginTop: '1rem' }}>
+                <button type="button" onClick={() => { setMode('signin'); setError('') }} style={{ color: '#1e90ff', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>&larr; Back to Sign In</button>
+              </p>
+            </form>
+          )
+        ) : (
+          <>
+            <form onSubmit={handleEmailAuth}>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <label className="form-label">Email</label>
+                <input type="email" className="form-input" placeholder="you@company.com" value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <label className="form-label">Password</label>
+                <input type="password" className="form-input" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+              </div>
 
-          {error && (
-            <p style={{ fontSize: '13px', color: '#ff4444', marginBottom: '0.75rem' }}>{error}</p>
-          )}
+              {mode === 'signin' && (
+                <div style={{ textAlign: 'right', marginBottom: '1rem' }}>
+                  <button type="button" onClick={() => { setMode('reset'); setError('') }} style={{ color: '#1e90ff', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>Forgot password?</button>
+                </div>
+              )}
+              {mode === 'signup' && <div style={{ marginBottom: '1rem' }} />}
 
-          <button
-            type="submit"
-            className="btn btn-accent"
-            style={{ width: '100%', justifyContent: 'center', padding: '0.65rem' }}
-            disabled={loading}
-          >
-            {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-          </button>
-        </form>
+              {error && <p style={{ fontSize: '13px', color: '#ff4444', marginBottom: '0.75rem' }}>{error}</p>}
 
-        <p style={{ fontSize: '12px', color: '#7a8fa8', textAlign: 'center', marginTop: '1rem' }}>
-          {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-          <button
-            onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-            style={{ color: '#1e90ff', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}
-          >
-            {mode === 'signin' ? 'Sign up free' : 'Sign in'}
-          </button>
-        </p>
+              <button type="submit" className="btn btn-accent" style={{ width: '100%', justifyContent: 'center', padding: '0.65rem' }} disabled={loading}>
+                {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+              </button>
+            </form>
+
+            <p style={{ fontSize: '12px', color: '#7a8fa8', textAlign: 'center', marginTop: '1rem' }}>
+              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+              <button onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')} style={{ color: '#1e90ff', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>
+                {mode === 'signin' ? 'Sign up free' : 'Sign in'}
+              </button>
+            </p>
+          </>
+        )}
       </div>
     </div>
   )
