@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import Tracking from '@/app/components/Tracking'
 
 export const metadata: Metadata = {
   title: 'AI SEO powered by CGMIMM — AI-Powered SEO Platform',
@@ -88,14 +89,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} />
-            <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA_ID}');` }} />
-          </>
-        )}
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Tracking />
+      </body>
     </html>
   )
 }
