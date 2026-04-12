@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/login')
   const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
-  const isAdminLogin = request.nextUrl.pathname === '/admin/login'
+  const isAdminLogin = request.nextUrl.pathname === '/admin/login' || request.nextUrl.pathname === '/admin/forgot-password' || request.nextUrl.pathname === '/admin/reset-password'
   const isDashboard = request.nextUrl.pathname.startsWith('/dashboard') ||
     request.nextUrl.pathname.startsWith('/audit') ||
     request.nextUrl.pathname.startsWith('/keywords') ||
