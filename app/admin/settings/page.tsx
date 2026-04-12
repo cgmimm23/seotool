@@ -90,6 +90,80 @@ export default function AdminSettingsPage() {
         {field('intercom_app_id', 'Intercom App ID', 'abc123', 'Optional. Intercom live chat widget on customer dashboard.')}
         {field('custom_head_script', 'Custom Head Script', '<script>...</script>', 'Raw HTML/script injected into the <head> of all pages. Use for any third-party tracking.')}
       </div>
+
+      <ChangePasswordCard />
+    </div>
+  )
+}
+
+function ChangePasswordCard() {
+  const [current, setCurrent] = useState('')
+  const [next, setNext] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setMsg(null)
+
+    if (next !== confirm) return setMsg({ type: 'error', text: 'New passwords do not match' })
+    if (next.length < 8) return setMsg({ type: 'error', text: 'New password must be at least 8 characters' })
+
+    setLoading(true)
+    const res = await fetch('/api/admin/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: current, newPassword: next }),
+    })
+    const data = await res.json()
+    setLoading(false)
+
+    if (!res.ok) return setMsg({ type: 'error', text: data.error || 'Failed to change password' })
+
+    setMsg({ type: 'success', text: 'Password changed successfully' })
+    setCurrent('')
+    setNext('')
+    setConfirm('')
+  }
+
+  const input = {
+    width: '100%', padding: '0.5rem 0.75rem', background: '#f8f9fb',
+    border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px',
+    color: '#000', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const,
+  }
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={{ fontSize: '16px', color: '#2367a0', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif' }}>Change Admin Password</h2>
+
+      <form onSubmit={submit}>
+        <div style={{ marginBottom: '0.75rem' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: '#939393', marginBottom: '4px', fontWeight: 600 }}>Current Password</label>
+          <input type="password" value={current} onChange={e => setCurrent(e.target.value)} required style={input} />
+        </div>
+        <div style={{ marginBottom: '0.75rem' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: '#939393', marginBottom: '4px', fontWeight: 600 }}>New Password</label>
+          <input type="password" value={next} onChange={e => setNext(e.target.value)} required minLength={8} placeholder="At least 8 characters" style={input} />
+        </div>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: '#939393', marginBottom: '4px', fontWeight: 600 }}>Confirm New Password</label>
+          <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required style={input} />
+        </div>
+
+        {msg && (
+          <p style={{ fontSize: '13px', color: msg.type === 'error' ? '#ff4444' : '#00d084', marginBottom: '0.75rem' }}>{msg.text}</p>
+        )}
+
+        <button type="submit" disabled={loading || !current || !next || !confirm} style={{
+          padding: '0.5rem 1.25rem', background: '#e4b34f', border: 'none',
+          borderRadius: '50px', color: '#fff', fontWeight: 700, cursor: 'pointer',
+          fontSize: '13px', fontFamily: 'Montserrat, sans-serif',
+          opacity: loading || !current || !next || !confirm ? 0.7 : 1,
+        }}>
+          {loading ? 'Changing...' : 'Change Password'}
+        </button>
+      </form>
     </div>
   )
 }
