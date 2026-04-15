@@ -76,7 +76,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             fontSize: '13px',
             color: '#939393',
             marginBottom: '1.5rem',
-            fontFamily: 'Open Sans, sans-serif',
+            fontFamily: 'var(--font-open-sans), sans-serif',
           }}
         >
           <Link href="/" style={{ color: '#939393', textDecoration: 'none' }}>
@@ -101,7 +101,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             color,
             background: `${color}15`,
             marginBottom: '0.75rem',
-            fontFamily: 'Montserrat, sans-serif',
+            fontFamily: 'var(--font-montserrat), sans-serif',
             textTransform: 'uppercase',
             letterSpacing: '0.04em',
           }}
@@ -112,7 +112,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {/* Title */}
         <h1
           style={{
-            fontFamily: 'Montserrat, sans-serif',
+            fontFamily: 'var(--font-montserrat), sans-serif',
             fontWeight: 800,
             fontSize: '2rem',
             color: '#2367a0',
@@ -130,7 +130,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             color: '#939393',
             lineHeight: 1.7,
             marginBottom: '2rem',
-            fontFamily: 'Open Sans, sans-serif',
+            fontFamily: 'var(--font-open-sans), sans-serif',
           }}
         >
           {article.description}
@@ -154,7 +154,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         >
           <h2
             style={{
-              fontFamily: 'Montserrat, sans-serif',
+              fontFamily: 'var(--font-montserrat), sans-serif',
               fontWeight: 800,
               fontSize: '1.3rem',
               color: '#fff',
@@ -168,7 +168,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               color: 'rgba(255,255,255,0.85)',
               fontSize: '0.92rem',
               marginBottom: '1.25rem',
-              fontFamily: 'Open Sans, sans-serif',
+              fontFamily: 'var(--font-open-sans), sans-serif',
               lineHeight: 1.6,
               maxWidth: '480px',
               margin: '0 auto 1.25rem',
@@ -188,7 +188,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               fontSize: '14px',
               fontWeight: 700,
               textDecoration: 'none',
-              fontFamily: 'Montserrat, sans-serif',
+              fontFamily: 'var(--font-montserrat), sans-serif',
               boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
             }}
           >
@@ -201,7 +201,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <section style={{ marginTop: '3rem' }}>
             <h2
               style={{
-                fontFamily: 'Montserrat, sans-serif',
+                fontFamily: 'var(--font-montserrat), sans-serif',
                 fontWeight: 700,
                 fontSize: '1.2rem',
                 color: '#000',
@@ -239,14 +239,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                       textTransform: 'uppercase',
                       letterSpacing: '0.04em',
                       marginBottom: '0.35rem',
-                      fontFamily: 'Montserrat, sans-serif',
+                      fontFamily: 'var(--font-montserrat), sans-serif',
                     }}
                   >
                     {r.category}
                   </div>
                   <h3
                     style={{
-                      fontFamily: 'Montserrat, sans-serif',
+                      fontFamily: 'var(--font-montserrat), sans-serif',
                       fontWeight: 700,
                       fontSize: '0.82rem',
                       color: '#000',
@@ -266,7 +266,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       {/* Article body styles */}
       <style>{`
         .seo-article-body h2 {
-          font-family: Montserrat, sans-serif;
+          font-family: var(--font-montserrat), sans-serif;
           font-weight: 700;
           font-size: 1.35rem;
           color: #2367a0;
@@ -274,7 +274,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           line-height: 1.3;
         }
         .seo-article-body h3 {
-          font-family: Montserrat, sans-serif;
+          font-family: var(--font-montserrat), sans-serif;
           font-weight: 600;
           font-size: 1.08rem;
           color: #000;
@@ -282,7 +282,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           line-height: 1.35;
         }
         .seo-article-body p {
-          font-family: 'Open Sans', sans-serif;
+          font-family: var(--font-open-sans), sans-serif;
           font-size: 0.95rem;
           color: #333;
           line-height: 1.8;
@@ -290,7 +290,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         }
         .seo-article-body ul,
         .seo-article-body ol {
-          font-family: 'Open Sans', sans-serif;
+          font-family: var(--font-open-sans), sans-serif;
           font-size: 0.95rem;
           color: #333;
           line-height: 1.8;
@@ -316,7 +316,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           margin: 0 0 1rem;
         }
         .seo-article-body code {
-          font-family: 'Roboto Mono', monospace;
+          font-family: var(--font-roboto-mono), monospace;
           font-size: 0.85rem;
           background: rgba(0,0,0,0.04);
           padding: 2px 5px;
@@ -332,7 +332,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         .seo-article-body table {
           width: 100%;
           border-collapse: collapse;
-          font-family: 'Open Sans', sans-serif;
+          font-family: var(--font-open-sans), sans-serif;
           font-size: 0.9rem;
           margin-bottom: 1rem;
         }
