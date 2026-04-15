@@ -14,12 +14,14 @@ const openSans = Open_Sans({
   weight: ['300', '400', '500', '600'],
   display: 'swap',
   variable: '--font-open-sans',
+  preload: false,
 })
 const robotoMono = Roboto_Mono({
   subsets: ['latin'],
   weight: ['400', '500'],
   display: 'swap',
   variable: '--font-roboto-mono',
+  preload: false,
 })
 
 export const metadata: Metadata = {
