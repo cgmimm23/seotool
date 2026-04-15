@@ -381,14 +381,14 @@ export default function LandingPage() {
             </div>
             <div style={{ fontSize: '12px', color: '#fff' }}>AI-Powered SEO Platform</div>
           </div>
-          <div style={{ display: 'flex', gap: '2rem', fontSize: '13px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '2rem', fontSize: '13px', flexWrap: 'wrap', fontWeight: 600 }}>
             <a href="#features" style={{ color: '#fff', textDecoration: 'none' }}>Features</a>
             <a href="#pricing" style={{ color: '#fff', textDecoration: 'none' }}>Pricing</a>
             <Link href="/login" style={{ color: '#fff', textDecoration: 'none' }}>Sign In</Link>
             <Link href="/terms" style={{ color: '#fff', textDecoration: 'none' }}>Terms</Link>
             <Link href="/privacy" style={{ color: '#fff', textDecoration: 'none' }}>Privacy</Link>
           </div>
-          <div style={{ display: 'flex', gap: '1.5rem', fontSize: '12px', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '1.5rem', fontSize: '12px', flexWrap: 'wrap', marginTop: '0.5rem', fontWeight: 600 }}>
             <span style={{ color: '#fff' }}>Also by CGMIMM:</span>
             <a href="https://linkmart.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>LinkMart</a>
             <a href="https://crm.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>AI CRM</a>
