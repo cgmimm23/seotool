@@ -12,14 +12,14 @@ export default function LandingPage() {
           <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '18px', color: '#2367a0', lineHeight: 1.2 }}>
             AI SEO
           </div>
-          <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#1a8a91', letterSpacing: '0.05em' }}>powered by CGMIMM</div>
+          <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#0f6b70', letterSpacing: '0.05em' }}>powered by CGMIMM</div>
         </div>
         <div className="nav-links" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <a href="#features" style={{ fontSize: '14px', color: '#5a5a5a', textDecoration: 'none' }}>Features</a>
           <a href="#pricing" style={{ fontSize: '14px', color: '#5a5a5a', textDecoration: 'none' }}>Pricing</a>
           <Link href="/learn" style={{ fontSize: '14px', color: '#5a5a5a', textDecoration: 'none' }}>Learn</Link>
           <Link href="/login" style={{
-            padding: '0.5rem 1.25rem', background: '#b8862a', color: '#fff',
+            padding: '0.5rem 1.25rem', background: '#7a5818', color: '#fff',
             borderRadius: '50px', fontSize: '14px', fontWeight: 700, textDecoration: 'none',
             fontFamily: 'Montserrat, sans-serif',
           }}>
@@ -35,7 +35,7 @@ export default function LandingPage() {
       }}>
         <div style={{
           display: 'inline-block', padding: '4px 14px', borderRadius: '50px', fontSize: '12px',
-          fontWeight: 600, color: '#1a8a91', background: 'rgba(104,204,209,0.1)',
+          fontWeight: 600, color: '#0f6b70', background: 'rgba(104,204,209,0.1)',
           marginBottom: '1.5rem', fontFamily: 'Montserrat, sans-serif',
         }}>
           AI-POWERED SEO PLATFORM
@@ -45,7 +45,7 @@ export default function LandingPage() {
           color: '#2367a0', lineHeight: 1.1, marginBottom: '1.5rem',
         }}>
           AI That Finds, Fixes, and<br />
-          <span style={{ color: '#1a8a91' }}>Ranks Your Site Higher.</span>
+          <span style={{ color: '#0f6b70' }}>Ranks Your Site Higher.</span>
         </h1>
         <p className="hero-sub" style={{
           color: '#5a5a5a', lineHeight: 1.7, maxWidth: '650px',
@@ -57,7 +57,7 @@ export default function LandingPage() {
         </p>
         <div className="hero-buttons">
           <Link href="/login" style={{
-            padding: '0.75rem 2rem', background: '#b8862a', color: '#fff',
+            padding: '0.75rem 2rem', background: '#7a5818', color: '#fff',
             borderRadius: '50px', fontSize: '16px', fontWeight: 700, textDecoration: 'none',
             fontFamily: 'Montserrat, sans-serif', boxShadow: '0 4px 15px rgba(228,179,79,0.3)',
           }}>
@@ -97,7 +97,7 @@ export default function LandingPage() {
       <section id="features" className="mobile-section" style={{ padding: '5rem 2rem', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
           <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
-            AI Does the Work. <span style={{ color: '#1a8a91' }}>You Get the Results.</span>
+            AI Does the Work. <span style={{ color: '#0f6b70' }}>You Get the Results.</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#5a5a5a', maxWidth: '600px', margin: '0 auto' }}>
             Every feature is powered by AI. It analyzes your site, writes your action plan, tracks your rankings,
@@ -135,7 +135,7 @@ export default function LandingPage() {
       <section className="mobile-section" style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
           <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
-            Your AI SEO Team in <span style={{ color: '#1a8a91' }}>3 Minutes</span>
+            Your AI SEO Team in <span style={{ color: '#0f6b70' }}>3 Minutes</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#5a5a5a', marginBottom: '3rem' }}>
             No consultants. No learning curve. AI handles everything.
@@ -149,7 +149,7 @@ export default function LandingPage() {
             ].map(s => (
               <div key={s.step}>
                 <div style={{
-                  width: '48px', height: '48px', borderRadius: '50%', background: '#1a8a91',
+                  width: '48px', height: '48px', borderRadius: '50%', background: '#0f6b70',
                   color: '#fff', fontSize: '20px', fontWeight: 800, display: 'flex',
                   alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem',
                   fontFamily: 'Montserrat, sans-serif',
@@ -175,7 +175,7 @@ export default function LandingPage() {
             <div style={{ direction: 'ltr' }}>
               <div style={{
                 display: 'inline-block', padding: '4px 12px', borderRadius: '50px', fontSize: '11px',
-                fontWeight: 600, color: '#1a8a91', background: 'rgba(104,204,209,0.1)',
+                fontWeight: 600, color: '#0f6b70', background: 'rgba(104,204,209,0.1)',
                 marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em',
               }}>
                 {section.tag}
@@ -189,7 +189,7 @@ export default function LandingPage() {
               <ul style={{ listStyle: 'none', padding: 0 }}>
                 {section.bullets.map((b, j) => (
                   <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '8px', fontSize: '14px', color: '#000' }}>
-                    <span style={{ color: '#1a8a91', fontWeight: 700, fontSize: '16px', lineHeight: '1.4' }}>&#10003;</span>
+                    <span style={{ color: '#0f6b70', fontWeight: 700, fontSize: '16px', lineHeight: '1.4' }}>&#10003;</span>
                     {b}
                   </li>
                 ))}
@@ -211,7 +211,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
-              Simple, Transparent <span style={{ color: '#1a8a91' }}>Pricing</span>
+              Simple, Transparent <span style={{ color: '#0f6b70' }}>Pricing</span>
             </h2>
             <p style={{ fontSize: '16px', color: '#5a5a5a' }}>
               Start free. Upgrade when you&apos;re ready to scale.
@@ -222,14 +222,14 @@ export default function LandingPage() {
             {plans.map((plan, i) => (
               <div key={i} style={{
                 background: '#fff', borderRadius: '16px', padding: '2rem',
-                border: plan.popular ? '2px solid #1a8a91' : '1px solid rgba(0,0,0,0.06)',
+                border: plan.popular ? '2px solid #0f6b70' : '1px solid rgba(0,0,0,0.06)',
                 position: 'relative', boxShadow: plan.popular ? '0 8px 30px rgba(104,204,209,0.15)' : '0 2px 8px rgba(0,0,0,0.03)',
                 display: 'flex', flexDirection: 'column',
               }}>
                 {plan.popular && (
                   <div style={{
                     position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)',
-                    background: '#1a8a91', color: '#fff', fontSize: '11px', fontWeight: 700,
+                    background: '#0f6b70', color: '#fff', fontSize: '11px', fontWeight: 700,
                     padding: '3px 16px', borderRadius: '50px', fontFamily: 'Montserrat, sans-serif',
                   }}>
                     MOST POPULAR
@@ -261,7 +261,7 @@ export default function LandingPage() {
                 ) : (
                   <Link href="/login" style={{
                     display: 'block', textAlign: 'center', padding: '0.6rem',
-                    background: plan.popular ? '#b8862a' : 'transparent',
+                    background: plan.popular ? '#7a5818' : 'transparent',
                     color: plan.popular ? '#fff' : '#2367a0',
                     border: plan.popular ? 'none' : '1px solid rgba(35,103,160,0.2)',
                     borderRadius: '50px', fontSize: '14px', fontWeight: 700,
@@ -274,7 +274,7 @@ export default function LandingPage() {
                 <ul style={{ listStyle: 'none', padding: 0, flex: 1 }}>
                   {plan.features.map((f, j) => (
                     <li key={j} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#000', marginBottom: '8px', alignItems: 'flex-start' }}>
-                      <span style={{ color: '#1a8a91', fontWeight: 700 }}>&#10003;</span>
+                      <span style={{ color: '#0f6b70', fontWeight: 700 }}>&#10003;</span>
                       {f}
                     </li>
                   ))}
@@ -290,7 +290,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
-              Trusted by Businesses <span style={{ color: '#1a8a91' }}>Like Yours</span>
+              Trusted by Businesses <span style={{ color: '#0f6b70' }}>Like Yours</span>
             </h2>
           </div>
           <div className="grid-features">
@@ -317,7 +317,7 @@ export default function LandingPage() {
       <section className="mobile-section" style={{ background: '#f8f9fb', padding: '5rem 2rem' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
           <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
-            Try It <span style={{ color: '#1a8a91' }}>Free</span>
+            Try It <span style={{ color: '#0f6b70' }}>Free</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#5a5a5a', marginBottom: '2rem' }}>
             Enter any URL and see what AI finds — no signup required.
@@ -335,7 +335,7 @@ export default function LandingPage() {
               }}
             />
             <button type="submit" style={{
-              padding: '0.75rem 1.5rem', background: '#b8862a', border: 'none',
+              padding: '0.75rem 1.5rem', background: '#7a5818', border: 'none',
               borderRadius: '50px', color: '#fff', fontSize: '15px', fontWeight: 700,
               cursor: 'pointer', fontFamily: 'Montserrat, sans-serif', whiteSpace: 'nowrap',
             }}>
@@ -352,14 +352,14 @@ export default function LandingPage() {
       <section className="mobile-section" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h2 className="section-title" style={{ fontFamily: 'Montserrat, sans-serif', color: '#2367a0', marginBottom: '1rem' }}>
-            Let AI Handle Your <span style={{ color: '#1a8a91' }}>SEO</span>
+            Let AI Handle Your <span style={{ color: '#0f6b70' }}>SEO</span>
           </h2>
           <p style={{ fontSize: '16px', color: '#5a5a5a', marginBottom: '2rem' }}>
             Stop spending hours on SEO you don&apos;t fully understand. Let AI audit your site,
             write your fix list, track your rankings, and tell you what to do next — automatically.
           </p>
           <Link href="/login" style={{
-            display: 'inline-block', padding: '0.85rem 2.5rem', background: '#b8862a',
+            display: 'inline-block', padding: '0.85rem 2.5rem', background: '#7a5818',
             color: '#fff', borderRadius: '50px', fontSize: '16px', fontWeight: 700,
             textDecoration: 'none', fontFamily: 'Montserrat, sans-serif',
             boxShadow: '0 4px 15px rgba(228,179,79,0.3)',
@@ -372,33 +372,33 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer style={{
-        background: '#2367a0', padding: '3rem 2rem', color: 'rgba(255,255,255,0.92)',
+        background: '#2367a0', padding: '3rem 2rem', color: '#fff',
       }}>
         <div className="footer-inner" style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div>
             <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '16px', color: '#fff', marginBottom: '4px' }}>
-              AI SEO <span style={{ color: '#1a8a91' }}>powered by CGMIMM</span>
+              AI SEO <span style={{ color: '#8fd9de' }}>powered by CGMIMM</span>
             </div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)' }}>AI-Powered SEO Platform</div>
+            <div style={{ fontSize: '12px', color: '#fff' }}>AI-Powered SEO Platform</div>
           </div>
           <div style={{ display: 'flex', gap: '2rem', fontSize: '13px', flexWrap: 'wrap' }}>
-            <a href="#features" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'none' }}>Features</a>
-            <a href="#pricing" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'none' }}>Pricing</a>
-            <Link href="/login" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'none' }}>Sign In</Link>
-            <Link href="/terms" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'none' }}>Terms</Link>
-            <Link href="/privacy" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'none' }}>Privacy</Link>
+            <a href="#features" style={{ color: '#fff', textDecoration: 'none' }}>Features</a>
+            <a href="#pricing" style={{ color: '#fff', textDecoration: 'none' }}>Pricing</a>
+            <Link href="/login" style={{ color: '#fff', textDecoration: 'none' }}>Sign In</Link>
+            <Link href="/terms" style={{ color: '#fff', textDecoration: 'none' }}>Terms</Link>
+            <Link href="/privacy" style={{ color: '#fff', textDecoration: 'none' }}>Privacy</Link>
           </div>
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '12px', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-            <span style={{ color: 'rgba(255,255,255,0.8)' }}>Also by CGMIMM:</span>
-            <a href="https://linkmart.cgmimm.com" target="_blank" style={{ color: '#1a8a91', textDecoration: 'none' }}>LinkMart</a>
-            <a href="https://crm.cgmimm.com" target="_blank" style={{ color: '#1a8a91', textDecoration: 'none' }}>AI CRM</a>
-            <a href="https://www.livecustomer.co" target="_blank" style={{ color: '#1a8a91', textDecoration: 'none' }}>AI Bot & Live Chat</a>
-            <a href="https://www.cgmimm.com" target="_blank" style={{ color: '#1a8a91', textDecoration: 'none' }}>Find Local Business</a>
-            <a href="https://marketingmachine.cgmimm.com" target="_blank" style={{ color: '#1a8a91', textDecoration: 'none' }}>Marketing Machine</a>
-            <a href="https://local.cgmimm.com" target="_blank" style={{ color: '#1a8a91', textDecoration: 'none' }}>Local SEO</a>
-            <a href="https://buildapplication.cgmimm.com" target="_blank" style={{ color: '#1a8a91', textDecoration: 'none' }}>AI Application Builder</a>
+            <span style={{ color: '#fff' }}>Also by CGMIMM:</span>
+            <a href="https://linkmart.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>LinkMart</a>
+            <a href="https://crm.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>AI CRM</a>
+            <a href="https://www.livecustomer.co" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>AI Bot & Live Chat</a>
+            <a href="https://www.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>Find Local Business</a>
+            <a href="https://marketingmachine.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>Marketing Machine</a>
+            <a href="https://local.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>Local SEO</a>
+            <a href="https://buildapplication.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>AI Application Builder</a>
           </div>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
+          <div style={{ fontSize: '12px', color: '#fff' }}>
             &copy; {new Date().getFullYear()} CGMIMM. All rights reserved.
           </div>
         </div>
@@ -411,23 +411,23 @@ export default function LandingPage() {
 
 const features = [
   { icon: '🔍', title: 'AI Site Audit', desc: 'AI crawls your entire site, scores it across technical SEO, content, performance, and mobile — then writes your personalized fix list in plain English. No expertise needed.', color: '#2367a0' },
-  { icon: '📈', title: 'AI Rank Tracker', desc: 'AI monitors your Google rankings in real time, detects position changes, and explains why you moved up or down so you always know your next move.', color: '#1a8a91' },
-  { icon: '🕷️', title: 'AI Site Crawler', desc: 'AI crawls every page on your site, finds broken links, missing tags, thin content, and redirect chains — then summarizes the critical issues to fix first.', color: '#b8862a' },
+  { icon: '📈', title: 'AI Rank Tracker', desc: 'AI monitors your Google rankings in real time, detects position changes, and explains why you moved up or down so you always know your next move.', color: '#0f6b70' },
+  { icon: '🕷️', title: 'AI Site Crawler', desc: 'AI crawls every page on your site, finds broken links, missing tags, thin content, and redirect chains — then summarizes the critical issues to fix first.', color: '#7a5818' },
   { icon: '🎯', title: 'AI Page Optimizer', desc: 'AI reads your actual page HTML, analyzes it against your target keywords, and delivers a scored report with specific fixes ranked by impact.', color: '#2367a0' },
-  { icon: '⚡', title: 'AI Speed Analysis', desc: 'AI measures your Core Web Vitals — LCP, FID, CLS — for mobile and desktop, then tells you exactly what\'s slowing you down and how to fix it.', color: '#1a8a91' },
-  { icon: '📊', title: 'AI Analytics', desc: 'AI pulls your GA4 data and interprets it for you — traffic trends, source breakdowns, bounce rates — surfacing insights you\'d miss reading raw numbers.', color: '#b8862a' },
+  { icon: '⚡', title: 'AI Speed Analysis', desc: 'AI measures your Core Web Vitals — LCP, FID, CLS — for mobile and desktop, then tells you exactly what\'s slowing you down and how to fix it.', color: '#0f6b70' },
+  { icon: '📊', title: 'AI Analytics', desc: 'AI pulls your GA4 data and interprets it for you — traffic trends, source breakdowns, bounce rates — surfacing insights you\'d miss reading raw numbers.', color: '#7a5818' },
   { icon: '🔗', title: 'AI Backlink Analysis', desc: 'AI evaluates your backlink profile — domain authority, spam scores, link types — and identifies which links are helping your rankings and which are hurting them.', color: '#2367a0' },
-  { icon: '🔎', title: 'AI Search Console', desc: 'AI connects to Google Search Console, syncs your real ranking data, and highlights the keywords where you\'re closest to page one — your biggest quick wins.', color: '#1a8a91' },
-  { icon: '🤖', title: 'AI Visibility Check', desc: 'AI checks if ChatGPT, Perplexity, and other AI search engines can find your site. Stay visible in the new era of AI-powered search.', color: '#b8862a' },
+  { icon: '🔎', title: 'AI Search Console', desc: 'AI connects to Google Search Console, syncs your real ranking data, and highlights the keywords where you\'re closest to page one — your biggest quick wins.', color: '#0f6b70' },
+  { icon: '🤖', title: 'AI Visibility Check', desc: 'AI checks if ChatGPT, Perplexity, and other AI search engines can find your site. Stay visible in the new era of AI-powered search.', color: '#7a5818' },
   { icon: '📍', title: 'AI Local SEO', desc: 'AI audits your local presence — Google Business Profile, citations, local keywords — and tells you exactly how to outrank nearby competitors.', color: '#2367a0' },
-  { icon: '⭐', title: 'AI Review Manager', desc: 'AI surfaces your Google reviews across locations, helps you respond professionally, and monitors your reputation so nothing slips through.', color: '#1a8a91' },
-  { icon: '🏗️', title: 'AI Schema Generator', desc: 'AI generates structured data markup for your pages — Organization, FAQ, Product, Review — perfectly formatted and ready to paste into your site.', color: '#b8862a' },
+  { icon: '⭐', title: 'AI Review Manager', desc: 'AI surfaces your Google reviews across locations, helps you respond professionally, and monitors your reputation so nothing slips through.', color: '#0f6b70' },
+  { icon: '🏗️', title: 'AI Schema Generator', desc: 'AI generates structured data markup for your pages — Organization, FAQ, Product, Review — perfectly formatted and ready to paste into your site.', color: '#7a5818' },
   { icon: '📢', title: 'AI Ads Intelligence', desc: 'AI pulls your Google Ads data alongside organic performance, giving you a unified view of paid and organic so you can optimize total search spend.', color: '#2367a0' },
-  { icon: '🅱️', title: 'AI Bing Optimization', desc: 'AI manages your Bing presence — crawl stats, keyword data, URL submissions — so you capture traffic from the second-largest search engine automatically.', color: '#1a8a91' },
-  { icon: '🖼️', title: 'AI Image Optimizer', desc: 'AI compresses, resizes, and converts your images to WebP in one click. Faster images mean faster pages, better rankings, and happier visitors.', color: '#b8862a' },
+  { icon: '🅱️', title: 'AI Bing Optimization', desc: 'AI manages your Bing presence — crawl stats, keyword data, URL submissions — so you capture traffic from the second-largest search engine automatically.', color: '#0f6b70' },
+  { icon: '🖼️', title: 'AI Image Optimizer', desc: 'AI compresses, resizes, and converts your images to WebP in one click. Faster images mean faster pages, better rankings, and happier visitors.', color: '#7a5818' },
   { icon: '📡', title: 'AI Citation Builder', desc: 'AI pushes your business data to hundreds of directories at once, ensuring consistent NAP citations that boost your local search authority.', color: '#2367a0' },
-  { icon: '📋', title: 'AI GBP Creator', desc: 'AI walks you through creating your Google Business Profile step by step and auto-generates optimized business descriptions that attract customers.', color: '#1a8a91' },
-  { icon: '📉', title: 'AI Trend Analysis', desc: 'AI tracks your keyword positions over time across Google, Bing, and Search Console — spotting trends and measuring the real impact of every change you make.', color: '#b8862a' },
+  { icon: '📋', title: 'AI GBP Creator', desc: 'AI walks you through creating your Google Business Profile step by step and auto-generates optimized business descriptions that attract customers.', color: '#0f6b70' },
+  { icon: '📉', title: 'AI Trend Analysis', desc: 'AI tracks your keyword positions over time across Google, Bing, and Search Console — spotting trends and measuring the real impact of every change you make.', color: '#7a5818' },
 ]
 
 const detailedFeatures = [
