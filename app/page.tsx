@@ -377,7 +377,7 @@ export default function LandingPage() {
         <div className="footer-inner" style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div>
             <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '16px', color: '#fff', marginBottom: '4px' }}>
-              AI SEO <span style={{ color: '#8fd9de' }}>powered by CGMIMM</span>
+              AI SEO <span style={{ color: '#ffffff' }}>powered by CGMIMM</span>
             </div>
             <div style={{ fontSize: '12px', color: '#fff' }}>AI-Powered SEO Platform</div>
           </div>
@@ -390,13 +390,13 @@ export default function LandingPage() {
           </div>
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '12px', flexWrap: 'wrap', marginTop: '0.5rem' }}>
             <span style={{ color: '#fff' }}>Also by CGMIMM:</span>
-            <a href="https://linkmart.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>LinkMart</a>
-            <a href="https://crm.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>AI CRM</a>
-            <a href="https://www.livecustomer.co" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>AI Bot & Live Chat</a>
-            <a href="https://www.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>Find Local Business</a>
-            <a href="https://marketingmachine.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>Marketing Machine</a>
-            <a href="https://local.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>Local SEO</a>
-            <a href="https://buildapplication.cgmimm.com" target="_blank" style={{ color: '#8fd9de', textDecoration: 'none' }}>AI Application Builder</a>
+            <a href="https://linkmart.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>LinkMart</a>
+            <a href="https://crm.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>AI CRM</a>
+            <a href="https://www.livecustomer.co" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>AI Bot & Live Chat</a>
+            <a href="https://www.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>Find Local Business</a>
+            <a href="https://marketingmachine.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>Marketing Machine</a>
+            <a href="https://local.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>Local SEO</a>
+            <a href="https://buildapplication.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>AI Application Builder</a>
           </div>
           <div style={{ fontSize: '12px', color: '#fff' }}>
             &copy; {new Date().getFullYear()} CGMIMM. All rights reserved.
