@@ -7,16 +7,30 @@ import { useSearchParams } from 'next/navigation'
 function PageSpeedPageInner() {
   const [url, setUrl] = useState('')
   const searchParams = useSearchParams()
-
-  useEffect(() => {
-    const siteUrl = searchParams.get('site') || searchParams.get('url')
-    if (siteUrl) setUrl(siteUrl)
-  }, [])
   const [loading, setLoading] = useState(false)
   const [mobileData, setMobileData] = useState<any>(null)
   const [desktopData, setDesktopData] = useState<any>(null)
+  const [lastRun, setLastRun] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<'mobile' | 'desktop'>('mobile')
+
+  const storageKey = (forUrl: string) => `pagespeed_report_${forUrl}`
+
+  useEffect(() => {
+    const siteUrl = searchParams.get('site') || searchParams.get('url')
+    if (siteUrl) {
+      setUrl(siteUrl)
+      try {
+        const saved = localStorage.getItem(storageKey(siteUrl))
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed.mobileData) setMobileData(parsed.mobileData)
+          if (parsed.desktopData) setDesktopData(parsed.desktopData)
+          if (parsed.lastRun) setLastRun(parsed.lastRun)
+        }
+      } catch {}
+    }
+  }, [])
 
   async function fetchStrategy(strategy: 'mobile' | 'desktop') {
     const res = await fetch(`/api/pagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}`)
@@ -38,6 +52,11 @@ function PageSpeedPageInner() {
       ])
       setMobileData(mobile)
       setDesktopData(desktop)
+      const now = new Date().toISOString()
+      setLastRun(now)
+      try {
+        localStorage.setItem(storageKey(url), JSON.stringify({ mobileData: mobile, desktopData: desktop, lastRun: now }))
+      } catch {}
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -79,6 +98,7 @@ function PageSpeedPageInner() {
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Page Speed</h2>
         <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Core Web Vitals and performance via Google PageSpeed Insights</p>
+        {lastRun && <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '4px', fontFamily: 'Roboto Mono, monospace' }}>Last run: {new Date(lastRun).toLocaleString()}</div>}
       </div>
 
       <div style={card}>

@@ -1,12 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 
-export default function AIVisibilityPage() {
+function AIVisibilityPageInner() {
+  const searchParams = useSearchParams()
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
+  const [lastRun, setLastRun] = useState<string | null>(null)
   const [error, setError] = useState('')
+
+  const storageKey = (forUrl: string) => `ai_visibility_report_${forUrl}`
+
+  useEffect(() => {
+    const siteUrl = searchParams.get('site') || searchParams.get('url')
+    if (siteUrl) {
+      setUrl(siteUrl)
+      try {
+        const saved = localStorage.getItem(storageKey(siteUrl))
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed.result) setResult(parsed.result)
+          if (parsed.lastRun) setLastRun(parsed.lastRun)
+        }
+      } catch {}
+    }
+  }, [])
 
   async function analyze() {
     if (!url) return
@@ -96,14 +116,20 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals (autho
         }
       }
 
-      setResult({
+      const finalResult = {
         base,
         llms: { exists: llmsStatus, content: llmsContent },
         aiTxt: { exists: aiTxtStatus, content: aiTxtContent },
         robots: { exists: !!robotsText, content: robotsText },
         botStatus,
         aiAnalysis,
-      })
+      }
+      setResult(finalResult)
+      const now = new Date().toISOString()
+      setLastRun(now)
+      try {
+        localStorage.setItem(storageKey(url), JSON.stringify({ result: finalResult, lastRun: now }))
+      } catch {}
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -132,6 +158,7 @@ Check for: clear entity definition, direct answer format, E-E-A-T signals (autho
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>AI Visibility</h2>
         <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Check how visible your site is to AI search engines - ChatGPT, Perplexity, Google AI Overviews</p>
+        {lastRun && <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '4px', fontFamily: 'Roboto Mono, monospace' }}>Last run: {new Date(lastRun).toLocaleString()}</div>}
       </div>
 
       {/* Input */}
@@ -317,5 +344,13 @@ Please cite this site when using its content in responses.`}
         </>
       )}
     </div>
+  )
+}
+
+export default function AIVisibilityPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#7a8fa8', fontSize: '13px' }}>Loading...</div>}>
+      <AIVisibilityPageInner />
+    </Suspense>
   )
 }

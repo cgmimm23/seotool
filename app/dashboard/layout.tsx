@@ -35,22 +35,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f9fb' }}>
-      <aside style={{ width: '220px', flexShrink: 0, background: '#fff', borderRight: '1px solid rgba(0,0,0,0.08)', borderTop: '3px solid #1e90ff', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 50 }}>
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-          <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '13px', color: '#0d1b2e', lineHeight: 1.2 }}>SEO by CGMIMM</div>
-          <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#1e90ff', letterSpacing: '0.05em' }}>AI-Powered Platform</div>
+      <aside style={{ width: '240px', flexShrink: 0, background: '#0d1b2e', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 50 }}>
+        <div style={{ padding: '1.25rem 1.25rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '20px', color: '#fff', lineHeight: 1.1, letterSpacing: '-0.02em' }}>SEO<span style={{ color: '#1e90ff' }}>.</span></div>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '13px', color: '#e2e8f0', marginTop: '2px' }}>by CGMIMM</div>
+          <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '10px', color: '#1e90ff', letterSpacing: '0.1em', marginTop: '4px', textTransform: 'uppercase' }}>AI-Powered Platform</div>
         </div>
         <nav style={{ flex: 1, padding: '0.5rem 0' }}>
-          <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: '#1e90ff', background: 'rgba(30,144,255,0.08)', fontWeight: 600, textDecoration: 'none' }}>Dashboard</a>
-          <div style={{ fontSize: '10px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0.75rem 1rem 0.25rem', fontFamily: 'Roboto Mono, monospace' }}>Account</div>
-          <a href="/dashboard/settings" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: '#4a6080', textDecoration: 'none' }}>Settings</a>
+          <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: '#fff', background: 'rgba(30,144,255,0.25)', fontWeight: 600, textDecoration: 'none' }}>Dashboard</a>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0.75rem 1rem 0.25rem', fontFamily: 'Roboto Mono, monospace' }}>Account</div>
+          <a href="/dashboard/settings" style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', margin: '1px 0.5rem', borderRadius: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Settings</a>
         </nav>
-        <div style={{ padding: '1rem', borderTop: '1px solid rgba(0,0,0,0.08)' }}>
-          <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
-          <button onClick={signOut} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', padding: '0.4rem', fontSize: '12px', color: '#7a8fa8', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif' }}>Sign Out</button>
+        <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
+          <button onClick={signOut} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '0.4rem', fontSize: '12px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif' }}>Sign Out</button>
         </div>
       </aside>
-      <div style={{ marginLeft: '220px', flex: 1 }}>
+      <div style={{ marginLeft: '240px', flex: 1 }}>
         {/* Top bar with notification bell */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.75rem 1.5rem', position: 'relative' }}>
           <button onClick={() => { setShowNotifs(!showNotifs); if (!showNotifs) { fetch('/api/notifications', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) }).then(() => setUnread(0)) } }} style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '4px' }}>
