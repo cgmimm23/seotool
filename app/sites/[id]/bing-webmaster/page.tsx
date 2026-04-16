@@ -15,25 +15,47 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
   const [submitUrl, setSubmitUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitResult, setSubmitResult] = useState<'success' | 'error' | null>(null)
+  const [bingKey, setBingKey] = useState('')
+  const [hasBingKey, setHasBingKey] = useState<boolean | null>(null)
+  const [savingKey, setSavingKey] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data: site } = await supabase.from('sites').select('url').eq('id', params.id).single()
+      const { data: site } = await supabase.from('sites').select('url, bing_api_key').eq('id', params.id).single()
       if (site?.url) { setSiteUrl(site.url); setSubmitUrl(site.url) }
+      setHasBingKey(!!site?.bing_api_key)
     }
     load()
   }, [params.id])
+
+  async function saveBingKey() {
+    if (!bingKey.trim()) return
+    setSavingKey(true)
+    const { error: e } = await supabase.from('sites').update({ bing_api_key: bingKey.trim() }).eq('id', params.id)
+    setSavingKey(false)
+    if (e) { alert('Could not save key: ' + e.message); return }
+    setBingKey('')
+    setHasBingKey(true)
+  }
+
+  async function disconnectBing() {
+    if (!confirm('Remove Bing Webmaster API key from this site?')) return
+    await supabase.from('sites').update({ bing_api_key: null }).eq('id', params.id)
+    setHasBingKey(false)
+    setData(null)
+  }
 
   async function fetchData() {
     if (!siteUrl) return
     setLoading(true)
     setError('')
     try {
+      const q = `siteId=${params.id}&siteUrl=${encodeURIComponent(siteUrl)}`
       const [statsRes, keywordsRes, errorsRes] = await Promise.allSettled([
-        fetch(`/api/bing-webmaster?endpoint=crawl-stats&siteUrl=${encodeURIComponent(siteUrl)}`),
-        fetch(`/api/bing-webmaster?endpoint=keywords&siteUrl=${encodeURIComponent(siteUrl)}`),
-        fetch(`/api/bing-webmaster?endpoint=crawl-issues&siteUrl=${encodeURIComponent(siteUrl)}`),
+        fetch(`/api/bing-webmaster?endpoint=crawl-stats&${q}`),
+        fetch(`/api/bing-webmaster?endpoint=keywords&${q}`),
+        fetch(`/api/bing-webmaster?endpoint=crawl-issues&${q}`),
       ])
 
       const stats = statsRes.status === 'fulfilled' ? await statsRes.value.json() : null
@@ -56,7 +78,7 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
       const res = await fetch('/api/bing-webmaster', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: 'submit-url', siteUrl, url: submitUrl }),
+        body: JSON.stringify({ endpoint: 'submit-url', siteUrl, url: submitUrl, siteId: params.id }),
       })
       setSubmitResult(res.ok ? 'success' : 'error')
     } catch {
@@ -69,16 +91,54 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
   const card = { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }
   const tabBtn = (t: Tab) => ({ padding: '0.5rem 1rem', fontSize: '13px', color: tab === t ? '#1e90ff' : '#7a8fa8', cursor: 'pointer', borderBottom: `2px solid ${tab === t ? '#1e90ff' : 'transparent'}`, marginBottom: '-1px', fontWeight: tab === t ? 600 : 400, background: 'none', border: 'none', fontFamily: 'Open Sans, sans-serif' } as any)
 
+  if (hasBingKey === false) return (
+    <div>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Bing Webmaster Tools</h2>
+        <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Connect Bing Webmaster for this site</p>
+      </div>
+      <div style={{ ...card, padding: '2rem' }}>
+        <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>Add your Bing Webmaster API key</div>
+        <p style={{ fontSize: '13px', color: '#7a8fa8', lineHeight: 1.6, marginBottom: '1rem' }}>
+          1. Go to <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener" style={{ color: '#1e90ff' }}>bing.com/webmasters</a> and sign in.<br />
+          2. Click <strong>Settings (gear icon) → API Access → Generate</strong>.<br />
+          3. Copy the key and paste it here. We store it only for this site.
+        </p>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <input
+            type="text"
+            value={bingKey}
+            onChange={e => setBingKey(e.target.value)}
+            placeholder="Paste your Bing API key"
+            className="form-input"
+            style={{ flex: 1, fontFamily: 'Roboto Mono, monospace', fontSize: '12px' }}
+          />
+          <button onClick={saveBingKey} className="btn btn-accent" disabled={savingKey || !bingKey.trim()} style={{ fontSize: '12px' }}>
+            {savingKey ? 'Saving…' : 'Connect'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
         <div>
           <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Bing Webmaster Tools</h2>
           <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Crawl stats, keyword data, and URL submission</p>
         </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+        <button onClick={disconnectBing} className="btn btn-ghost" style={{ fontSize: '12px' }}>Disconnect Bing</button>
         <button onClick={fetchData} disabled={loading} className="btn btn-accent" style={{ fontSize: '12px' }}>
           {loading ? 'Loading...' : 'Load Data'}
         </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem', padding: '8px 12px', background: 'rgba(0,208,132,0.08)', border: '1px solid rgba(0,208,132,0.2)', borderRadius: '8px', fontSize: '12px' }}>
+        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00d084' }} />
+        <div style={{ color: '#0d1b2e', fontWeight: 600 }}>Bing connected for this site</div>
       </div>
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}

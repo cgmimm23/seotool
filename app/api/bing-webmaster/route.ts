@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerSupabase } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
-const BING_API_KEY = process.env.BING_WEBMASTER_API_KEY
+async function resolveBingKey(siteId?: string | null): Promise<string | null> {
+  if (siteId) {
+    const supabase = createServerSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: site } = await supabase.from('sites')
+        .select('user_id, bing_api_key').eq('id', siteId).single()
+      if (site && site.user_id === user.id && site.bing_api_key) return site.bing_api_key
+    }
+  }
+  return process.env.BING_WEBMASTER_API_KEY || null
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const endpoint = searchParams.get('endpoint')
   const siteUrl = searchParams.get('siteUrl')
+  const siteId = searchParams.get('siteId')
 
+  const BING_API_KEY = await resolveBingKey(siteId)
   if (!BING_API_KEY) {
-    return NextResponse.json({ error: 'Bing Webmaster API not configured' }, { status: 500 })
+    return NextResponse.json({ error: 'Bing Webmaster API key not set for this site. Add it in site settings.' }, { status: 400 })
   }
 
   if (!endpoint || !siteUrl) {
@@ -53,12 +67,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!BING_API_KEY) {
-    return NextResponse.json({ error: 'Bing Webmaster API not configured' }, { status: 500 })
-  }
-
   try {
-    const { endpoint, siteUrl, url } = await req.json()
+    const { endpoint, siteUrl, url, siteId } = await req.json()
+    const BING_API_KEY = await resolveBingKey(siteId)
+    if (!BING_API_KEY) {
+      return NextResponse.json({ error: 'Bing Webmaster API key not set for this site. Add it in site settings.' }, { status: 400 })
+    }
     const cleanSiteUrl = siteUrl?.replace(/\/$/, '')
 
     if (endpoint === 'submit-url') {
