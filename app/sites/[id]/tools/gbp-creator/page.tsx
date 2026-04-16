@@ -35,7 +35,13 @@ export default function GBPCreatorPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.provider_token) { setConnected(true); fetchAccounts() }
+      if (!session) return
+      if (session.provider_token) { setConnected(true); fetchAccounts() }
+      else {
+        supabase.from('profiles').select('google_access_token').eq('id', session.user.id).single().then(({ data }) => {
+          if (data?.google_access_token) { setConnected(true); fetchAccounts() }
+        })
+      }
     })
   }, [])
 
@@ -200,7 +206,13 @@ export default function GBPCreatorPage({ params }: { params: { id: string } }) {
                   ))}
                 </div>
               </div>
-              {accounts.length > 0 && <div style={{ marginBottom: '1rem' }}><label style={labelStyle}>Google Business Account</label><select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)} style={inputStyle}>{accounts.map((a: any) => <option key={a.name} value={a.name}>{a.accountName || a.name}</option>)}</select></div>}
+              {accounts.length > 0 ? (
+                <div style={{ marginBottom: '1rem' }}><label style={labelStyle}>Google Business Account</label><select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)} style={inputStyle}>{accounts.map((a: any) => <option key={a.name} value={a.name}>{a.accountName || a.name}</option>)}</select></div>
+              ) : (
+                <div style={{ background: 'rgba(228,179,79,0.1)', border: '1px solid rgba(228,179,79,0.3)', borderRadius: '8px', padding: '1rem', fontSize: '13px', color: '#7a5818', marginBottom: '1rem' }}>
+                  No Google Business accounts found. Make sure your Google account has access to Google Business Profile Manager.
+                </div>
+              )}
               {submitError && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '1rem' }}>{submitError}</div>}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button className="btn btn-ghost" onClick={() => setStep(4)}>Back</button>
