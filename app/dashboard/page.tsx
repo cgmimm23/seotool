@@ -86,30 +86,35 @@ export default function Dashboard() {
   async function addSite() {
     if (!newSiteUrl) return
     setAddingSite(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { alert('Session expired — please sign in again.'); return }
 
-    const url = newSiteUrl.startsWith('http') ? newSiteUrl : 'https://' + newSiteUrl
+      const url = newSiteUrl.startsWith('http') ? newSiteUrl : 'https://' + newSiteUrl
 
-    const { data, error } = await supabase.from('sites').insert({
-      user_id: session.user.id,
-      url,
-      name: newSiteName || url.replace(/^https?:\/\//, ''),
-      active: true,
-    }).select().single()
+      const { data, error } = await supabase.from('sites').insert({
+        user_id: session.user.id,
+        url,
+        name: newSiteName || url.replace(/^https?:\/\//, ''),
+        active: true,
+      }).select().single()
 
-    if (!error && data) {
+      if (error) { alert('Could not add site: ' + error.message); return }
+
+      // Best-effort scan schedule — don't block site creation if it fails.
       await supabase.from('scan_schedule').insert({
         site_id: data.id,
         user_id: session.user.id,
         plan: 'free',
       })
+
       setNewSiteUrl('')
       setNewSiteName('')
       setShowAddSite(false)
       loadSites()
+    } finally {
+      setAddingSite(false)
     }
-    setAddingSite(false)
   }
 
   async function runAudit(site: any) {
