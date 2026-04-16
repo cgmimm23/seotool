@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase-server'
+import { getGoogleToken } from '@/lib/google-token'
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabase()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const accessToken = session.provider_token
+    const accessToken = await getGoogleToken()
     if (!accessToken) return NextResponse.json({ error: 'No Google access token. Please reconnect your Google account.' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
