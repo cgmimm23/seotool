@@ -10,10 +10,9 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const accessToken = await getGoogleToken()
-    if (!accessToken) return NextResponse.json({ error: 'No Google access token. Please reconnect Google.' }, { status: 401 })
-
     const { siteUrl, siteId, days = 90 } = await request.json()
+    const accessToken = await getGoogleToken(siteId)
+    if (!accessToken) return NextResponse.json({ error: 'No Google access token. Please connect Google for this site.' }, { status: 401 })
     if (!siteUrl || !siteId) return NextResponse.json({ error: 'siteUrl and siteId required' }, { status: 400 })
 
     const endDate = new Date()

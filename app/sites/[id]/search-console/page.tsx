@@ -19,14 +19,25 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
 
   useEffect(() => { checkConnection() }, [])
 
+  const [connectedEmail, setConnectedEmail] = useState('')
+
   async function checkConnection() {
     setCheckingAuth(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.provider_token) { setConnected(true); fetchSites(session.provider_token) }
+    const { data: site } = await supabase.from('sites')
+      .select('google_email, google_access_token, gsc_site_url')
+      .eq('id', params.id).single()
+    if (site?.google_access_token) {
+      setConnected(true)
+      setConnectedEmail(site.google_email || '')
+      if (site.gsc_site_url) setSiteUrl(site.gsc_site_url)
+      await fetchSites()
+    }
     setCheckingAuth(false)
   }
 
   async function connectGoogle() {
+    document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
+    document.cookie = `oauth_site_id=${params.id}; path=/; max-age=600; SameSite=Lax`
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -37,17 +48,29 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
     })
   }
 
-  async function fetchSites(token: string) {
+  async function disconnectGoogle() {
+    if (!confirm('Disconnect Google from this site?')) return
+    await supabase.from('sites').update({
+      google_email: null, google_access_token: null, google_refresh_token: null, google_token_expires_at: null,
+    }).eq('id', params.id)
+    setConnected(false)
+    setConnectedEmail('')
+    setSites([])
+    setData(null)
+    setSiteUrl('')
+  }
+
+  async function fetchSites() {
     try {
       const res = await fetch('/api/search-console/proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: '/webmasters/v3/sites' }),
+        body: JSON.stringify({ endpoint: '/webmasters/v3/sites', siteId: params.id }),
       })
       const data = await res.json()
       const siteList = (data.siteEntry || []).map((s: any) => s.siteUrl)
       setSites(siteList)
-      if (siteList.length > 0) setSiteUrl(siteList[0])
+      setSiteUrl(prev => prev || siteList[0] || '')
     } catch (err) { console.error('Could not fetch sites', err) }
   }
 
@@ -56,10 +79,11 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/search-console?siteUrl=${encodeURIComponent(siteUrl)}&days=${days}`)
+      const res = await fetch(`/api/search-console?siteId=${params.id}&siteUrl=${encodeURIComponent(siteUrl)}&days=${days}`)
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
+      await supabase.from('sites').update({ gsc_site_url: siteUrl }).eq('id', params.id)
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
   }
@@ -140,6 +164,13 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
             {syncing ? 'Syncing...' : '↑ Sync to Rank History'}
           </button>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem', padding: '8px 12px', background: 'rgba(0,208,132,0.08)', border: '1px solid rgba(0,208,132,0.2)', borderRadius: '8px', fontSize: '12px' }}>
+        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00d084' }} />
+        <div style={{ color: '#0d1b2e', fontWeight: 600 }}>Connected as {connectedEmail || 'Google user'}</div>
+        <button onClick={connectGoogle} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#2367a0', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>Switch account</button>
+        <button onClick={disconnectGoogle} style={{ background: 'transparent', border: 'none', color: '#7a8fa8', fontSize: '12px', cursor: 'pointer' }}>Disconnect</button>
       </div>
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}

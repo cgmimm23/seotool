@@ -8,8 +8,10 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const accessToken = await getGoogleToken()
-    if (!accessToken) return NextResponse.json({ error: 'No Google access token. Please reconnect your Google account.' }, { status: 401 })
+    const { searchParams: earlyParams } = new URL(request.url)
+    const earlySiteId = earlyParams.get('siteId')
+    const accessToken = await getGoogleToken(earlySiteId)
+    if (!accessToken) return NextResponse.json({ error: 'No Google access token. Please connect Google for this site.' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const action = searchParams.get('action')

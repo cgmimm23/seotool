@@ -10,13 +10,14 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const accessToken = await getGoogleToken()
-    if (!accessToken) return NextResponse.json({ error: 'No Google access token. Please reconnect Google.' }, { status: 401 })
-
     const { searchParams } = new URL(request.url)
     const siteUrl = searchParams.get('siteUrl')
+    const siteId = searchParams.get('siteId')
     const days = parseInt(searchParams.get('days') || '30')
     if (!siteUrl) return NextResponse.json({ error: 'siteUrl required' }, { status: 400 })
+
+    const accessToken = await getGoogleToken(siteId)
+    if (!accessToken) return NextResponse.json({ error: 'No Google access token. Please connect Google for this site.' }, { status: 401 })
 
     const endDate = new Date()
     const startDate = new Date()

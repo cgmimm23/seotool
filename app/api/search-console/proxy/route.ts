@@ -9,9 +9,9 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { endpoint, body } = await req.json()
+  const { endpoint, body, siteId } = await req.json()
 
-  const accessToken = await getGoogleToken()
+  const accessToken = await getGoogleToken(siteId)
   if (!accessToken) {
     return NextResponse.json({ error: 'Google account not connected. Sign in with Google first.' }, { status: 401 })
   }
