@@ -8,10 +8,13 @@ interface UserDetail {
     id: string; email: string; full_name: string; avatar_url: string;
     plan: string; status: string; role: string; created_at: string;
     last_sign_in_at: string | null;
+    trial_ends_at: string | null;
+    stripe_subscription_id?: string | null;
   }
   sites: { id: string; url: string; name: string; active: boolean; created_at: string }[]
   totalAudits: number
   totalKeywords: number
+  duplicates: { id: string; plan: string; created_at: string }[]
 }
 
 const cardStyle = {
@@ -58,6 +61,25 @@ export default function AdminUserDetailPage() {
     if (!confirm(`Delete user ${data?.user.email}? This permanently removes their account and all data.`)) return
     await fetch(`/api/admin/users/${params.id}`, { method: 'DELETE' })
     router.push('/admin/users')
+  }
+
+  async function clearTrial() {
+    setSaving(true)
+    await fetch(`/api/admin/users/${params.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trial_ends_at: null }),
+    })
+    const res = await fetch(`/api/admin/users/${params.id}`)
+    setData(await res.json())
+    setSaving(false)
+  }
+
+  async function impersonate() {
+    const res = await fetch(`/api/admin/users/${params.id}/impersonate`, { method: 'POST' })
+    const j = await res.json()
+    if (j.url) window.open(j.url, '_blank')
+    else alert(j.error || 'Failed to generate sign-in link')
   }
 
   if (loading) return <div style={{ color: '#939393', padding: '2rem' }}>Loading user...</div>
@@ -110,6 +132,39 @@ export default function AdminUserDetailPage() {
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Trial</label>
+            <div style={{ fontSize: '13px', color: user.trial_ends_at ? '#000' : '#939393' }}>
+              {user.trial_ends_at
+                ? `Ends ${new Date(user.trial_ends_at).toLocaleString()}${new Date(user.trial_ends_at) < new Date() ? ' (expired)' : ''}`
+                : 'No active trial'}
+              {user.trial_ends_at && (
+                <button onClick={clearTrial} disabled={saving} style={{ marginLeft: '10px', background: 'none', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '50px', padding: '2px 10px', fontSize: '11px', cursor: 'pointer', color: '#2367a0', fontWeight: 600 }}>
+                  Clear trial
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>User ID</label>
+            <div style={{ fontSize: '11px', color: '#939393', fontFamily: 'monospace', wordBreak: 'break-all' }}>{user.id}</div>
+          </div>
+
+          {data.duplicates.length > 0 && (
+            <div style={{ marginBottom: '1rem', padding: '10px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#ef4444', marginBottom: '6px' }}>
+                ⚠ {data.duplicates.length} other profile{data.duplicates.length !== 1 ? 's' : ''} share this email
+              </div>
+              {data.duplicates.map(d => (
+                <div key={d.id} style={{ fontSize: '11px', color: '#000', marginBottom: '4px' }}>
+                  <a href={`/admin/users/${d.id}`} style={{ color: '#2367a0', fontFamily: 'monospace' }}>{d.id.slice(0, 8)}…</a>
+                  {' — '}{d.plan} — created {new Date(d.created_at).toLocaleDateString()}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '11px', color: '#939393', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Member Since</label>
             <div style={{ fontSize: '13px', color: '#939393' }}>{new Date(user.created_at).toLocaleString()}</div>
           </div>
@@ -119,7 +174,7 @@ export default function AdminUserDetailPage() {
             <div style={{ fontSize: '13px', color: '#939393' }}>{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Never'}</div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <button onClick={handleSave} disabled={saving} style={{
               padding: '0.5rem 1.5rem', background: '#e4b34f', border: 'none',
               borderRadius: '50px', color: '#fff', fontWeight: 700, cursor: 'pointer',
@@ -127,6 +182,13 @@ export default function AdminUserDetailPage() {
               opacity: saving ? 0.7 : 1,
             }}>
               {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+            <button onClick={impersonate} style={{
+              padding: '0.5rem 1.5rem', background: '#2367a0', border: 'none',
+              borderRadius: '50px', color: '#fff', fontWeight: 700, cursor: 'pointer',
+              fontSize: '13px', fontFamily: 'Montserrat, sans-serif',
+            }}>
+              Sign in as user
             </button>
             <button onClick={handleDelete} style={{
               padding: '0.5rem 1.5rem', background: 'rgba(239,68,68,0.1)', border: 'none',

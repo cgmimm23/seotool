@@ -21,11 +21,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
+  const { data: dupes } = await supabase
+    .from('profiles')
+    .select('id, plan, created_at')
+    .eq('email', profileRes.data.email)
+    .neq('id', params.id)
+
   return NextResponse.json({
     user: profileRes.data,
     sites: sitesRes.data || [],
     totalAudits: auditsRes.count || 0,
     totalKeywords: keywordsRes.count || 0,
+    duplicates: dupes || [],
   })
 }
 
@@ -35,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const body = await req.json()
   const updates: Record<string, any> = {}
-  const allowed = ['plan', 'status', 'full_name', 'role']
+  const allowed = ['plan', 'status', 'full_name', 'role', 'trial_ends_at']
 
   for (const key of allowed) {
     if (body[key] !== undefined) updates[key] = body[key]
@@ -43,6 +50,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+  }
+
+  // Setting a paid plan clears trial and reactivates the account.
+  const paidPlans = ['starter', 'pro', 'agency', 'enterprise']
+  if (updates.plan && paidPlans.includes(updates.plan)) {
+    if (body.trial_ends_at === undefined) updates.trial_ends_at = null
+    if (body.status === undefined) updates.status = 'active'
   }
 
   updates.updated_at = new Date().toISOString()
