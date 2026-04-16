@@ -22,12 +22,18 @@ export async function POST(request: NextRequest) {
     // Get accounts list
     if (action === 'get_accounts') {
       const res = await fetch('https://mybusinessaccountmanagement.googleapis.com/v1/accounts', { headers })
+      const rawBody = await res.text()
+      let parsed: any = null
+      try { parsed = JSON.parse(rawBody) } catch {}
+      console.log('[GBP get_accounts]', { status: res.status, body: rawBody })
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error?.message || 'Could not fetch GBP accounts')
+        return NextResponse.json({
+          error: parsed?.error?.message || 'Could not fetch GBP accounts',
+          status: res.status,
+          details: parsed?.error || rawBody,
+        }, { status: res.status })
       }
-      const data = await res.json()
-      return NextResponse.json({ accounts: data.accounts || [] })
+      return NextResponse.json({ accounts: parsed?.accounts || [], rawCount: (parsed?.accounts || []).length })
     }
 
     // Create new location
