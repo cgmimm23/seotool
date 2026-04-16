@@ -3,12 +3,16 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 
+type Property = { propertyId: string; displayName: string; accountName: string }
+
 export default function AnalyticsPage() {
   const [connected, setConnected] = useState(false)
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>(null)
   const [error, setError] = useState('')
   const [propertyId, setPropertyId] = useState('')
+  const [properties, setProperties] = useState<Property[]>([])
+  const [loadingProperties, setLoadingProperties] = useState(false)
   const [days, setDays] = useState(30)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const supabase = createClient()
@@ -18,11 +22,43 @@ export default function AnalyticsPage() {
   async function checkConnection() {
     setCheckingAuth(true)
     const { data: { session } } = await supabase.auth.getSession()
-    if (session?.provider_token) setConnected(true)
+    if (!session) { setCheckingAuth(false); return }
+
+    if (session.provider_token) {
+      setConnected(true)
+      await loadProperties()
+    } else {
+      const { data: profile } = await supabase.from('profiles')
+        .select('google_access_token, ga4_property_id')
+        .eq('id', session.user.id).single()
+      if (profile?.google_access_token) {
+        setConnected(true)
+        if (profile.ga4_property_id) setPropertyId(profile.ga4_property_id)
+        await loadProperties()
+      }
+    }
     setCheckingAuth(false)
   }
 
+  async function loadProperties() {
+    setLoadingProperties(true)
+    try {
+      const res = await fetch('/api/analytics?action=list_properties')
+      const json = await res.json()
+      if (json.properties) {
+        setProperties(json.properties)
+        if (!propertyId && json.properties.length > 0) {
+          setPropertyId(json.properties[0].propertyId)
+        }
+      } else if (json.error) {
+        setError(json.error)
+      }
+    } catch (err: any) { setError(err.message) }
+    finally { setLoadingProperties(false) }
+  }
+
   async function connectGoogle() {
+    document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -42,6 +78,11 @@ export default function AnalyticsPage() {
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
+      // Remember selected property
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        await supabase.from('profiles').update({ ga4_property_id: propertyId }).eq('id', session.user.id)
+      }
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
   }
@@ -65,12 +106,12 @@ export default function AnalyticsPage() {
       </div>
       <div style={{ ...card, textAlign: 'center', padding: '3rem' }}>
         <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Connect Google Analytics</div>
-        <p style={{ fontSize: '14px', color: '#7a8fa8', marginBottom: '1.5rem', maxWidth: '440px', margin: '0 auto 1.5rem' }}>Connect your Google account to see real traffic, sessions, user behavior, and traffic sources from your GA4 property.</p>
+        <p style={{ fontSize: '14px', color: '#7a8fa8', marginBottom: '1.5rem', maxWidth: '440px', margin: '0 auto 1.5rem' }}>One-click connect. We&apos;ll auto-detect all your GA4 properties — no ID copy-pasting.</p>
         <button onClick={connectGoogle} style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: '#fff', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '8px', padding: '0.75rem 1.5rem', fontSize: '14px', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif' }}>
           <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
           Connect with Google
         </button>
-        <p style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '1rem' }}>Read-only access to your GA4 data</p>
+        <p style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '1rem' }}>Read-only access. You can disconnect anytime.</p>
       </div>
     </div>
   )
@@ -82,8 +123,20 @@ export default function AnalyticsPage() {
           <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Analytics</h2>
           <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Site traffic and user behavior — Google Analytics 4</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <input type="text" className="form-input" placeholder="GA4 Property ID (e.g. 123456789)" value={propertyId} onChange={e => setPropertyId(e.target.value)} style={{ width: '240px', fontFamily: 'Roboto Mono, monospace', fontSize: '12px' }} />
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {loadingProperties ? (
+            <div style={{ fontSize: '12px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>Loading your properties...</div>
+          ) : properties.length > 0 ? (
+            <select value={propertyId} onChange={e => setPropertyId(e.target.value)} className="form-input" style={{ minWidth: '260px', fontSize: '13px' }}>
+              {properties.map(p => (
+                <option key={p.propertyId} value={p.propertyId}>
+                  {p.displayName} — {p.accountName}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input type="text" className="form-input" placeholder="GA4 Property ID" value={propertyId} onChange={e => setPropertyId(e.target.value)} style={{ width: '220px', fontFamily: 'Roboto Mono, monospace', fontSize: '12px' }} />
+          )}
           <select value={days} onChange={e => setDays(+e.target.value)} className="form-input" style={{ width: 'auto' }}>
             <option value={7}>Last 7 days</option>
             <option value={28}>Last 28 days</option>
@@ -96,9 +149,11 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '1rem', padding: '8px 12px', background: 'rgba(30,144,255,0.05)', border: '1px solid rgba(30,144,255,0.15)', borderRadius: '8px' }}>
-        Find your GA4 Property ID in Google Analytics under Admin - Property Settings. It is a numeric ID like 123456789.
-      </div>
+      {properties.length === 0 && !loadingProperties && (
+        <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '1rem', padding: '8px 12px', background: 'rgba(228,179,79,0.08)', border: '1px solid rgba(228,179,79,0.25)', borderRadius: '8px' }}>
+          Could not auto-detect GA4 properties. Enter your Property ID manually from Analytics - Admin - Property Settings.
+        </div>
+      )}
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}
       {loading && <div style={{ textAlign: 'center', padding: '3rem', color: '#7a8fa8', fontSize: '13px', fontFamily: 'Roboto Mono, monospace' }}>Loading GA4 data...</div>}

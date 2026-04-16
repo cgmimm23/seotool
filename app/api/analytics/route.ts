@@ -12,6 +12,31 @@ export async function GET(request: NextRequest) {
     if (!accessToken) return NextResponse.json({ error: 'No Google access token. Please reconnect your Google account.' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
+    const action = searchParams.get('action')
+
+    // List GA4 properties the user has access to
+    if (action === 'list_properties') {
+      const accountsRes = await fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries', {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      })
+      if (!accountsRes.ok) {
+        const err = await accountsRes.json().catch(() => ({}))
+        return NextResponse.json({ error: err?.error?.message || 'Could not list properties', status: accountsRes.status }, { status: accountsRes.status })
+      }
+      const { accountSummaries = [] } = await accountsRes.json()
+      const properties: any[] = []
+      for (const acc of accountSummaries) {
+        for (const prop of acc.propertySummaries || []) {
+          properties.push({
+            propertyId: prop.property?.replace('properties/', ''),
+            displayName: prop.displayName,
+            accountName: acc.displayName,
+          })
+        }
+      }
+      return NextResponse.json({ properties })
+    }
+
     const propertyId = searchParams.get('propertyId')
     const days = parseInt(searchParams.get('days') || '30')
     if (!propertyId) return NextResponse.json({ error: 'propertyId required' }, { status: 400 })
