@@ -24,5 +24,7 @@ export async function GET(request: Request) {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'
-  return NextResponse.redirect(`${siteUrl}/dashboard`)
+  const next = searchParams.get('next')
+  const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+  return NextResponse.redirect(`${siteUrl}${safeNext}`)
 }
