@@ -136,7 +136,7 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
       const res = await fetch('/api/bing-webmaster', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: 'submit-url', siteUrl: url, url }),
+        body: JSON.stringify({ endpoint: 'submit-url', siteUrl: url, url, siteId: params.id }),
       })
       setBingResult(res.ok ? 'success' : 'error')
     } catch { setBingResult('error') }
@@ -310,7 +310,7 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
                   <button onClick={submitToBing} disabled={bingSubmitting} style={{ padding: '0.5rem 14px', borderRadius: '8px', fontSize: '12px', border: 'none', background: bingResult === 'success' ? '#00d084' : '#1e90ff', color: '#fff', cursor: bingSubmitting ? 'not-allowed' : 'pointer', fontFamily: 'Open Sans, sans-serif', fontWeight: 600, opacity: bingSubmitting ? 0.6 : 1, whiteSpace: 'nowrap' }}>
                     {bingSubmitting ? 'Submitting...' : bingResult === 'success' ? 'Submitted!' : bingResult === 'error' ? 'Try Again' : 'Submit to Bing'}
                   </button>
-                  <span style={{ fontSize: '11px', color: '#7a8fa8', alignSelf: 'center' }}>Uses BING_WEBMASTER_API_KEY from server environment</span>
+                  <span style={{ fontSize: '11px', color: '#7a8fa8', alignSelf: 'center' }}>Uses the Bing key connected on this site&apos;s Bing Webmaster tab</span>
                 </div>
                 {bingResult === 'error' && <div style={{ fontSize: '11px', color: '#ff4444', marginTop: '6px' }}>Submission failed. Check your API key and try again.</div>}
               </div>
