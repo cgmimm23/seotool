@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     // Upsert keywords
     const keywordUpserts = uniqueKeywords.map(kw => ({
       site_id: siteId,
-      user_id: session.user.id,
+      user_id: user.id,
       keyword: kw,
       page_path: '/',
     }))
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       .from('keywords')
       .select('id, keyword')
       .eq('site_id', siteId)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
 
     const kwMap: Record<string, string> = {}
     for (const kw of kwData || []) kwMap[kw.keyword] = kw.id
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         if (!kwId) return null
         return {
           keyword_id: kwId,
-          user_id: session.user.id,
+          user_id: user.id,
           position: Math.round(r.position),
           previous_position: null,
           source: 'gsc',
