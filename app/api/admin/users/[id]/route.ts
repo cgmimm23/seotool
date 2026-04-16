@@ -52,11 +52,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
   }
 
-  // Setting a paid plan clears trial and reactivates the account.
+  // Setting a paid plan clears trial, reactivates, and skips onboarding gate.
   const paidPlans = ['starter', 'pro', 'agency', 'enterprise']
   if (updates.plan && paidPlans.includes(updates.plan)) {
     if (body.trial_ends_at === undefined) updates.trial_ends_at = null
     if (body.status === undefined) updates.status = 'active'
+    updates.onboarding_completed = true
   }
 
   updates.updated_at = new Date().toISOString()

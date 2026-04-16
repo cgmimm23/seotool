@@ -20,11 +20,13 @@ export default function Dashboard() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) return
       supabase.from('profiles').select('trial_ends_at, onboarding_completed, plan, stripe_subscription_id').eq('id', session.user.id).single().then(({ data }) => {
-        if (data && !data.onboarding_completed && !data.stripe_subscription_id) {
+        const paidPlans = ['starter', 'pro', 'agency', 'enterprise']
+        const hasPaidAccess = data && (data.stripe_subscription_id || paidPlans.includes(data.plan))
+        if (data && !data.onboarding_completed && !hasPaidAccess) {
           window.location.href = '/dashboard/onboarding'
           return
         }
-        if (data?.trial_ends_at && !data.stripe_subscription_id) {
+        if (data?.trial_ends_at && !hasPaidAccess) {
           const days = Math.ceil((new Date(data.trial_ends_at).getTime() - Date.now()) / 86400000)
           if (days > 0) setTrialDays(days)
         }
