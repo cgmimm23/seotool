@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI SEO by CGMIMM — Google Business Profile API Access Application</title>
+<style>
+  @page { size: letter; margin: 0.75in; }
+  body { font-family: 'Open Sans', Arial, sans-serif; color: #0d1b2e; max-width: 7in; margin: 0 auto; line-height: 1.55; font-size: 11pt; }
+  h1 { color: #2367a0; font-family: 'Montserrat', Arial, sans-serif; font-size: 22pt; margin: 0 0 4px; }
+  h2 { color: #2367a0; font-family: 'Montserrat', Arial, sans-serif; font-size: 14pt; margin: 22px 0 8px; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; }
+  h3 { color: #0d1b2e; font-family: 'Montserrat', Arial, sans-serif; font-size: 11pt; margin: 14px 0 4px; }
+  .subtitle { color: #7a8fa8; font-size: 10pt; margin-bottom: 18px; }
+  .meta { background: #f8f9fb; border: 1px solid #e5e5e5; border-radius: 6px; padding: 10px 14px; font-size: 10pt; margin-bottom: 20px; }
+  .meta div { margin: 3px 0; }
+  ul { margin: 6px 0 10px; padding-left: 20px; }
+  li { margin-bottom: 3px; }
+  code { background: #f0f4f8; padding: 1px 5px; border-radius: 3px; font-size: 9.5pt; color: #0f6b70; }
+  .section-list { margin: 0; padding: 0; list-style: none; }
+  .section-list li { padding: 6px 0; border-bottom: 1px solid #f0f4f8; }
+  .scope { font-family: 'Courier New', monospace; font-size: 10pt; color: #0f6b70; }
+  .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #e5e5e5; font-size: 9pt; color: #7a8fa8; }
+</style>
+</head>
+<body>
+
+<h1>AI SEO by CGMIMM</h1>
+<div class="subtitle">Google Business Profile API Access Application</div>
+
+<div class="meta">
+  <div><strong>Application:</strong> AI SEO by CGMIMM</div>
+  <div><strong>Website:</strong> https://seo.cgmimm.com</div>
+  <div><strong>Company:</strong> CGMIMM (Marketing Machine)</div>
+  <div><strong>Contact:</strong> Jonathan Dickey — jonathan@cgmimm.com</div>
+  <div><strong>OAuth Client:</strong> AI SEO Tool (marketing-tool project)</div>
+  <div><strong>Primary scope requested:</strong> <span class="scope">https://www.googleapis.com/auth/business.manage</span></div>
+</div>
+
+<h2>Product Overview</h2>
+<p>AI SEO by CGMIMM is a full-stack SEO platform for small and mid-size businesses. It combines automated technical audits, rank tracking, page optimization, and local-presence management in a single dashboard. Every feature is powered by AI — the platform interprets raw data and writes a plain-English action plan the business owner can execute without SEO expertise.</p>
+<p>Customers subscribe at Starter ($59.95/mo), Pro ($149/mo), or Enterprise (custom) tiers and use the tool to manage SEO for their own websites. Agencies on Pro and Enterprise manage multiple client sites.</p>
+
+<h2>Why We Need Business Profile API Access</h2>
+<p>Local search visibility is a core part of SEO for the business owners we serve (contractors, restaurants, medical practices, retail, professional services). A correctly-configured, fully-optimized Google Business Profile is one of the single highest-impact local-ranking factors for our customers.</p>
+<p>Our users are already Google Business Profile owners (or are creating their first listing). They grant our application explicit OAuth consent to manage their own profiles on their behalf.</p>
+
+<h2>Specific Use Cases</h2>
+
+<h3>1. Business Profile Creation & Claiming</h3>
+<ul>
+  <li>Guided setup wizard that collects NAP (name, address, phone), categories, hours, service areas, and description</li>
+  <li>AI-generated, keyword-optimized business descriptions that follow Google's 750-character limit and content guidelines</li>
+  <li>Submits the completed listing via the Business Information API under the user's own Google Business Profile Manager account</li>
+  <li>Walks the user through Google's verification flow (postcard, phone, email, video) via the Verifications API</li>
+</ul>
+
+<h3>2. Profile Sync & Auditing</h3>
+<ul>
+  <li>Pulls the user's existing GBP locations and audits completeness (missing categories, photos, service areas, attributes)</li>
+  <li>Flags gaps and opportunities in the same plain-English action list the rest of the tool produces</li>
+  <li>Keeps NAP data consistent between the user's website, GBP, and other citation sources we push to</li>
+</ul>
+
+<h3>3. Review Management</h3>
+<ul>
+  <li>Surfaces Google reviews across all of a user's locations in a single inbox</li>
+  <li>AI suggests professional, brand-appropriate responses to reviews (user approves before posting)</li>
+  <li>Alerts users to new negative reviews so they can respond quickly</li>
+</ul>
+
+<h2>Data Handling & Security</h2>
+<ul>
+  <li><strong>OAuth consent:</strong> Users authorize our app via Google's standard OAuth 2.0 consent flow with the minimum scopes required (<code>business.manage</code> for GBP, plus read-only Search Console and Analytics where applicable).</li>
+  <li><strong>Token storage:</strong> Access and refresh tokens are stored encrypted in our Supabase Postgres database (AES-256 at rest, TLS in transit). Tokens are associated only with the user who granted them and are never shared across accounts.</li>
+  <li><strong>Row-level security:</strong> Every database table uses Postgres row-level security so users can only read and write their own data.</li>
+  <li><strong>Write operations:</strong> All writes to Business Profile data (creating listings, updating info, posting review replies) are user-initiated from the UI. We do not perform unattended background writes to Google.</li>
+  <li><strong>Disconnection:</strong> Users can revoke access at any time from their settings page; we immediately delete the stored tokens.</li>
+</ul>
+
+<h2>Compliance Commitments</h2>
+<ul>
+  <li>We will adhere to the Google Business Profile API Terms of Service and the Google API Services User Data Policy, including the Limited Use requirements.</li>
+  <li>We will not sell, trade, or transfer Business Profile data to third parties.</li>
+  <li>We will not use Business Profile data for advertising targeting or to train generative AI models beyond the specific AI-assistance features listed above (description writing, review reply suggestions — each operating on a single user's own data, with the user's explicit trigger).</li>
+  <li>We will display Google's required attribution and will follow all branding guidelines.</li>
+  <li>Our public privacy policy (available at <code>https://seo.cgmimm.com/privacy</code>) discloses exactly what Google data we access, how we use it, and how users can revoke access.</li>
+</ul>
+
+<h2>Current Status</h2>
+<ul>
+  <li>My Business Account Management API — enabled in Cloud Console</li>
+  <li>My Business Business Information API — enabled in Cloud Console</li>
+  <li>My Business Verifications API — enabled in Cloud Console</li>
+  <li>Current quota on each: 0 (reason for this application)</li>
+</ul>
+
+<h2>Request</h2>
+<p>We respectfully request production quota access for the three APIs listed above so we can deliver the Business Profile features described in this document to our paying customers. We are happy to provide a recorded walkthrough of the integration, sample OAuth consent screens, or any additional compliance documentation Google requires.</p>
+
+<div class="footer">
+  Contact: Jonathan Dickey &mdash; jonathan@cgmimm.com &mdash; https://seo.cgmimm.com<br>
+  CGMIMM (Marketing Machine) &mdash; https://marketingmachine.cgmimm.com
+</div>
+
+</body>
+</html>
