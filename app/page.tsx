@@ -149,7 +149,7 @@ export default function LandingPage() {
             ].map(s => (
               <div key={s.step}>
                 <div style={{
-                  width: '48px', height: '48px', borderRadius: '50%', background: '#0f6b70',
+                  width: '48px', height: '48px', borderRadius: '50%', background: '#2367a0',
                   color: '#fff', fontSize: '20px', fontWeight: 800, display: 'flex',
                   alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem',
                   fontFamily: 'Montserrat, sans-serif',
@@ -371,35 +371,69 @@ export default function LandingPage() {
       </main>
 
       {/* FOOTER */}
-      <footer style={{
-        background: '#2367a0', padding: '3rem 2rem', color: '#fff',
-      }}>
-        <div className="footer-inner" style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div>
-            <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '16px', color: '#fff', marginBottom: '4px' }}>
-              AI SEO <span style={{ color: '#ffffff' }}>powered by CGMIMM</span>
+      <footer style={{ background: '#2367a0', padding: '3.5rem 2rem 2rem', color: '#fff' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div className="footer-grid">
+            {/* Brand */}
+            <div>
+              <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 800, fontSize: '18px', color: '#fff', marginBottom: '8px' }}>
+                AI SEO <span style={{ fontWeight: 600 }}>by CGMIMM</span>
+              </div>
+              <div style={{ fontSize: '13px', color: '#fff', lineHeight: 1.6, opacity: 0.9 }}>
+                AI-powered SEO that audits, diagnoses, and fixes your site — automatically.
+              </div>
             </div>
-            <div style={{ fontSize: '12px', color: '#fff' }}>AI-Powered SEO Platform</div>
+
+            {/* Product */}
+            <div>
+              <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '13px', color: '#fff', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Product
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px' }}>
+                <a href="#features" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Features</a>
+                <a href="#pricing" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Pricing</a>
+                <Link href="/learn" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Learn</Link>
+              </div>
+            </div>
+
+            {/* Account */}
+            <div>
+              <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '13px', color: '#fff', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Account
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px' }}>
+                <Link href="/login" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Sign in</Link>
+                <Link href="/login" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Start free trial</Link>
+                <Link href="/terms" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Terms</Link>
+                <Link href="/privacy" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Privacy</Link>
+              </div>
+            </div>
+
+            {/* CGMIMM Ecosystem */}
+            <div>
+              <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '13px', color: '#fff', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                CGMIMM Ecosystem
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px' }}>
+                <a href="https://crm.cgmimm.com" target="_blank" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>AI CRM</a>
+                <a href="https://linkmart.cgmimm.com" target="_blank" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>LinkMart</a>
+                <a href="https://buildapplication.cgmimm.com" target="_blank" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Build Application</a>
+                <a href="https://www.livecustomer.co" target="_blank" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>LiveCustomer</a>
+                <a href="https://local.cgmimm.com" target="_blank" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Local</a>
+                <a href="https://marketingmachine.cgmimm.com" target="_blank" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Marketing Machine</a>
+                <a href="https://www.cgmimm.com" target="_blank" style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Claim Your Business</a>
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '2rem', fontSize: '13px', flexWrap: 'wrap', fontWeight: 600 }}>
-            <a href="#features" style={{ color: '#fff', textDecoration: 'none' }}>Features</a>
-            <a href="#pricing" style={{ color: '#fff', textDecoration: 'none' }}>Pricing</a>
-            <Link href="/login" style={{ color: '#fff', textDecoration: 'none' }}>Sign In</Link>
-            <Link href="/terms" style={{ color: '#fff', textDecoration: 'none' }}>Terms</Link>
-            <Link href="/privacy" style={{ color: '#fff', textDecoration: 'none' }}>Privacy</Link>
-          </div>
-          <div style={{ display: 'flex', gap: '1.5rem', fontSize: '12px', flexWrap: 'wrap', marginTop: '0.5rem', fontWeight: 600 }}>
-            <span style={{ color: '#fff' }}>Also by CGMIMM:</span>
-            <a href="https://linkmart.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>LinkMart</a>
-            <a href="https://crm.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>AI CRM</a>
-            <a href="https://www.livecustomer.co" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>AI Bot & Live Chat</a>
-            <a href="https://www.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>Find Local Business</a>
-            <a href="https://marketingmachine.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>Marketing Machine</a>
-            <a href="https://local.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>Local SEO</a>
-            <a href="https://buildapplication.cgmimm.com" target="_blank" style={{ color: '#ffffff', textDecoration: 'none' }}>AI Application Builder</a>
-          </div>
-          <div style={{ fontSize: '12px', color: '#fff' }}>
-            &copy; {new Date().getFullYear()} CGMIMM. All rights reserved.
+
+          <div style={{
+            marginTop: '2.5rem', paddingTop: '1.5rem',
+            borderTop: '1px solid rgba(255,255,255,0.2)',
+            display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem',
+            fontSize: '12px', color: '#fff', fontWeight: 600,
+          }}>
+            <div>&copy; {new Date().getFullYear()} AI SEO by CGMIMM. All rights reserved.</div>
+            <div style={{ opacity: 0.9 }}>Part of the CGMIMM ecosystem.</div>
           </div>
         </div>
       </footer>

@@ -110,6 +110,7 @@ h1, h2, h3, h4, h5 {
 .nav-links { display: flex; gap: 12px; align-items: center; }
 .detail-section { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
 .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 2.5rem; }
 .trust-bar { display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; }
 .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 900px; margin: 0 auto; }
 .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
@@ -128,6 +129,7 @@ h1, h2, h3, h4, h5 {
   .hero-buttons a { text-align: center; }
   .trust-bar { gap: 1rem; display: grid !important; grid-template-columns: 1fr 1fr !important; text-align: center; }
   .footer-inner { flex-direction: column; text-align: center; gap: 1rem; }
+  .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 2rem !important; }
   .mobile-section { padding: 2rem 1rem !important; }
   .mobile-pad { padding: 1.25rem !important; }
   .detail-visual { display: none !important; }
