@@ -45,6 +45,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://seo.cgmimm.com',
   },
+  verification: {
+    google: 'EWPe6JxtsyyEzPTEZ_XaXPaaB7nLAWzo_FFrw8a8phU',
+  },
 }
 
 const jsonLd = {
