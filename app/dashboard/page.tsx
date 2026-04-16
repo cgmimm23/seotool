@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [addingsite, setAddingSite] = useState(false)
   const [scanningId, setScanningId] = useState<string | null>(null)
   const [trialDays, setTrialDays] = useState<number | null>(null)
+  const [debugInfo, setDebugInfo] = useState<{ userId: string; email: string; plan: string | null } | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -20,6 +21,7 @@ export default function Dashboard() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) return
       supabase.from('profiles').select('trial_ends_at, onboarding_completed, plan, stripe_subscription_id').eq('id', session.user.id).single().then(({ data }) => {
+        setDebugInfo({ userId: session.user.id, email: session.user.email || '', plan: data?.plan || null })
         const paidPlans = ['starter', 'pro', 'agency', 'enterprise']
         const hasPaidAccess = data && (data.stripe_subscription_id || paidPlans.includes(data.plan))
         if (data && !data.onboarding_completed && !hasPaidAccess) {
@@ -207,6 +209,13 @@ export default function Dashboard() {
           <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>No sites yet</div>
           <p style={{ fontSize: '14px', color: '#7a8fa8', marginBottom: '1.5rem' }}>Add your first site to start tracking SEO health, keywords, and rankings.</p>
           <button className="btn btn-accent" onClick={() => setShowAddSite(true)}>Add Your First Site</button>
+          {debugInfo && (
+            <div style={{ marginTop: '2rem', fontSize: '11px', color: '#939393', fontFamily: 'monospace', textAlign: 'left', display: 'inline-block' }}>
+              <div>signed in as: {debugInfo.email}</div>
+              <div>user_id: {debugInfo.userId}</div>
+              <div>plan: {debugInfo.plan ?? '(no profile row)'}</div>
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
