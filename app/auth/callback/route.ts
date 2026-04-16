@@ -1,5 +1,6 @@
 import { createServerSupabase } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -24,7 +25,12 @@ export async function GET(request: Request) {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'
-  const next = searchParams.get('next')
-  const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
-  return NextResponse.redirect(`${siteUrl}${safeNext}`)
+  const cookieStore = cookies()
+  const returnCookie = cookieStore.get('oauth_return')?.value
+  const returnPath = returnCookie ? decodeURIComponent(returnCookie) : null
+  const safePath = returnPath && returnPath.startsWith('/') && !returnPath.startsWith('//') ? returnPath : '/dashboard'
+
+  const res = NextResponse.redirect(`${siteUrl}${safePath}`)
+  res.cookies.delete('oauth_return')
+  return res
 }

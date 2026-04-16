@@ -15,15 +15,6 @@ export default function Dashboard() {
   const supabase = createClient()
 
   useEffect(() => {
-    // If an OAuth flow stashed a return path, honor it
-    if (typeof window !== 'undefined') {
-      const returnPath = localStorage.getItem('oauth_return_path')
-      if (returnPath && returnPath !== window.location.pathname) {
-        localStorage.removeItem('oauth_return_path')
-        window.location.replace(returnPath)
-        return
-      }
-    }
     loadSites()
     // Check trial and onboarding
     supabase.auth.getSession().then(({ data: { session } }) => {

@@ -46,7 +46,7 @@ export default function GBPCreatorPage({ params }: { params: { id: string } }) {
   }, [])
 
   async function connectGoogle() {
-    localStorage.setItem('oauth_return_path', window.location.pathname)
+    document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
     await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback`, scopes: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/webmasters.readonly', queryParams: { access_type: 'offline', prompt: 'consent' } } })
   }
 
