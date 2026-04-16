@@ -114,10 +114,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
+        <style dangerouslySetInnerHTML={{ __html: `#lc-box{display:none;position:fixed;bottom:96px;right:16px;z-index:999998;width:380px;height:580px;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.2);}#lc-toggle:checked~#lc-box{display:block;}` }} />
       </head>
       <body>
         {children}
         <Tracking />
+        <input type="checkbox" id="lc-toggle" style={{ display: 'none' }} />
+        <label htmlFor="lc-toggle" style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 999999, width: '58px', height: '58px', borderRadius: '50%', background: '#1a3a5c', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </label>
+        <div id="lc-box">
+          <iframe src="https://chat.livecustomer.co/bot/bot_0krgrey4" width="100%" height="100%" style={{ border: 'none' }} />
+        </div>
       </body>
     </html>
   )
