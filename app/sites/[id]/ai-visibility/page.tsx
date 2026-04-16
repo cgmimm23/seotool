@@ -16,20 +16,32 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
   const [lastScanned, setLastScanned] = useState<string | null>(null)
   const supabase = createClient()
 
+  const storageKey = `ai_visibility_${params.id}`
+
   useEffect(() => {
     async function load() {
       const { data } = await supabase.from('sites').select('url, name').eq('id', params.id).single()
       if (data?.url) setUrl(data.url)
       if (data?.name) setSiteName(data.name)
 
-      // Load last report from Supabase
+      // Load last report from localStorage first (reliable, per-browser)
+      try {
+        const saved = localStorage.getItem(storageKey)
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed.result) setResult(parsed.result)
+          if (parsed.lastScanned) setLastScanned(parsed.lastScanned)
+        }
+      } catch {}
+
+      // Also try Supabase (cross-device history)
       const { data: report } = await supabase
         .from('ai_visibility_reports')
         .select('*')
         .eq('site_id', params.id)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (report) {
         setLastScanned(report.created_at)
@@ -96,7 +108,13 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
       try { aiAnalysis = JSON.parse(text.replace(/```json|```/g, '').trim()) } catch { const m = text.match(/\{[\s\S]*\}/); if (m) aiAnalysis = JSON.parse(m[0]) }
       const newResult = { base, llms, aiTxt, robots, botStatus, aiAnalysis }
       setResult(newResult)
-      setLastScanned(new Date().toISOString())
+      const scannedAt = new Date().toISOString()
+      setLastScanned(scannedAt)
+
+      // Save to localStorage (reliable per-browser persistence)
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({ result: newResult, lastScanned: scannedAt }))
+      } catch {}
 
       // Save to Supabase
       if (aiAnalysis) {
