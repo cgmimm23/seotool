@@ -210,7 +210,12 @@ export default function GBPCreatorPage({ params }: { params: { id: string } }) {
                 <div style={{ marginBottom: '1rem' }}><label style={labelStyle}>Google Business Account</label><select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)} style={inputStyle}>{accounts.map((a: any) => <option key={a.name} value={a.name}>{a.accountName || a.name}</option>)}</select></div>
               ) : (
                 <div style={{ background: 'rgba(228,179,79,0.1)', border: '1px solid rgba(228,179,79,0.3)', borderRadius: '8px', padding: '1rem', fontSize: '13px', color: '#7a5818', marginBottom: '1rem' }}>
-                  No Google Business accounts found. Make sure your Google account has access to Google Business Profile Manager.
+                  No Google Business accounts found. Either your Google account has no GBP access, or the connected account is missing the Business Profile permission.
+                  <div style={{ marginTop: '10px' }}>
+                    <button onClick={connectGoogle} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '6px', padding: '0.5rem 1rem', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                      Reconnect with Google (pick a different account)
+                    </button>
+                  </div>
                 </div>
               )}
               {submitError && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '1rem' }}>{submitError}</div>}
