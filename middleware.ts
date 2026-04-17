@@ -55,6 +55,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  // Prevent CDN from caching authenticated pages and ensure caches vary
+  // by the RSC request header so RSC-format responses aren't served for
+  // full-page navigations.
+  if (isDashboard || isAdminPage) {
+    supabaseResponse.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate')
+    supabaseResponse.headers.set('Vary', 'RSC, Next-Router-State-Tree, Next-Router-Prefetch, Cookie')
+  }
+
   return supabaseResponse
 }
 
