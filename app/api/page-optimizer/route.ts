@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     if (serpKey) {
       try {
         const serp = await fetchSerpResults(keyword, serpKey)
-        competitors = (serp.organic_results || []).slice(0, 10).map(r => ({
+        competitors = (serp.organic_results || []).slice(0, 3).map(r => ({
           position: r.position,
           title: r.title,
           link: r.link,

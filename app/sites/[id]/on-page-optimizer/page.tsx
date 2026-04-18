@@ -169,7 +169,7 @@ function OnPageOptimizerInner({ params }: { params: { id: string } }) {
 
           {competitors.length > 0 && (
             <div style={card}>
-              <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Top 10 SERP Competitors</div>
+              <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Top SERP Competitors</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {competitors.map((c: any) => (
                   <div key={c.position} style={{ display: 'grid', gridTemplateColumns: '32px 1fr', gap: '10px', padding: '8px 12px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)' }}>
