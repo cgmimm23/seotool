@@ -119,12 +119,11 @@ function SiteCrawlerPageInner({ params }: { params: { id: string } }) {
 
   async function loadLastReport() {
     try {
-      const res = await fetch('/api/crawl-report?full=true')
+      const res = await fetch(`/api/crawl-report?full=true&siteId=${params.id}`)
       const data = await res.json()
       if (data.reports?.[0]?.pages?.length > 0) {
         const r = data.reports[0]
         setPages(r.pages)
-        setUrl(r.url)
         setAiSummary(r.summary || '')
         setDone(true)
       }
