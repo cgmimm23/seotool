@@ -74,13 +74,23 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
       const { base, llms, aiTxt, robots } = filesData
       const robotsText = robots.content
       const aiBots = [
-        { name: 'GPTBot', company: 'OpenAI' },
-        { name: 'ClaudeBot', company: 'Anthropic' },
-        { name: 'PerplexityBot', company: 'Perplexity' },
-        { name: 'Google-Extended', company: 'Google AI' },
-        { name: 'Applebot-Extended', company: 'Apple' },
-        { name: 'cohere-ai', company: 'Cohere' },
-        { name: 'Bytespider', company: 'ByteDance' },
+        // Training-data bots: blocking these is OPTIONAL — it opts your content
+        // out of being used to train AI models. Does NOT affect AI search visibility.
+        { name: 'GPTBot', company: 'OpenAI', purpose: 'training' },
+        { name: 'ClaudeBot', company: 'Anthropic', purpose: 'training' },
+        { name: 'anthropic-ai', company: 'Anthropic', purpose: 'training' },
+        { name: 'Google-Extended', company: 'Google AI', purpose: 'training' },
+        { name: 'Applebot-Extended', company: 'Apple', purpose: 'training' },
+        { name: 'cohere-ai', company: 'Cohere', purpose: 'training' },
+        { name: 'Bytespider', company: 'ByteDance', purpose: 'training' },
+        { name: 'Amazonbot', company: 'Amazon', purpose: 'training' },
+        // Search / answer bots: blocking these REMOVES you from AI search results.
+        // Should almost always be allowed.
+        { name: 'OAI-SearchBot', company: 'OpenAI (ChatGPT Search)', purpose: 'search' },
+        { name: 'ChatGPT-User', company: 'OpenAI (ChatGPT browsing)', purpose: 'search' },
+        { name: 'PerplexityBot', company: 'Perplexity', purpose: 'search' },
+        { name: 'Perplexity-User', company: 'Perplexity (user-triggered)', purpose: 'search' },
+        { name: 'Claude-Web', company: 'Anthropic (Claude browsing)', purpose: 'search' },
       ]
       const botStatus = aiBots.map(bot => {
         if (!robotsText) return { ...bot, status: 'unknown' }
@@ -99,7 +109,19 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          system: `You are an AI search optimization expert. Analyze the given URL for AI visibility signals. Return ONLY valid JSON, no markdown, no backticks.\n\nSchema:\n{\n  "overall_score": 72,\n  "ai_overview_likelihood": "Medium",\n  "summary": "one sentence",\n  "checks": [\n    { "status": "pass|fail|warn", "title": "", "detail": "" }\n  ]\n}`,
+          system: `You are an AI search optimization expert. Analyze the given URL for AI visibility signals. Return ONLY valid JSON, no markdown, no backticks.
+
+IMPORTANT: Treat "blocking training bots" (GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, cohere-ai, Bytespider, anthropic-ai, Amazonbot) as a NEUTRAL content-licensing choice — it does NOT hurt AI search visibility. Only flag blocked bots as a problem when they are AI SEARCH bots (OAI-SearchBot, PerplexityBot, ChatGPT-User, Perplexity-User, Claude-Web). Never conflate training-data crawling with search-index crawling in your checks.
+
+Schema:
+{
+  "overall_score": 72,
+  "ai_overview_likelihood": "Medium",
+  "summary": "one sentence",
+  "checks": [
+    { "status": "pass|fail|warn", "title": "", "detail": "" }
+  ]
+}`,
           messages: [{ role: 'user', content: `Analyze this URL for AI search optimization: ${url}` }],
         }),
       })
@@ -172,10 +194,18 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
   }
 
   function scoreColor(s: number) { if (s >= 80) return '#00d084'; if (s >= 60) return '#ffa500'; return '#ff4444' }
-  function botStatusColor(s: string) {
+  function botStatusColor(s: string, purpose?: string) {
+    // For training bots, "blocked" is neutral (it means you opted out of training)
+    // and "not mentioned" / "allowed" are also fine.
+    // For search bots, "blocked" is a real problem.
+    const isTraining = purpose === 'training'
     if (s === 'allowed') return { bg: 'rgba(0,208,132,0.1)', color: '#00d084', label: 'Allowed' }
-    if (s === 'blocked') return { bg: 'rgba(255,68,68,0.1)', color: '#ff4444', label: 'Blocked' }
-    if (s === 'not mentioned') return { bg: 'rgba(255,165,0,0.1)', color: '#ffa500', label: 'Not mentioned' }
+    if (s === 'blocked') return isTraining
+      ? { bg: 'rgba(122,143,168,0.1)', color: '#7a8fa8', label: 'Blocked (training opt-out)' }
+      : { bg: 'rgba(255,68,68,0.1)', color: '#ff4444', label: 'Blocked' }
+    if (s === 'not mentioned') return isTraining
+      ? { bg: 'rgba(122,143,168,0.08)', color: '#7a8fa8', label: 'Not mentioned' }
+      : { bg: 'rgba(255,165,0,0.1)', color: '#ffa500', label: 'Not mentioned' }
     return { bg: 'rgba(0,0,0,0.05)', color: '#7a8fa8', label: 'Unknown' }
   }
   const cardStyle = { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }
@@ -235,11 +265,35 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
               ))}
             </div>
           </div>
+          {/* Search / Answer bots — blocking these hurts AI search visibility */}
           <div style={cardStyle}>
-            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>AI Bot Access (robots.txt)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px' }}>
-              {result.botStatus.map((bot: any) => {
-                const s = botStatusColor(bot.status)
+            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>AI Search & Answer Bots</div>
+            <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '1rem', lineHeight: 1.5 }}>
+              These bots power AI search results (ChatGPT Search, Perplexity, Claude browsing). Blocking them removes you from AI answers. <strong style={{ color: '#0d1b2e' }}>Should almost always be Allowed or Not mentioned.</strong>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+              {result.botStatus.filter((b: any) => b.purpose === 'search').map((bot: any) => {
+                const s = botStatusColor(bot.status, bot.purpose)
+                return (
+                  <div key={bot.name} style={{ background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '8px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e', fontFamily: 'Roboto Mono, monospace' }}>{bot.name}</div>
+                    <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '6px' }}>{bot.company}</div>
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: s.bg, color: s.color, fontFamily: 'Roboto Mono, monospace' }}>{s.label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Training bots — blocking is a choice, not a problem */}
+          <div style={cardStyle}>
+            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>AI Training Bots</div>
+            <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '1rem', lineHeight: 1.5 }}>
+              These bots collect content to train AI models (not for search). Blocking them <strong style={{ color: '#0d1b2e' }}>does NOT affect AI search visibility</strong> — it only opts your content out of being used as training data. Cloudflare users can toggle this on in one click under <strong style={{ color: '#0d1b2e' }}>Security → Bots → Block AI Scrapers</strong>.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+              {result.botStatus.filter((b: any) => b.purpose === 'training').map((bot: any) => {
+                const s = botStatusColor(bot.status, bot.purpose)
                 return (
                   <div key={bot.name} style={{ background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '8px', padding: '10px 12px' }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e', fontFamily: 'Roboto Mono, monospace' }}>{bot.name}</div>
