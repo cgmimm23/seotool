@@ -45,6 +45,35 @@ export interface PageOptimizationResult {
   ideas: Record<string, PageOptimizationIdea[]>
 }
 
+export interface KeywordStrategyResult {
+  summary: string
+  core_phrases: Array<{
+    phrase: string
+    intent: string
+    difficulty: 'easy' | 'medium' | 'hard'
+    target_page: string
+    rationale: string
+    optimization_notes: string
+  }>
+  long_tail_clusters: Array<{
+    cluster_name: string
+    parent_core_phrase: string
+    phrases: Array<{
+      phrase: string
+      intent: string
+      suggested_page_type: string
+    }>
+  }>
+  deployment_strategy: {
+    pillar_pages: string[]
+    cluster_content: string[]
+    internal_linking: string[]
+    tags_and_categories: string[]
+    schema_markup: string[]
+    priority_order: string[]
+  }
+}
+
 function parseJSON(text: string): any {
   const cleaned = text.replace(/```json|```/g, '').trim()
   try { return JSON.parse(cleaned) } catch {}
@@ -399,5 +428,135 @@ Output ONLY the JSON object.`,
     }
   } catch {
     throw new Error('Could not parse page optimization response')
+  }
+}
+
+export async function generateKeywordStrategy(
+  url: string,
+  siteType?: string | null,
+  platform?: string | null,
+  auditNotes?: string | null,
+): Promise<KeywordStrategyResult> {
+  // Fetch the homepage HTML for business context
+  let homepageText = ''
+  let homepageTitle = ''
+  let homepageDescription = ''
+  let homepageH1 = ''
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEO-CGMIMM-Strategy/1.0)' },
+      next: { revalidate: 0 },
+    })
+    if (res.ok) {
+      const html = await res.text()
+      homepageTitle = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() || ''
+      homepageDescription = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i)?.[1]?.trim() || ''
+      homepageH1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]+>/g, '').trim() || ''
+      const bodyText = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      homepageText = bodyText.slice(0, 5000)
+    }
+  } catch {}
+
+  const siteTypeKey = (siteType || '').toLowerCase()
+  const siteTypeDesc = SITE_TYPE_LABELS[siteTypeKey]
+  const platformKey = (platform || '').toLowerCase()
+  const platformDesc = PLATFORM_LABELS[platformKey]
+
+  const contextLines: string[] = []
+  if (siteTypeDesc) contextLines.push(`SITE TYPE: ${siteTypeDesc}`)
+  if (platformDesc) contextLines.push(`PLATFORM: ${platformDesc}`)
+  if (auditNotes && auditNotes.trim()) contextLines.push(`USER NOTES (authoritative): ${auditNotes.trim()}`)
+  const contextStr = contextLines.length ? `\n${contextLines.join('\n\n')}\n` : ''
+
+  const systemPrompt = `You are an expert SEO strategist specializing in topic cluster / hub-and-spoke keyword architecture. Return ONLY a valid JSON object — no markdown, no explanation outside the JSON.
+
+Required format:
+{
+  "summary": "One paragraph on the site's competitive positioning and where its biggest keyword opportunities lie.",
+  "core_phrases": [
+    {
+      "phrase": "the head term (2-4 words typically)",
+      "intent": "commercial|informational|local|transactional|navigational",
+      "difficulty": "easy|medium|hard",
+      "target_page": "which page should anchor this (homepage URL, existing service page URL, or 'needs new pillar page')",
+      "rationale": "1-2 sentences on why this phrase matters for this specific business",
+      "optimization_notes": "concrete changes to make on the target page: title, H1, first 100 words, schema, internal links."
+    }
+  ],
+  "long_tail_clusters": [
+    {
+      "cluster_name": "Human-readable theme name",
+      "parent_core_phrase": "which core phrase this cluster supports (must match a phrase in core_phrases exactly)",
+      "phrases": [
+        {
+          "phrase": "specific long-tail query",
+          "intent": "commercial|informational|local|transactional",
+          "suggested_page_type": "blog post|service page|FAQ|location page|pricing page|comparison page|glossary"
+        }
+      ]
+    }
+  ],
+  "deployment_strategy": {
+    "pillar_pages": ["action item — what pillar page to create or optimize, which URL"],
+    "cluster_content": ["action item — what blog post / service page / etc. to publish, with target long-tail"],
+    "internal_linking": ["action item — which pages should link to which, with anchor text suggestions"],
+    "tags_and_categories": ["platform-specific tag/category/taxonomy recommendations"],
+    "schema_markup": ["which schema type to add to which page type"],
+    "priority_order": ["Step 1: ...", "Step 2: ...", "Step 3: ..."]
+  }
+}
+
+Rules:
+- 3-5 core phrases — not more. These are the pillars the whole strategy hangs on.
+- Each core phrase should have its own long-tail cluster (12-20 phrases per cluster).
+- Long-tail phrases should be specific, realistic queries a real user would type — NOT keyword-stuffed combinations.
+- Mix intents: commercial/transactional for money pages, informational for blog content that earns links.
+- tags_and_categories MUST be platform-specific — reference the actual taxonomy system of the platform the user is on (WordPress categories/tags, Shopify collections, Wix tags, Webflow CMS collections, etc.).
+- priority_order should be a concrete sequenced checklist (10-15 steps max) the user can work through this month/quarter.
+${contextStr}
+Your entire response must be only the JSON object.`
+
+  const message = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 8000,
+    system: systemPrompt,
+    messages: [{
+      role: 'user',
+      content: `Build a keyword strategy for this site.
+
+URL: ${url}
+Homepage title: ${homepageTitle || '(not found)'}
+Meta description: ${homepageDescription || '(not found)'}
+H1: ${homepageH1 || '(not found)'}
+
+Homepage content (first 5000 chars, HTML stripped):
+${homepageText || '(could not fetch)'}
+
+Output ONLY the JSON object.`,
+    }],
+  })
+
+  const text = message.content
+    .filter((b) => b.type === 'text')
+    .map((b: any) => b.text)
+    .join('')
+
+  try {
+    const parsed = parseJSON(text)
+    return {
+      summary: parsed.summary || '',
+      core_phrases: parsed.core_phrases || [],
+      long_tail_clusters: parsed.long_tail_clusters || [],
+      deployment_strategy: parsed.deployment_strategy || {
+        pillar_pages: [],
+        cluster_content: [],
+        internal_linking: [],
+        tags_and_categories: [],
+        schema_markup: [],
+        priority_order: [],
+      },
+    }
+  } catch {
+    throw new Error('Could not parse keyword strategy response')
   }
 }
