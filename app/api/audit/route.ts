@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
     let resolvedSiteId = siteId
     let resolvedSiteType: string | null = siteTypeOverride || null
     let resolvedPlatform: string | null = platformOverride || null
+    let resolvedAuditNotes: string | null = null
 
     if (!resolvedSiteId) {
       const cleanUrl = url.replace(/^https?:\/\//, '').split('/')[0]
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
 
       const { data: existing } = await supabase
         .from('sites')
-        .select('id, site_type, platform')
+        .select('id, site_type, platform, audit_notes')
         .eq('user_id', user.id)
         .ilike('url', `%${cleanUrl}%`)
         .limit(1)
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
         resolvedSiteId = existing.id
         if (!resolvedSiteType) resolvedSiteType = existing.site_type
         if (!resolvedPlatform) resolvedPlatform = existing.platform
+        resolvedAuditNotes = existing.audit_notes || null
       } else {
         const { data: newSite } = await supabase
           .from('sites')
@@ -49,11 +51,12 @@ export async function POST(request: NextRequest) {
     } else {
       const { data: siteRow } = await supabase
         .from('sites')
-        .select('site_type, platform')
+        .select('site_type, platform, audit_notes')
         .eq('id', resolvedSiteId)
         .single()
       if (!resolvedSiteType) resolvedSiteType = siteRow?.site_type || null
       if (!resolvedPlatform) resolvedPlatform = siteRow?.platform || null
+      resolvedAuditNotes = siteRow?.audit_notes || null
     }
 
     // Persist any overrides the caller sent
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
       await supabase.from('sites').update(updates).eq('id', resolvedSiteId).eq('user_id', user.id)
     }
 
-    const audit = await runSeoAudit(url, resolvedSiteType, resolvedPlatform)
+    const audit = await runSeoAudit(url, resolvedSiteType, resolvedPlatform, resolvedAuditNotes)
 
     // Save audit report
     const { data, error } = await supabase

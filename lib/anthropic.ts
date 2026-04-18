@@ -58,10 +58,15 @@ function parseJSON(text: string): any {
 
 function buildVerifiedFactsStr(facts: Record<string, any>): string {
   if (!facts.verified) return ''
+  const perfLine = (label: string, p: any) => {
+    if (!p || p.score === null || p.score === undefined) return `- PageSpeed ${label}: NOT MEASURED`
+    const status = p.score >= 90 ? 'PASS' : p.score >= 50 ? 'WARN' : 'FAIL'
+    return `- PageSpeed ${label}: ${status} — real measured score ${p.score}/100${p.lcp ? ` (LCP ${p.lcp})` : ''}${p.cls ? ` (CLS ${p.cls})` : ''}${p.tbt ? ` (TBT ${p.tbt})` : ''}`
+  }
   return `
-VERIFIED TECHNICAL FACTS — confirmed by direct server check. Do NOT contradict these:
+VERIFIED TECHNICAL FACTS — confirmed by direct server check. You MUST mirror these exactly. If a fact is PASS, your check for it MUST be "pass" and you MUST NOT use hedging language like "needs review", "flagged for review", "should verify", "needs verification", "potential issue", or "worth checking". Only "warn" or "fail" on items marked WARN or FAIL below.
 - SSL/HTTPS: ${facts.hasSSL ? 'PASS - site uses HTTPS' : 'FAIL - not using HTTPS'}
-- Sitemap.xml: ${facts.sitemapExists ? `PASS - found at ${facts.sitemapUrl}` : facts.sitemapInRobots ? `WARN - referenced in robots.txt at ${facts.sitemapUrl}` : `FAIL - not found at ${facts.sitemapUrl}`}
+- Sitemap: ${facts.sitemapExists ? `PASS - sitemap.xml exists at ${facts.sitemapUrl}` : facts.sitemapInRobots ? `PASS - sitemap referenced in robots.txt at ${facts.sitemapUrl}` : `FAIL - no sitemap found`}
 - Robots.txt: ${facts.robotsExists ? 'PASS - robots.txt exists' : 'FAIL - robots.txt not found'}
 - Viewport meta tag: ${facts.hasViewport ? 'PASS - mobile viewport tag present' : 'FAIL - missing viewport meta tag'}
 - Canonical tag: ${facts.hasCanonical ? 'PASS - canonical tag present' : 'WARN - no canonical tag found'}
@@ -70,6 +75,8 @@ VERIFIED TECHNICAL FACTS — confirmed by direct server check. Do NOT contradict
 - Meta title: ${facts.hasTitle ? 'PASS - title tag present' : 'FAIL - missing title tag'}
 - Meta description: ${facts.hasMetaDescription ? 'PASS - meta description present' : 'FAIL - missing meta description'}
 - H1 tag: ${facts.hasH1 ? 'PASS - H1 tag found' : 'WARN - H1 not detected in raw HTML (may be client-side rendered)'}
+${perfLine('Mobile', facts.pagespeedMobile)}
+${perfLine('Desktop', facts.pagespeedDesktop)}
 `
 }
 
@@ -106,6 +113,7 @@ export async function runSeoAudit(
   url: string,
   siteType?: string | null,
   platform?: string | null,
+  auditNotes?: string | null,
 ): Promise<AuditResult> {
   // Fetch verified facts from our own API route (runs server-side with full network access)
   let facts: Record<string, any> = {}
@@ -140,6 +148,9 @@ export async function runSeoAudit(
   }
   if (platformDescription) {
     contextLines.push(`PLATFORM: ${platformDescription} — every "how_to_fix" must use this platform's specific interface and terminology. Do NOT give generic HTML/code instructions when the platform has its own SEO panel.`)
+  }
+  if (auditNotes && auditNotes.trim()) {
+    contextLines.push(`USER-PROVIDED NOTES — the site owner has written these to correct things prior audits got wrong or to provide context. Treat these as authoritative. Do not contradict them:\n${auditNotes.trim()}`)
   }
   const siteContextStr = contextLines.length ? `\n${contextLines.join('\n\n')}\n` : ''
 

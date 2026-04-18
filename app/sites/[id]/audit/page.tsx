@@ -40,7 +40,11 @@ function AuditPageInner({ params }: { params: { id: string } }) {
   const [url, setUrl] = useState('')
   const [siteType, setSiteType] = useState<string>('')
   const [platform, setPlatform] = useState<string>('')
+  const [auditNotes, setAuditNotes] = useState<string>('')
   const [editing, setEditing] = useState(false)
+  const [showNotes, setShowNotes] = useState(false)
+  const [savingNotes, setSavingNotes] = useState(false)
+  const [notesSaved, setNotesSaved] = useState(false)
   const [loading, setLoading] = useState(false)
   const [audit, setAudit] = useState<any>(null)
   const [lastScanned, setLastScanned] = useState<string | null>(null)
@@ -50,10 +54,11 @@ function AuditPageInner({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     async function load() {
-      const { data: site } = await supabase.from('sites').select('url, site_type, platform').eq('id', params.id).single()
+      const { data: site } = await supabase.from('sites').select('url, site_type, platform, audit_notes').eq('id', params.id).single()
       if (site?.url) setUrl(site.url)
       if (site?.site_type) setSiteType(site.site_type)
       if (site?.platform) setPlatform(site.platform)
+      if (site?.audit_notes) setAuditNotes(site.audit_notes)
 
       // Load last audit report
       const { data: reports } = await supabase
@@ -111,6 +116,15 @@ function AuditPageInner({ params }: { params: { id: string } }) {
     setEditing(false)
   }
 
+  async function saveNotes() {
+    setSavingNotes(true)
+    setNotesSaved(false)
+    await supabase.from('sites').update({ audit_notes: auditNotes || null }).eq('id', params.id)
+    setSavingNotes(false)
+    setNotesSaved(true)
+    setTimeout(() => setNotesSaved(false), 2500)
+  }
+
   function scoreColor(s: number) {
     if (s >= 80) return '#00d084'
     if (s >= 60) return '#ffa500'
@@ -143,7 +157,7 @@ function AuditPageInner({ params }: { params: { id: string } }) {
             <span style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', whiteSpace: 'nowrap' }}>Last scan: {timeAgo(lastScanned)}</span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', flexWrap: 'wrap' }}>
           {!editing ? (
             <>
               <span>Type: <strong style={{ color: siteType ? '#0d1b2e' : '#bbb' }}>{siteType ? labelFor(SITE_TYPE_OPTIONS, siteType) : 'not set'}</strong></span>
@@ -151,6 +165,10 @@ function AuditPageInner({ params }: { params: { id: string } }) {
               <span>Platform: <strong style={{ color: platform ? '#0d1b2e' : '#bbb' }}>{platform ? labelFor(PLATFORM_OPTIONS, platform) : 'not set'}</strong></span>
               <span>·</span>
               <button onClick={() => setEditing(true)} style={{ background: 'none', border: 'none', color: '#1e90ff', cursor: 'pointer', fontSize: '12px', padding: 0, fontFamily: 'Roboto Mono, monospace' }}>edit</button>
+              <span>·</span>
+              <button onClick={() => setShowNotes(!showNotes)} style={{ background: 'none', border: 'none', color: '#1e90ff', cursor: 'pointer', fontSize: '12px', padding: 0, fontFamily: 'Roboto Mono, monospace' }}>
+                {showNotes ? 'hide notes' : `notes for AI${auditNotes ? ' (set)' : ''}`}
+              </button>
             </>
           ) : (
             <>
@@ -167,6 +185,25 @@ function AuditPageInner({ params }: { params: { id: string } }) {
             </>
           )}
         </div>
+        {showNotes && (
+          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed rgba(0,0,0,0.08)' }}>
+            <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '4px', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notes for AI</div>
+            <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '6px' }}>
+              Correct or add context the audit keeps getting wrong. Examples: "Our sitemap is at /sitemap.xml" · "We score 100 on Google PageSpeed, ignore performance concerns" · "We're a roofing company serving Chicago only".
+            </div>
+            <textarea
+              value={auditNotes}
+              onChange={e => setAuditNotes(e.target.value)}
+              rows={4}
+              placeholder="Anything you want the AI to know about this site before it audits..."
+              style={{ width: '100%', padding: '8px 10px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '13px', fontFamily: 'inherit', resize: 'vertical', outline: 'none' }}
+            />
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
+              <button onClick={saveNotes} className="btn btn-accent" disabled={savingNotes} style={{ fontSize: '12px', padding: '4px 12px' }}>{savingNotes ? 'Saving...' : 'Save Notes'}</button>
+              {notesSaved && <span style={{ fontSize: '11px', color: '#00d084', fontFamily: 'Roboto Mono, monospace' }}>✓ Saved — will apply on next audit</span>}
+            </div>
+          </div>
+        )}
       </div>
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '1rem' }}>{error}</div>}

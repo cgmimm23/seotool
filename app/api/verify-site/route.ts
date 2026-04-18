@@ -51,6 +51,35 @@ export async function GET(req: NextRequest) {
       facts.hasH1 = h1Match ? h1Match[1].replace(/<[^>]+>/g, '').trim().length > 0 : false
       facts.verified = true
     }
+
+    // Real PageSpeed Insights — mobile + desktop — so the AI can't guess on perf
+    const pagespeedKey = process.env.NEXT_PUBLIC_PAGESPEED_API_KEY
+    if (pagespeedKey) {
+      const pageSpeedCall = async (strategy: 'mobile' | 'desktop') => {
+        const params = new URLSearchParams({
+          url,
+          strategy,
+          key: pagespeedKey,
+          category: 'performance',
+        })
+        const r = await fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params}`, {
+          signal: AbortSignal.timeout(60000),
+        })
+        if (!r.ok) return null
+        const j = await r.json()
+        const score = j.lighthouseResult?.categories?.performance?.score
+        const lcp = j.lighthouseResult?.audits?.['largest-contentful-paint']?.displayValue
+        const cls = j.lighthouseResult?.audits?.['cumulative-layout-shift']?.displayValue
+        const tbt = j.lighthouseResult?.audits?.['total-blocking-time']?.displayValue
+        return { score: score !== undefined ? Math.round(score * 100) : null, lcp, cls, tbt }
+      }
+      const [mobile, desktop] = await Promise.all([
+        pageSpeedCall('mobile').catch(() => null),
+        pageSpeedCall('desktop').catch(() => null),
+      ])
+      if (mobile) facts.pagespeedMobile = mobile
+      if (desktop) facts.pagespeedDesktop = desktop
+    }
   } catch (err: any) {
     facts.error = err.message
   }
