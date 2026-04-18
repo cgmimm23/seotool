@@ -76,7 +76,24 @@ const SITE_TYPE_LABELS: Record<string, string> = {
   other: 'general website',
 }
 
-export async function runSeoAudit(url: string, siteType?: string | null): Promise<AuditResult> {
+const PLATFORM_LABELS: Record<string, string> = {
+  wordpress: 'WordPress — fix instructions should reference the WordPress admin (Pages, Posts, Appearance > Theme Editor, Settings > Reading/Permalinks). Recommend Yoast SEO or Rank Math for meta tag / schema work. Note plugins like WP Rocket for caching, Smush for images.',
+  wix: 'Wix — fix instructions should reference Wix Editor/Studio: site dashboard > Marketing & SEO > SEO Tools, page-level SEO panel, Wix SEO Wiz. Note limited custom code unless using Velo. Schema via SEO Tools or custom code.',
+  squarespace: 'Squarespace — fix instructions should reference the Home menu > Marketing > SEO, page settings > SEO panel, and individual page or product SEO panels. Limited custom code via code injection.',
+  shopify: 'Shopify — fix instructions should reference Online Store > Preferences (meta), product/collection SEO fields, theme code (Liquid templates) for structured data. Suggest Shopify SEO apps if needed.',
+  webflow: 'Webflow — fix instructions should reference Project Settings > SEO, page settings > SEO & Open Graph, and Designer custom code panel for schema. CMS items have dedicated SEO fields.',
+  duda: 'Duda — fix instructions should reference SEO Overview panel, page-level SEO settings, header/footer HTML panels for schema, and Duda widgets. Limited plugin ecosystem.',
+  godaddy: 'GoDaddy Website Builder — fix instructions should reference GoDaddy site editor SEO settings (limited). Many advanced SEO items require moving to a CMS with more control — flag this when relevant.',
+  hubspot: 'HubSpot CMS — fix instructions should reference HubSpot Content tools, page SEO panel, blog settings, and structured data templates. Integration with HubSpot CRM.',
+  custom_code: 'custom-coded site / framework (Next.js, React, Astro, static, etc.) — fix instructions should reference code changes: <head> tags, meta tags, JSON-LD schema in markup, robots.txt/sitemap generation in code.',
+  other: 'unknown CMS / platform',
+}
+
+export async function runSeoAudit(
+  url: string,
+  siteType?: string | null,
+  platform?: string | null,
+): Promise<AuditResult> {
   // Fetch verified facts from our own API route (runs server-side with full network access)
   let facts: Record<string, any> = {}
   try {
@@ -101,10 +118,17 @@ export async function runSeoAudit(url: string, siteType?: string | null): Promis
 
   const verifiedFactsStr = buildVerifiedFactsStr(facts)
   const siteTypeKey = (siteType || '').toLowerCase()
-  const siteTypeDescription = SITE_TYPE_LABELS[siteTypeKey] || 'general website'
-  const siteTypeContext = siteType
-    ? `\nSITE TYPE: This site is a ${siteTypeDescription}. Tailor every "explanation" and "how_to_fix" to this business type. Prioritize checks that matter most for this type of site. Reference industry-specific best practices, schema types, and ranking factors.\n`
-    : ''
+  const siteTypeDescription = SITE_TYPE_LABELS[siteTypeKey]
+  const platformKey = (platform || '').toLowerCase()
+  const platformDescription = PLATFORM_LABELS[platformKey]
+  const contextLines: string[] = []
+  if (siteTypeDescription) {
+    contextLines.push(`SITE TYPE: This site is a ${siteTypeDescription}. Tailor every "explanation" and "how_to_fix" to this business type. Prioritize checks that matter most for this type of site.`)
+  }
+  if (platformDescription) {
+    contextLines.push(`PLATFORM: ${platformDescription} — every "how_to_fix" must use this platform's specific interface and terminology. Do NOT give generic HTML/code instructions when the platform has its own SEO panel.`)
+  }
+  const siteContextStr = contextLines.length ? `\n${contextLines.join('\n\n')}\n` : ''
 
   const systemPrompt = `You are an expert SEO auditor. Return ONLY a valid JSON object — no markdown, no explanation, no extra text.
 
@@ -131,7 +155,7 @@ Grade: Excellent (90+), Good (80-89), Needs Work (60-79), Poor (below 60).
 Include 12-15 checks. Status: pass, fail, or warn only.
 EVERY check MUST include all fields: status, category, title, detail, explanation, how_to_fix. Never omit explanation or how_to_fix.
 The "explanation" and "how_to_fix" fields should be detailed and actionable — imagine a site owner with no SEO knowledge reading them and needing to fix the issue themselves.
-${siteTypeContext}${verifiedFactsStr ? 'CRITICAL: The verified facts below are confirmed true. You MUST reflect them accurately in your checks.' : ''}
+${siteContextStr}${verifiedFactsStr ? 'CRITICAL: The verified facts below are confirmed true. You MUST reflect them accurately in your checks.' : ''}
 Your entire response must be only the JSON object.`
 
   const auditMessage = await client.messages.create({
@@ -167,7 +191,7 @@ Output ONLY the JSON object.`,
   } catch {
     const fallback = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2000,
+      max_tokens: 8000,
       system: systemPrompt,
       messages: [{ role: 'user', content: `SEO audit for: ${url}\n${verifiedFactsStr}\nOutput ONLY the JSON.` }],
     })

@@ -9,6 +9,8 @@ export default function Dashboard() {
   const [showAddSite, setShowAddSite] = useState(false)
   const [newSiteUrl, setNewSiteUrl] = useState('')
   const [newSiteName, setNewSiteName] = useState('')
+  const [newSiteType, setNewSiteType] = useState('')
+  const [newPlatform, setNewPlatform] = useState('')
   const [addingsite, setAddingSite] = useState(false)
   const [scanningId, setScanningId] = useState<string | null>(null)
   const [trialDays, setTrialDays] = useState<number | null>(null)
@@ -96,6 +98,8 @@ export default function Dashboard() {
         user_id: session.user.id,
         url,
         name: newSiteName || url.replace(/^https?:\/\//, ''),
+        site_type: newSiteType || null,
+        platform: newPlatform || null,
         active: true,
       }).select().single()
 
@@ -110,6 +114,8 @@ export default function Dashboard() {
 
       setNewSiteUrl('')
       setNewSiteName('')
+      setNewSiteType('')
+      setNewPlatform('')
       setShowAddSite(false)
       loadSites()
     } finally {
@@ -190,7 +196,7 @@ export default function Dashboard() {
       {showAddSite && (
         <div style={{ background: '#fff', border: '1px solid rgba(30,144,255,0.2)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
           <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>Add New Site</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '8px', alignItems: 'end' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
             <div>
               <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '4px', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>Site URL</div>
               <input type="text" style={inputStyle} placeholder="https://example.com" value={newSiteUrl} onChange={e => setNewSiteUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && addSite()} />
@@ -199,6 +205,45 @@ export default function Dashboard() {
               <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '4px', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>Site Name (optional)</div>
               <input type="text" style={inputStyle} placeholder="My Client Site" value={newSiteName} onChange={e => setNewSiteName(e.target.value)} />
             </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '4px', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>Site Type (optional)</div>
+              <select value={newSiteType} onChange={e => setNewSiteType(e.target.value)} style={inputStyle}>
+                <option value="">— Select site type —</option>
+                <option value="local_service">Local Service (roofing, plumbing, HVAC, etc.)</option>
+                <option value="ecommerce">E-commerce / Online Store</option>
+                <option value="blog_publisher">Blog / Publisher</option>
+                <option value="law_firm">Law Firm</option>
+                <option value="medical_dental">Medical / Dental Practice</option>
+                <option value="restaurant_food">Restaurant / Food Service</option>
+                <option value="real_estate">Real Estate</option>
+                <option value="saas_software">SaaS / Software</option>
+                <option value="professional_services">Professional Services / Agency</option>
+                <option value="nonprofit">Nonprofit</option>
+                <option value="educational">Educational / School / Course</option>
+                <option value="portfolio_personal">Portfolio / Personal Brand</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: '#7a8fa8', marginBottom: '4px', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>Platform (optional)</div>
+              <select value={newPlatform} onChange={e => setNewPlatform(e.target.value)} style={inputStyle}>
+                <option value="">— Select platform —</option>
+                <option value="wordpress">WordPress</option>
+                <option value="wix">Wix</option>
+                <option value="squarespace">Squarespace</option>
+                <option value="shopify">Shopify</option>
+                <option value="webflow">Webflow</option>
+                <option value="duda">Duda</option>
+                <option value="godaddy">GoDaddy Website Builder</option>
+                <option value="hubspot">HubSpot CMS</option>
+                <option value="custom_code">Custom code / Framework</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn btn-accent" onClick={addSite} disabled={addingsite || !newSiteUrl}>{addingsite ? 'Adding...' : 'Add Site'}</button>
             <button className="btn btn-ghost" onClick={() => setShowAddSite(false)}>Cancel</button>
           </div>

@@ -8,20 +8,20 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { url, siteId, siteType: siteTypeOverride } = await request.json()
+    const { url, siteId, siteType: siteTypeOverride, platform: platformOverride } = await request.json()
     if (!url) return NextResponse.json({ error: 'URL required' }, { status: 400 })
 
-    // Find or create site record first so we know the site_type before running the audit
     let resolvedSiteId = siteId
     let resolvedSiteType: string | null = siteTypeOverride || null
+    let resolvedPlatform: string | null = platformOverride || null
+
     if (!resolvedSiteId) {
       const cleanUrl = url.replace(/^https?:\/\//, '').split('/')[0]
       const baseUrl = url.startsWith('http') ? url.split('/').slice(0, 3).join('/') : 'https://' + cleanUrl
 
-      // Check if site already exists
       const { data: existing } = await supabase
         .from('sites')
-        .select('id, site_type')
+        .select('id, site_type, platform')
         .eq('user_id', user.id)
         .ilike('url', `%${cleanUrl}%`)
         .limit(1)
@@ -30,32 +30,41 @@ export async function POST(request: NextRequest) {
       if (existing) {
         resolvedSiteId = existing.id
         if (!resolvedSiteType) resolvedSiteType = existing.site_type
+        if (!resolvedPlatform) resolvedPlatform = existing.platform
       } else {
-        // Create new site (with site_type if provided)
         const { data: newSite } = await supabase
           .from('sites')
-          .insert({ user_id: user.id, url: baseUrl, name: cleanUrl, active: true, site_type: resolvedSiteType })
+          .insert({
+            user_id: user.id,
+            url: baseUrl,
+            name: cleanUrl,
+            active: true,
+            site_type: resolvedSiteType,
+            platform: resolvedPlatform,
+          })
           .select()
           .single()
         if (newSite) resolvedSiteId = newSite.id
       }
-    } else if (!resolvedSiteType) {
-      // If caller gave us a siteId but no siteType, fetch it from the DB
+    } else {
       const { data: siteRow } = await supabase
         .from('sites')
-        .select('site_type')
+        .select('site_type, platform')
         .eq('id', resolvedSiteId)
         .single()
-      resolvedSiteType = siteRow?.site_type || null
+      if (!resolvedSiteType) resolvedSiteType = siteRow?.site_type || null
+      if (!resolvedPlatform) resolvedPlatform = siteRow?.platform || null
     }
 
-    // If caller passed a siteType override and we have a resolved site, persist it
-    if (siteTypeOverride && resolvedSiteId) {
-      await supabase.from('sites').update({ site_type: siteTypeOverride }).eq('id', resolvedSiteId).eq('user_id', user.id)
+    // Persist any overrides the caller sent
+    if (resolvedSiteId && (siteTypeOverride || platformOverride)) {
+      const updates: any = {}
+      if (siteTypeOverride) updates.site_type = siteTypeOverride
+      if (platformOverride) updates.platform = platformOverride
+      await supabase.from('sites').update(updates).eq('id', resolvedSiteId).eq('user_id', user.id)
     }
 
-    // Run the AI audit with the site type for tailored recommendations
-    const audit = await runSeoAudit(url, resolvedSiteType)
+    const audit = await runSeoAudit(url, resolvedSiteType, resolvedPlatform)
 
     // Save audit report
     const { data, error } = await supabase

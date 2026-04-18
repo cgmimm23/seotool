@@ -5,24 +5,38 @@ import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 const SITE_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'local_service', label: 'Local Service (roofing, plumbing, HVAC, etc.)' },
-  { value: 'ecommerce', label: 'E-commerce / Online Store' },
+  { value: 'local_service', label: 'Local Service' },
+  { value: 'ecommerce', label: 'E-commerce' },
   { value: 'blog_publisher', label: 'Blog / Publisher' },
   { value: 'law_firm', label: 'Law Firm' },
-  { value: 'medical_dental', label: 'Medical / Dental Practice' },
-  { value: 'restaurant_food', label: 'Restaurant / Food Service' },
+  { value: 'medical_dental', label: 'Medical / Dental' },
+  { value: 'restaurant_food', label: 'Restaurant / Food' },
   { value: 'real_estate', label: 'Real Estate' },
   { value: 'saas_software', label: 'SaaS / Software' },
-  { value: 'professional_services', label: 'Professional Services / Agency' },
+  { value: 'professional_services', label: 'Professional Services' },
   { value: 'nonprofit', label: 'Nonprofit' },
-  { value: 'educational', label: 'Educational / School / Course' },
-  { value: 'portfolio_personal', label: 'Portfolio / Personal Brand' },
+  { value: 'educational', label: 'Educational' },
+  { value: 'portfolio_personal', label: 'Portfolio / Personal' },
+  { value: 'other', label: 'Other' },
+]
+
+const PLATFORM_OPTIONS: { value: string; label: string }[] = [
+  { value: 'wordpress', label: 'WordPress' },
+  { value: 'wix', label: 'Wix' },
+  { value: 'squarespace', label: 'Squarespace' },
+  { value: 'shopify', label: 'Shopify' },
+  { value: 'webflow', label: 'Webflow' },
+  { value: 'duda', label: 'Duda' },
+  { value: 'godaddy', label: 'GoDaddy Website Builder' },
+  { value: 'hubspot', label: 'HubSpot CMS' },
+  { value: 'custom_code', label: 'Custom code / Framework' },
   { value: 'other', label: 'Other' },
 ]
 
 function AuditPageInner() {
   const [url, setUrl] = useState('')
   const [siteType, setSiteType] = useState<string>('')
+  const [platform, setPlatform] = useState<string>('')
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -33,15 +47,9 @@ function AuditPageInner() {
   const [audit, setAudit] = useState<any>(null)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [showTypePrompt, setShowTypePrompt] = useState(false)
 
   async function runAudit() {
     if (!url) return
-    if (!siteType) {
-      setShowTypePrompt(true)
-      return
-    }
-    setShowTypePrompt(false)
     setLoading(true)
     setError('')
     setAudit(null)
@@ -49,7 +57,12 @@ function AuditPageInner() {
       const res = await fetch('/api/audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, siteId: null, siteType }),
+        body: JSON.stringify({
+          url,
+          siteId: null,
+          siteType: siteType || undefined,
+          platform: platform || undefined,
+        }),
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
@@ -90,18 +103,17 @@ function AuditPageInner() {
             {loading ? 'Scanning...' : 'Scan Now'}
           </button>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <label style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Site type:</label>
-          <select value={siteType} onChange={e => setSiteType(e.target.value)} className="form-input" style={{ flex: 1, maxWidth: '420px', fontSize: '13px' }}>
-            <option value="">— Select a site type for tailored recommendations —</option>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '12px' }}>
+          <span style={{ color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>Optional context:</span>
+          <select value={siteType} onChange={e => setSiteType(e.target.value)} className="form-input" style={{ flex: 1, fontSize: '12px' }}>
+            <option value="">— Site type —</option>
             {SITE_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+          <select value={platform} onChange={e => setPlatform(e.target.value)} className="form-input" style={{ flex: 1, fontSize: '12px' }}>
+            <option value="">— Platform —</option>
+            {PLATFORM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
         </div>
-        {showTypePrompt && !siteType && (
-          <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(255,165,0,0.08)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: '8px', fontSize: '12px', color: '#8a5a00' }}>
-            Please pick a site type so we can tailor the audit to your business.
-          </div>
-        )}
       </div>
 
       {error && (
