@@ -3,19 +3,39 @@
 import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase'
 
+const SITE_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'local_service', label: 'Local Service (roofing, plumbing, HVAC, etc.)' },
+  { value: 'ecommerce', label: 'E-commerce / Online Store' },
+  { value: 'blog_publisher', label: 'Blog / Publisher' },
+  { value: 'law_firm', label: 'Law Firm' },
+  { value: 'medical_dental', label: 'Medical / Dental Practice' },
+  { value: 'restaurant_food', label: 'Restaurant / Food Service' },
+  { value: 'real_estate', label: 'Real Estate' },
+  { value: 'saas_software', label: 'SaaS / Software' },
+  { value: 'professional_services', label: 'Professional Services / Agency' },
+  { value: 'nonprofit', label: 'Nonprofit' },
+  { value: 'educational', label: 'Educational / School / Course' },
+  { value: 'portfolio_personal', label: 'Portfolio / Personal Brand' },
+  { value: 'other', label: 'Other' },
+]
+
 function AuditPageInner({ params }: { params: { id: string } }) {
   const [url, setUrl] = useState('')
+  const [siteType, setSiteType] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [audit, setAudit] = useState<any>(null)
   const [lastScanned, setLastScanned] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [showTypePrompt, setShowTypePrompt] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      // Load site URL
-      const { data: site } = await supabase.from('sites').select('url').eq('id', params.id).single()
+      // Load site URL + site_type
+      const { data: site } = await supabase.from('sites').select('url, site_type').eq('id', params.id).single()
       if (site?.url) setUrl(site.url)
+      if (site?.site_type) setSiteType(site.site_type)
 
       // Load last audit report
       const { data: reports } = await supabase
@@ -44,13 +64,19 @@ function AuditPageInner({ params }: { params: { id: string } }) {
 
   async function runAudit() {
     if (!url) return
+    // If site type hasn't been set, prompt first so recommendations are tailored
+    if (!siteType) {
+      setShowTypePrompt(true)
+      return
+    }
+    setShowTypePrompt(false)
     setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, siteId: params.id }),
+        body: JSON.stringify({ url, siteId: params.id, siteType }),
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
@@ -88,13 +114,25 @@ function AuditPageInner({ params }: { params: { id: string } }) {
       </div>
 
       <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
           <input type="text" className="form-input" placeholder="https://yoursite.com" value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && runAudit()} style={{ flex: 1 }} />
           <button className="btn btn-accent" onClick={runAudit} disabled={loading}>{loading ? 'Scanning...' : 'Scan Now'}</button>
           {lastScanned && !loading && (
             <span style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', whiteSpace: 'nowrap' }}>Last scan: {timeAgo(lastScanned)}</span>
           )}
         </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <label style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Site type:</label>
+          <select value={siteType} onChange={e => setSiteType(e.target.value)} className="form-input" style={{ flex: 1, maxWidth: '420px', fontSize: '13px' }}>
+            <option value="">— Select a site type for tailored recommendations —</option>
+            {SITE_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        {showTypePrompt && !siteType && (
+          <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(255,165,0,0.08)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: '8px', fontSize: '12px', color: '#8a5a00' }}>
+            Please pick a site type so we can tailor the audit to your business.
+          </div>
+        )}
       </div>
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '1rem' }}>{error}</div>}
@@ -140,16 +178,45 @@ function AuditPageInner({ params }: { params: { id: string } }) {
                 <div key={status} style={{ marginBottom: '1.25rem' }}>
                   <div style={{ fontSize: '11px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Roboto Mono, monospace', marginBottom: '0.5rem' }}>{labels[status]} ({items.length})</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {items.map((check: any, i: number) => (
-                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '20px 1fr auto', gap: '10px', alignItems: 'start', padding: '10px 14px', borderRadius: '8px', border: `1px solid rgba(0,0,0,0.06)`, borderLeft: `2px solid ${colors[status]}`, background: '#f8f9fb' }}>
-                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: `${colors[status]}18`, color: colors[status], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, marginTop: '1px' }}>{icons[status]}</div>
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>{check.title}</div>
-                          <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>{check.detail}</div>
+                    {items.map((check: any, i: number) => {
+                      const key = `${status}-${i}`
+                      const isOpen = expanded === key
+                      const hasDetail = check.explanation || check.how_to_fix
+                      return (
+                        <div key={i} style={{ borderRadius: '8px', border: `1px solid rgba(0,0,0,0.06)`, borderLeft: `2px solid ${colors[status]}`, background: '#f8f9fb', overflow: 'hidden' }}>
+                          <div
+                            onClick={() => hasDetail && setExpanded(isOpen ? null : key)}
+                            style={{ display: 'grid', gridTemplateColumns: '20px 1fr auto auto', gap: '10px', alignItems: 'start', padding: '10px 14px', cursor: hasDetail ? 'pointer' : 'default' }}
+                          >
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: `${colors[status]}18`, color: colors[status], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, marginTop: '1px' }}>{icons[status]}</div>
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>{check.title}</div>
+                              <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>{check.detail}</div>
+                            </div>
+                            <div style={{ fontSize: '10px', fontFamily: 'Roboto Mono, monospace', color: '#7a8fa8', border: '1px solid rgba(0,0,0,0.08)', padding: '1px 7px', borderRadius: '10px', whiteSpace: 'nowrap' }}>{check.category}</div>
+                            {hasDetail && (
+                              <div style={{ fontSize: '14px', color: '#7a8fa8', userSelect: 'none' }}>{isOpen ? '▾' : '▸'}</div>
+                            )}
+                          </div>
+                          {isOpen && hasDetail && (
+                            <div style={{ padding: '0 14px 14px 44px', background: '#f8f9fb' }}>
+                              {check.explanation && (
+                                <div style={{ marginBottom: '12px' }}>
+                                  <div style={{ fontSize: '10px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Why this matters</div>
+                                  <div style={{ fontSize: '13px', color: '#0d1b2e', lineHeight: 1.6 }}>{check.explanation}</div>
+                                </div>
+                              )}
+                              {check.how_to_fix && (
+                                <div>
+                                  <div style={{ fontSize: '10px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{status === 'pass' ? 'Maintenance tips' : 'How to fix'}</div>
+                                  <div style={{ fontSize: '13px', color: '#0d1b2e', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{check.how_to_fix}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div style={{ fontSize: '10px', fontFamily: 'Roboto Mono, monospace', color: '#7a8fa8', border: '1px solid rgba(0,0,0,0.08)', padding: '1px 7px', borderRadius: '10px', whiteSpace: 'nowrap' }}>{check.category}</div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )

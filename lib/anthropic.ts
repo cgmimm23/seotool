@@ -17,6 +17,8 @@ export interface AuditResult {
     category: string
     title: string
     detail: string
+    explanation?: string
+    how_to_fix?: string
   }>
 }
 
@@ -58,7 +60,23 @@ VERIFIED TECHNICAL FACTS — confirmed by direct server check. Do NOT contradict
 `
 }
 
-export async function runSeoAudit(url: string): Promise<AuditResult> {
+const SITE_TYPE_LABELS: Record<string, string> = {
+  local_service: 'local service business (e.g. roofing, plumbing, HVAC, landscaping — depends on local SEO, GBP, service-area pages, reviews, trust signals)',
+  ecommerce: 'ecommerce / online store (depends on product schema, category pages, site search, cart UX, reviews, shipping info, secure checkout)',
+  blog_publisher: 'blog or publisher (depends on content freshness, author E-E-A-T signals, topical authority, internal linking, reader engagement)',
+  law_firm: 'law firm (depends on practice area pages, local SEO, E-E-A-T / author bios, case results, testimonials, compliance)',
+  medical_dental: 'medical or dental practice (depends on local SEO, practitioner bios with credentials, HIPAA-safe content, YMYL trust signals, appointment booking)',
+  restaurant_food: 'restaurant or food service (depends on menu schema, hours, reservations, photos, location data, reviews, local search)',
+  real_estate: 'real estate (depends on property schema, location pages, agent bios, IDX integration, local SEO, lead capture)',
+  saas_software: 'SaaS / software product (depends on feature pages, pricing transparency, docs/help content, conversion optimization, programmatic SEO)',
+  professional_services: 'professional services / agency / consulting (depends on service pages, case studies, author E-E-A-T, lead magnets, conversion paths)',
+  nonprofit: 'nonprofit (depends on mission/impact content, donation flows, trust signals, board/leadership bios, storytelling)',
+  educational: 'educational site / school / course (depends on curriculum pages, instructor bios, accreditation info, local signals if physical campus)',
+  portfolio_personal: 'portfolio / personal brand (depends on project showcase, about page, contact/hire flow, author authority signals)',
+  other: 'general website',
+}
+
+export async function runSeoAudit(url: string, siteType?: string | null): Promise<AuditResult> {
   // Fetch verified facts from our own API route (runs server-side with full network access)
   let facts: Record<string, any> = {}
   try {
@@ -82,6 +100,11 @@ export async function runSeoAudit(url: string): Promise<AuditResult> {
   } catch {}
 
   const verifiedFactsStr = buildVerifiedFactsStr(facts)
+  const siteTypeKey = (siteType || '').toLowerCase()
+  const siteTypeDescription = SITE_TYPE_LABELS[siteTypeKey] || 'general website'
+  const siteTypeContext = siteType
+    ? `\nSITE TYPE: This site is a ${siteTypeDescription}. Tailor every "explanation" and "how_to_fix" to this business type. Prioritize checks that matter most for this type of site. Reference industry-specific best practices, schema types, and ranking factors.\n`
+    : ''
 
   const systemPrompt = `You are an expert SEO auditor. Return ONLY a valid JSON object — no markdown, no explanation, no extra text.
 
@@ -93,13 +116,22 @@ Required format:
   "summary": "Brief one-sentence summary",
   "categories": { "Technical": 80, "Content": 65, "On-Page": 70, "Performance": 60, "Mobile": 85 },
   "checks": [
-    { "status": "pass", "category": "Technical", "title": "SSL Certificate", "detail": "Site uses HTTPS" }
+    {
+      "status": "pass",
+      "category": "Technical",
+      "title": "SSL Certificate",
+      "detail": "Site uses HTTPS",
+      "explanation": "2-4 sentence paragraph explaining WHY this matters for SEO, user trust, or rankings. Be specific to this site's situation if possible. Reference concrete impact (search ranking, user experience, indexing, conversion).",
+      "how_to_fix": "Clear step-by-step instructions to fix or improve this. Use numbered steps (1., 2., 3.). Be specific and actionable — include tool/setting names, code snippets, or URLs where relevant. If the check already passes, use this field for 'Maintenance tips' instead."
+    }
   ]
 }
 
 Grade: Excellent (90+), Good (80-89), Needs Work (60-79), Poor (below 60).
 Include 12-15 checks. Status: pass, fail, or warn only.
-${verifiedFactsStr ? 'CRITICAL: The verified facts below are confirmed true. You MUST reflect them accurately in your checks.' : ''}
+EVERY check MUST include all fields: status, category, title, detail, explanation, how_to_fix. Never omit explanation or how_to_fix.
+The "explanation" and "how_to_fix" fields should be detailed and actionable — imagine a site owner with no SEO knowledge reading them and needing to fix the issue themselves.
+${siteTypeContext}${verifiedFactsStr ? 'CRITICAL: The verified facts below are confirmed true. You MUST reflect them accurately in your checks.' : ''}
 Your entire response must be only the JSON object.`
 
   const auditMessage = await client.messages.create({
