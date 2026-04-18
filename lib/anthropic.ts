@@ -32,6 +32,19 @@ export interface KeywordAnalysis {
   }>
 }
 
+export interface PageOptimizationIdea {
+  impact: 'high' | 'medium' | 'low'
+  title: string
+  detail: string
+  how_to_fix: string
+}
+
+export interface PageOptimizationResult {
+  optimization_score: number
+  summary: string
+  ideas: Record<string, PageOptimizationIdea[]>
+}
+
 function parseJSON(text: string): any {
   const cleaned = text.replace(/```json|```/g, '').trim()
   try { return JSON.parse(cleaned) } catch {}
@@ -255,5 +268,125 @@ Include 5-8 fixes ordered by SEO impact. Your entire response must be the JSON o
     return parseJSON(text)
   } catch {
     throw new Error('Could not parse keyword analysis response')
+  }
+}
+
+export async function analyzePageOptimization(
+  pageUrl: string,
+  keyword: string,
+  secondaryKeywords: string[] = [],
+  competitors: Array<{ position: number; title: string; link: string; snippet: string }> = [],
+  platform?: string | null,
+  siteType?: string | null,
+): Promise<PageOptimizationResult> {
+  // Fetch the page HTML server-side
+  let pageHtml = ''
+  let pageTitle = ''
+  let pageMetaDescription = ''
+  let pageH1 = ''
+  let pageWordCount = 0
+  try {
+    const res = await fetch(pageUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEO-CGMIMM-Audit/1.0)' },
+      next: { revalidate: 0 },
+    })
+    if (res.ok) {
+      pageHtml = await res.text()
+      pageTitle = pageHtml.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() || ''
+      pageMetaDescription = pageHtml.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i)?.[1]?.trim() || ''
+      pageH1 = pageHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]+>/g, '').trim() || ''
+      const bodyText = pageHtml.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      pageWordCount = bodyText.split(' ').filter(Boolean).length
+    }
+  } catch {}
+
+  const platformKey = (platform || '').toLowerCase()
+  const platformDesc = PLATFORM_LABELS[platformKey]
+  const siteTypeKey = (siteType || '').toLowerCase()
+  const siteTypeDesc = SITE_TYPE_LABELS[siteTypeKey]
+
+  const contextLines: string[] = []
+  if (platformDesc) contextLines.push(`PLATFORM: ${platformDesc}`)
+  if (siteTypeDesc) contextLines.push(`SITE TYPE: ${siteTypeDesc}`)
+  const contextStr = contextLines.length ? `\n${contextLines.join('\n\n')}\n` : ''
+
+  const competitorsBlock = competitors.length
+    ? `\nTop ${competitors.length} ranking competitors for "${keyword}":\n${competitors.map(c => `${c.position}. ${c.title}\n   ${c.link}\n   ${c.snippet || ''}`).join('\n')}\n`
+    : ''
+
+  const systemPrompt = `You are an expert on-page SEO analyst. Return ONLY a valid JSON object — no markdown, no explanation outside the JSON.
+
+Required format:
+{
+  "optimization_score": 68,
+  "summary": "one-sentence summary of how well the page is optimized for the target keyword",
+  "ideas": {
+    "Content": [
+      {
+        "impact": "high",
+        "title": "Keyword is missing from H1",
+        "detail": "one-sentence observation — what's wrong or missing",
+        "how_to_fix": "step-by-step, platform-specific instructions. Use numbered steps."
+      }
+    ],
+    "Semantic": [ ... ],
+    "Strategy": [ ... ],
+    "Technical": [ ... ],
+    "Competitive": [ ... ],
+    "User Experience": [ ... ]
+  }
+}
+
+Score from 0-100 based on how well the page is optimized for the target keyword, considering:
+- Is the keyword in the title tag, H1, and first 100 words?
+- Is the meta description compelling and keyword-relevant?
+- How does word count compare to top competitors?
+- Does the page cover the semantic/related terms the top rankers use?
+- Is there schema markup relevant to this content?
+- Is the content structure (H2s, H3s) aligned with search intent?
+- Are there internal links supporting this page?
+- Is search intent matched (informational vs commercial vs navigational)?
+
+EVERY idea MUST include: impact (high/medium/low), title, detail, how_to_fix. Every how_to_fix must be specific and platform-aware.
+Group ideas by category. Only include categories with at least one idea. Prioritize the highest-impact ideas.
+${contextStr}
+Your entire response must be only the JSON object.`
+
+  const message = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 8000,
+    system: systemPrompt,
+    messages: [{
+      role: 'user',
+      content: `Analyze this page for optimization against its target keyword.
+
+Page URL: ${pageUrl}
+Target keyword: "${keyword}"
+${secondaryKeywords.length ? `Secondary keywords: ${secondaryKeywords.map(k => `"${k}"`).join(', ')}` : ''}
+
+Extracted page signals:
+- Title tag: ${pageTitle || '(not found)'}
+- Meta description: ${pageMetaDescription || '(not found)'}
+- H1: ${pageH1 || '(not found)'}
+- Approx word count: ${pageWordCount}
+${competitorsBlock}
+Output ONLY the JSON object.`,
+    }],
+  })
+
+  const text = message.content
+    .filter((b) => b.type === 'text')
+    .map((b: any) => b.text)
+    .join('')
+
+  try {
+    const parsed = parseJSON(text)
+    return {
+      optimization_score: parsed.optimization_score || parsed.score || 50,
+      summary: parsed.summary || '',
+      ideas: parsed.ideas || {},
+    }
+  } catch {
+    throw new Error('Could not parse page optimization response')
   }
 }
