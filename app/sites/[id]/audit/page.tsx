@@ -2,22 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase'
-
-const SITE_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'local_service', label: 'Local Service' },
-  { value: 'ecommerce', label: 'E-commerce' },
-  { value: 'blog_publisher', label: 'Blog / Publisher' },
-  { value: 'law_firm', label: 'Law Firm' },
-  { value: 'medical_dental', label: 'Medical / Dental' },
-  { value: 'restaurant_food', label: 'Restaurant / Food' },
-  { value: 'real_estate', label: 'Real Estate' },
-  { value: 'saas_software', label: 'SaaS / Software' },
-  { value: 'professional_services', label: 'Professional Services' },
-  { value: 'nonprofit', label: 'Nonprofit' },
-  { value: 'educational', label: 'Educational' },
-  { value: 'portfolio_personal', label: 'Portfolio / Personal' },
-  { value: 'other', label: 'Other' },
-]
+import { BUSINESS_CATEGORIES } from '@/lib/business-categories'
 
 const PLATFORM_OPTIONS: { value: string; label: string }[] = [
   { value: 'wordpress', label: 'WordPress' },
@@ -162,7 +147,7 @@ function AuditPageInner({ params }: { params: { id: string } }) {
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', flexWrap: 'wrap' }}>
           {!editing ? (
             <>
-              <span>Type: <strong style={{ color: siteType ? '#0d1b2e' : '#bbb' }}>{siteType ? labelFor(SITE_TYPE_OPTIONS, siteType) : 'not set'}</strong></span>
+              <span>Type: <strong style={{ color: siteType ? '#0d1b2e' : '#bbb' }}>{siteType || 'not set'}</strong></span>
               <span>·</span>
               <span>Platform: <strong style={{ color: platform ? '#0d1b2e' : '#bbb' }}>{platform ? labelFor(PLATFORM_OPTIONS, platform) : 'not set'}</strong></span>
               <span>·</span>
@@ -174,10 +159,18 @@ function AuditPageInner({ params }: { params: { id: string } }) {
             </>
           ) : (
             <>
-              <select value={siteType} onChange={e => setSiteType(e.target.value)} className="form-input" style={{ flex: 1, fontSize: '12px' }}>
-                <option value="">— Site type —</option>
-                {SITE_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <input
+                type="text"
+                list="business-categories"
+                value={siteType}
+                onChange={e => setSiteType(e.target.value)}
+                placeholder="Business type (e.g. Roofing contractor)"
+                className="form-input"
+                style={{ flex: 1, fontSize: '12px' }}
+              />
+              <datalist id="business-categories">
+                {BUSINESS_CATEGORIES.map(c => <option key={c} value={c} />)}
+              </datalist>
               <select value={platform} onChange={e => setPlatform(e.target.value)} className="form-input" style={{ flex: 1, fontSize: '12px' }}>
                 <option value="">— Platform —</option>
                 {PLATFORM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}

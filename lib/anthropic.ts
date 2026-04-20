@@ -168,12 +168,12 @@ export async function runSeoAudit(
 
   const verifiedFactsStr = buildVerifiedFactsStr(facts)
   const siteTypeKey = (siteType || '').toLowerCase()
-  const siteTypeDescription = SITE_TYPE_LABELS[siteTypeKey]
+  const siteTypeDescription = SITE_TYPE_LABELS[siteTypeKey] || (siteType?.trim() || '')
   const platformKey = (platform || '').toLowerCase()
   const platformDescription = PLATFORM_LABELS[platformKey]
   const contextLines: string[] = []
   if (siteTypeDescription) {
-    contextLines.push(`SITE TYPE: This site is a ${siteTypeDescription}. Tailor every "explanation" and "how_to_fix" to this business type. Prioritize checks that matter most for this type of site.`)
+    contextLines.push(`SITE TYPE: This site is a ${siteTypeDescription}. Tailor every "explanation" and "how_to_fix" to the specific profession or business category above. Reference industry-specific SEO priorities (local pack ranking factors, relevant schema types, industry directories, citation sources, common competitor types). Prioritize checks that matter most for this kind of site.`)
   }
   if (platformDescription) {
     contextLines.push(`PLATFORM: ${platformDescription} — every "how_to_fix" must use this platform's specific interface and terminology. Do NOT give generic HTML/code instructions when the platform has its own SEO panel.`)
@@ -343,7 +343,7 @@ export async function analyzePageOptimization(
   const platformKey = (platform || '').toLowerCase()
   const platformDesc = PLATFORM_LABELS[platformKey]
   const siteTypeKey = (siteType || '').toLowerCase()
-  const siteTypeDesc = SITE_TYPE_LABELS[siteTypeKey]
+  const siteTypeDesc = SITE_TYPE_LABELS[siteTypeKey] || (siteType?.trim() || '')
 
   const contextLines: string[] = []
   if (platformDesc) contextLines.push(`PLATFORM: ${platformDesc}`)
@@ -458,7 +458,7 @@ export async function generateKeywordStrategy(
   } catch {}
 
   const siteTypeKey = (siteType || '').toLowerCase()
-  const siteTypeDesc = SITE_TYPE_LABELS[siteTypeKey]
+  const siteTypeDesc = SITE_TYPE_LABELS[siteTypeKey] || (siteType?.trim() || '')
   const platformKey = (platform || '').toLowerCase()
   const platformDesc = PLATFORM_LABELS[platformKey]
 
