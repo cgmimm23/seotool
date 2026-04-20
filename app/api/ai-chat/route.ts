@@ -95,7 +95,15 @@ The SEO by CGMIMM platform has these tools:
 - Be encouraging but honest about issues
 - Keep responses concise and practical
 - Use bullet points for lists of issues or steps
-- If you don't have data for something, say so and tell the user how to get it`
+- If you don't have data for something, say so and tell the user how to get it
+
+## Web Access
+You have a web_search tool. Use it freely when the user asks about:
+- The current live state of their site (titles, meta, content on a page)
+- Competitor research, SERP results, or what ranks for a keyword
+- Recent SEO news, Google algorithm updates, or industry guidance
+- Any question where the answer requires information not in the data above
+Search when helpful. Cite sources inline when you do.`
 
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -108,6 +116,7 @@ The SEO by CGMIMM platform has these tools:
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         system: systemPrompt,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: messages,
       }),
     })
