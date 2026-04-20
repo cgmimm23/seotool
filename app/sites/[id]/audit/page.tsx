@@ -47,6 +47,7 @@ function AuditPageInner({ params }: { params: { id: string } }) {
   const [notesSaved, setNotesSaved] = useState(false)
   const [loading, setLoading] = useState(false)
   const [audit, setAudit] = useState<any>(null)
+  const [prevAudit, setPrevAudit] = useState<any>(null)
   const [lastScanned, setLastScanned] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -60,13 +61,13 @@ function AuditPageInner({ params }: { params: { id: string } }) {
       if (site?.platform) setPlatform(site.platform)
       if (site?.audit_notes) setAuditNotes(site.audit_notes)
 
-      // Load last audit report
+      // Load the two most recent audits — we use the second one for deltas
       const { data: reports } = await supabase
         .from('audit_reports')
         .select('*')
         .eq('site_id', params.id)
         .order('created_at', { ascending: false })
-        .limit(1)
+        .limit(2)
 
       if (reports?.[0]) {
         const r = reports[0]
@@ -81,6 +82,7 @@ function AuditPageInner({ params }: { params: { id: string } }) {
           checks: r.checks,
         })
       }
+      if (reports?.[1]) setPrevAudit(reports[1])
     }
     load()
   }, [params.id])
@@ -217,13 +219,35 @@ function AuditPageInner({ params }: { params: { id: string } }) {
               <span style={{ fontSize: '26px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: scoreColor(score), lineHeight: 1 }}>{score}</span>
               <span style={{ fontSize: '10px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>{audit.grade}</span>
             </div>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '11px', color: '#1e90ff', marginBottom: '4px' }}>{audit.url}</div>
               <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '17px', fontWeight: 600 }}>{audit.summary}</div>
               <div style={{ fontSize: '13px', color: '#7a8fa8', marginTop: '4px' }}>
                 {audit.checks?.filter((c: any) => c.status === 'fail').length} errors · {audit.checks?.filter((c: any) => c.status === 'warn').length} warnings · {audit.checks?.filter((c: any) => c.status === 'pass').length} passing
               </div>
             </div>
+            {prevAudit && (
+              (() => {
+                const delta = audit.overall_score - prevAudit.overall_score
+                const currFail = (audit.checks || []).filter((c: any) => c.status === 'fail').length
+                const prevFail = (prevAudit.checks || []).filter((c: any) => c.status === 'fail').length
+                const failDelta = currFail - prevFail
+                const daysSince = Math.round((new Date(audit.created_at || Date.now()).getTime() - new Date(prevAudit.created_at).getTime()) / 86400000)
+                const deltaColor = delta > 0 ? '#00d084' : delta < 0 ? '#ff4444' : '#7a8fa8'
+                const failDeltaColor = failDelta < 0 ? '#00d084' : failDelta > 0 ? '#ff4444' : '#7a8fa8'
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', borderLeft: '1px solid rgba(0,0,0,0.08)', paddingLeft: '1.25rem', minWidth: '180px' }}>
+                    <div style={{ fontSize: '10px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Roboto Mono, monospace' }}>Since last audit{daysSince >= 1 ? ` (${daysSince}d)` : ''}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: deltaColor, fontFamily: 'Roboto Mono, monospace' }}>
+                      {delta > 0 ? '↑' : delta < 0 ? '↓' : '='} {Math.abs(delta)} points
+                    </div>
+                    <div style={{ fontSize: '12px', color: failDeltaColor, fontFamily: 'Roboto Mono, monospace' }}>
+                      {failDelta < 0 ? `${Math.abs(failDelta)} fewer errors` : failDelta > 0 ? `${failDelta} new errors` : 'same error count'}
+                    </div>
+                  </div>
+                )
+              })()
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '8px', marginBottom: '12px' }}>

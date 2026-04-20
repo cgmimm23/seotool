@@ -143,10 +143,26 @@ function OnPageOptimizerInner({ params }: { params: { id: string } }) {
               <span style={{ fontSize: '26px', fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: scoreColor(analysis.optimization_score), lineHeight: 1 }}>{analysis.optimization_score}</span>
               <span style={{ fontSize: '9px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', marginTop: '2px' }}>SCORE</span>
             </div>
-            <div>
-              <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '11px', color: '#1e90ff', marginBottom: '4px' }}>{pageUrl} · "{keyword}"</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: '11px', color: '#1e90ff', marginBottom: '4px' }}>{pageUrl} · &quot;{keyword}&quot;</div>
               <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '16px', fontWeight: 600 }}>{analysis.summary}</div>
             </div>
+            {(() => {
+              const prior = reports.find((r: any) => r.page_url === pageUrl && r.keyword === keyword && r.optimization_score !== analysis.optimization_score)
+              if (!prior) return null
+              const delta = analysis.optimization_score - prior.optimization_score
+              const deltaColor = delta > 0 ? '#00d084' : delta < 0 ? '#ff4444' : '#7a8fa8'
+              const daysSince = Math.round((Date.now() - new Date(prior.created_at).getTime()) / 86400000)
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', borderLeft: '1px solid rgba(0,0,0,0.08)', paddingLeft: '1.25rem', minWidth: '150px' }}>
+                  <div style={{ fontSize: '10px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Roboto Mono, monospace' }}>vs last analysis{daysSince >= 1 ? ` (${daysSince}d ago)` : ''}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: deltaColor, fontFamily: 'Roboto Mono, monospace' }}>
+                    {delta > 0 ? '↑' : '↓'} {Math.abs(delta)} points
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>was {prior.optimization_score}</div>
+                </div>
+              )
+            })()}
           </div>
 
           <div style={card}>
