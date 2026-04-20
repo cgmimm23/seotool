@@ -407,6 +407,47 @@ Schema:
 
             </div>
           </div>
+
+          {/* Next Steps */}
+          <div style={{ ...cardStyle, borderLeft: '3px solid #1e90ff' }}>
+            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>What to do next</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {!result.llms.exists && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Publish /llms.txt</div>
+                    <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>Copy the generated llms.txt snippet above and upload it to your site root</div>
+                  </div>
+                </div>
+              )}
+              {result.botStatus.filter((b: any) => b.purpose === 'search' && b.status === 'blocked').length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#fff4f4', borderRadius: '8px', border: '1px solid rgba(255,68,68,0.2)' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#ff4444' }}>Unblock AI search bots in robots.txt</div>
+                    <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>You&apos;re blocking search bots (ChatGPT Search, Perplexity). This removes you from AI answers.</div>
+                  </div>
+                </div>
+              )}
+              <a href={`/sites/${params.id}/audit`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Run Site Audit for E-E-A-T signals</div>
+                    <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>AI engines rank authoritative content higher — the audit checks author bios, schema, and trust signals</div>
+                  </div>
+                  <span style={{ fontSize: '18px', color: '#1e90ff', userSelect: 'none' }}>→</span>
+                </div>
+              </a>
+              <a href={`/sites/${params.id}/keyword-strategy`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Generate Keyword Strategy</div>
+                    <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>AI answers favor clear topical authority — a strategy helps you build that systematically</div>
+                  </div>
+                  <span style={{ fontSize: '18px', color: '#1e90ff', userSelect: 'none' }}>→</span>
+                </div>
+              </a>
+            </div>
+          </div>
         </>
       )}
     </div>

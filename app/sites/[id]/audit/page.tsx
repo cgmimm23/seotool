@@ -293,6 +293,43 @@ function AuditPageInner({ params }: { params: { id: string } }) {
               )
             })}
           </div>
+
+          {/* Next Steps */}
+          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', borderLeft: '3px solid #1e90ff' }}>
+            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>What to do next</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {(() => {
+                const failCount = (audit?.checks || []).filter((c: any) => c.status === 'fail').length
+                const warnCount = (audit?.checks || []).filter((c: any) => c.status === 'warn').length
+                const actions: { title: string; detail: string; href: string }[] = []
+                if (failCount > 0) actions.push({ title: `Fix ${failCount} audit error${failCount > 1 ? 's' : ''}`, detail: 'Click into each red-flag check above and follow the platform-specific how-to-fix steps', href: `#` })
+                actions.push({ title: 'Run the Site Crawler', detail: 'Audit checks the homepage. Crawl every page on your site to find issues across the whole site', href: `/sites/${params.id}/site-crawler` })
+                actions.push({ title: 'Generate a Keyword Strategy', detail: 'Get core phrases and a deployment plan — so you know what to optimize pages for', href: `/sites/${params.id}/keyword-strategy` })
+                actions.push({ title: 'Optimize a key page', detail: 'Pick a page and target keyword, then get a Semrush-style page optimization score', href: `/sites/${params.id}/on-page-optimizer` })
+                if (warnCount > 0) actions.push({ title: `Address ${warnCount} warning${warnCount > 1 ? 's' : ''}`, detail: 'Warnings are lower priority than errors but still worth fixing', href: `#` })
+                return actions.slice(0, 5).map((a, i) => (
+                  a.href.startsWith('#') ? (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>{a.title}</div>
+                        <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>{a.detail}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <a key={i} href={a.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>{a.title}</div>
+                          <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>{a.detail}</div>
+                        </div>
+                        <span style={{ fontSize: '18px', color: '#1e90ff', userSelect: 'none' }}>→</span>
+                      </div>
+                    </a>
+                  )
+                ))
+              })()}
+            </div>
+          </div>
         </>
       )}
 

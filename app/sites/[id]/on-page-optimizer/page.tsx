@@ -83,6 +83,17 @@ function OnPageOptimizerInner({ params }: { params: { id: string } }) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  async function trackKeyword(kw: string, pagePath: string = '/') {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    await supabase.from('keywords').insert({
+      site_id: params.id,
+      user_id: session.user.id,
+      page_path: pagePath,
+      keyword: kw,
+    })
+  }
+
   const card = { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }
 
   return (
@@ -184,6 +195,45 @@ function OnPageOptimizerInner({ params }: { params: { id: string } }) {
               </div>
             </div>
           )}
+
+          {/* Next Steps */}
+          <div style={{ ...card, borderLeft: '3px solid #1e90ff' }}>
+            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '1rem' }}>What to do next</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div onClick={() => { if (keyword) trackKeyword(keyword); alert('Keyword added to tracking') }} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Track &quot;{keyword}&quot; on Google</div>
+                  <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>Add this keyword to your tracked list so we monitor its ranking over time</div>
+                </div>
+                <span style={{ fontSize: '18px', color: '#1e90ff', userSelect: 'none' }}>+</span>
+              </div>
+              <a href={`/sites/${params.id}/audit`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Run a full Site Audit</div>
+                    <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>Some page-optimization issues are site-wide — the audit finds them</div>
+                  </div>
+                  <span style={{ fontSize: '18px', color: '#1e90ff', userSelect: 'none' }}>→</span>
+                </div>
+              </a>
+              <a href={`/sites/${params.id}/keyword-strategy`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>See related long-tail phrases</div>
+                    <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>The Keyword Strategy tool groups long-tail phrases under core topics — find more keywords to optimize for</div>
+                  </div>
+                  <span style={{ fontSize: '18px', color: '#1e90ff', userSelect: 'none' }}>→</span>
+                </div>
+              </a>
+              <div onClick={() => { setKeyword(''); setPageUrl(''); setSecondary(''); setAnalysis(null); setCompetitors([]); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center', padding: '10px 14px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#0d1b2e' }}>Analyze another page</div>
+                  <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '2px', lineHeight: 1.5 }}>Pick a different page + keyword and score it the same way</div>
+                </div>
+                <span style={{ fontSize: '18px', color: '#1e90ff', userSelect: 'none' }}>↻</span>
+              </div>
+            </div>
+          </div>
         </>
       )}
 
