@@ -280,9 +280,15 @@ function OnPageOptimizerInner({ params }: { params: { id: string } }) {
       )}
 
       {!loading && !analysis && reports.length === 0 && (
-        <div style={{ ...card, textAlign: 'center', padding: '3rem', color: '#7a8fa8' }}>
-          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', color: '#4a6080', marginBottom: '4px' }}>No analyses yet</div>
-          <div style={{ fontSize: '13px' }}>Enter a page URL and target keyword, then click Analyze</div>
+        <div style={{ ...card }}>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '17px', fontWeight: 600, marginBottom: '8px' }}>How to optimize a page for a keyword</div>
+          <div style={{ fontSize: '13px', color: '#7a8fa8', marginBottom: '1.25rem', lineHeight: 1.6 }}>We fetch your page, pull the top 3 ranking competitors from Google, and score your page against them. You get specific fixes grouped by Content, Semantic, Strategy, Technical, and Competitive categories.</div>
+          <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#0d1b2e', lineHeight: 1.6 }}>
+            <li><strong>Pick one page</strong> on your site you want to rank better (e.g., your homepage or a key service page).</li>
+            <li><strong>Enter the single target keyword</strong> you want that page to rank for. Add a few secondary keywords if you want.</li>
+            <li><strong>Click &quot;Analyze Page&quot;</strong>. Each idea is clickable — open it to see exactly what to change.</li>
+          </ol>
+          <div style={{ fontSize: '12px', color: '#7a8fa8', marginTop: '1rem', lineHeight: 1.6 }}>Tip: if you haven&apos;t yet, run <a href={`/sites/${params.id}/keyword-strategy`} style={{ color: '#1e90ff', textDecoration: 'none' }}>Keyword Strategy</a> first — it suggests core phrases for each page, which you can then drop straight into this optimizer.</div>
         </div>
       )}
     </div>

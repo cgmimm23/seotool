@@ -358,9 +358,14 @@ function AuditPageInner({ params }: { params: { id: string } }) {
       )}
 
       {!loading && !audit && (
-        <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '3rem', textAlign: 'center', color: '#7a8fa8' }}>
-          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', color: '#4a6080', marginBottom: '4px' }}>No audit run yet</div>
-          <div style={{ fontSize: '13px' }}>Click Scan Now to run your first SEO audit</div>
+        <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '2rem' }}>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '17px', fontWeight: 600, marginBottom: '8px' }}>How to run your first audit</div>
+          <div style={{ fontSize: '13px', color: '#7a8fa8', marginBottom: '1.25rem', lineHeight: 1.6 }}>The audit checks your homepage for technical SEO, content quality, on-page signals, performance, and mobile readiness. Takes about 45 seconds.</div>
+          <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#0d1b2e', lineHeight: 1.6 }}>
+            <li><strong>Confirm the URL</strong> above (we prefilled it from your site).</li>
+            <li><strong>Pick your site type and platform</strong> (optional but recommended) — the AI tailors fix instructions to your business and CMS.</li>
+            <li><strong>Click &quot;Scan Now&quot;</strong>. You&apos;ll get a score, category breakdown, and a prioritized list of fixes — each expandable with a platform-specific how-to.</li>
+          </ol>
         </div>
       )}
     </div>

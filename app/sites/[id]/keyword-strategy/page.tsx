@@ -244,9 +244,16 @@ function KeywordStrategyInner({ params }: { params: { id: string } }) {
       )}
 
       {!loading && !strategy && (
-        <div style={{ ...card, textAlign: 'center', padding: '3rem', color: '#7a8fa8' }}>
-          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', color: '#4a6080', marginBottom: '4px' }}>No strategy yet</div>
-          <div style={{ fontSize: '13px' }}>Click Generate Strategy — the AI will analyze your site and produce core phrases, long-tail clusters, and a deployment plan.</div>
+        <div style={card}>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '17px', fontWeight: 600, marginBottom: '8px' }}>How keyword strategy works</div>
+          <div style={{ fontSize: '13px', color: '#7a8fa8', marginBottom: '1.25rem', lineHeight: 1.6 }}>Great SEO rarely comes from chasing one keyword. This tool builds a topic-cluster architecture for your site: 3-5 core pillar phrases, a long-tail cluster under each, and a deployment plan tailored to your platform (WordPress tags, Shopify collections, Wix categories, etc.).</div>
+          <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#0d1b2e', lineHeight: 1.6 }}>
+            <li><strong>Click &quot;Generate Strategy&quot;</strong> above. The AI reads your homepage and builds a personalized plan (takes ~30-60 seconds).</li>
+            <li><strong>Review the core phrases</strong> and their target pages. Each one is a pillar page to optimize heavily.</li>
+            <li><strong>Expand each long-tail cluster</strong> to see related queries grouped by theme — these become your blog / FAQ / service-page content roadmap.</li>
+            <li><strong>Use the Deployment Strategy section</strong> as your checklist — it includes platform-specific tag structure, internal linking, and the priority order.</li>
+            <li>Click <strong>&quot;Optimize&quot;</strong> next to any phrase to send it straight to the On-Page Optimizer with the keyword pre-filled.</li>
+          </ol>
         </div>
       )}
     </div>
