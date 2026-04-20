@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 function OnPageOptimizerInner({ params }: { params: { id: string } }) {
+  const searchParams = useSearchParams()
   const [siteUrl, setSiteUrl] = useState('')
   const [pageUrl, setPageUrl] = useState('')
   const [keyword, setKeyword] = useState('')
@@ -19,10 +21,16 @@ function OnPageOptimizerInner({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function load() {
       const { data: site } = await supabase.from('sites').select('url').eq('id', params.id).single()
-      if (site?.url) {
-        setSiteUrl(site.url)
-        if (!pageUrl) setPageUrl(site.url)
-      }
+
+      // Prefill from query params (handoff from Keyword Strategy etc.)
+      const qKeyword = searchParams.get('keyword')
+      const qPageUrl = searchParams.get('pageUrl')
+      if (qKeyword) setKeyword(qKeyword)
+      if (qPageUrl) setPageUrl(qPageUrl)
+      else if (site?.url) setPageUrl(site.url)
+
+      if (site?.url) setSiteUrl(site.url)
+
       const res = await fetch(`/api/page-optimizer?siteId=${params.id}`)
       if (res.ok) {
         const json = await res.json()

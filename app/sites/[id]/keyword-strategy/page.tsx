@@ -126,7 +126,7 @@ function KeywordStrategyInner({ params }: { params: { id: string } }) {
                   const isOpen = openCore === key
                   return (
                     <div key={i} style={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)', background: '#f8f9fb', overflow: 'hidden' }}>
-                      <div onClick={() => setOpenCore(isOpen ? null : key)} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto auto', gap: '10px', alignItems: 'center', padding: '10px 14px', cursor: 'pointer' }}>
+                      <div onClick={() => setOpenCore(isOpen ? null : key)} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto auto auto', gap: '10px', alignItems: 'center', padding: '10px 14px', cursor: 'pointer' }}>
                         <div>
                           <div style={{ fontSize: '14px', fontWeight: 700, color: '#0d1b2e' }}>{c.phrase}</div>
                           <div style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', marginTop: '2px' }}>{c.target_page}</div>
@@ -134,6 +134,7 @@ function KeywordStrategyInner({ params }: { params: { id: string } }) {
                         <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: `${intentColor(c.intent)}18`, color: intentColor(c.intent), fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>{c.intent}</span>
                         <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: `${diffColor(c.difficulty)}18`, color: diffColor(c.difficulty), fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>{c.difficulty}</span>
                         <button onClick={e => { e.stopPropagation(); trackKeyword(c.phrase) }} style={{ fontSize: '11px', background: 'transparent', border: '1px solid rgba(30,144,255,0.3)', color: '#1e90ff', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer' }}>+ Track</button>
+                        <a onClick={e => e.stopPropagation()} href={`/sites/${params.id}/on-page-optimizer?keyword=${encodeURIComponent(c.phrase)}${c.target_page && c.target_page.startsWith('http') ? `&pageUrl=${encodeURIComponent(c.target_page)}` : ''}`} style={{ fontSize: '11px', background: 'transparent', border: '1px solid rgba(0,208,132,0.3)', color: '#00d084', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', textDecoration: 'none' }}>Optimize</a>
                         <span style={{ fontSize: '14px', color: '#7a8fa8', userSelect: 'none' }}>{isOpen ? '▾' : '▸'}</span>
                       </div>
                       {isOpen && (
@@ -181,11 +182,12 @@ function KeywordStrategyInner({ params }: { params: { id: string } }) {
                         <div style={{ padding: '0 14px 14px 14px' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {cluster.phrases.map((p: any, pi: number) => (
-                              <div key={pi} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: '8px', alignItems: 'center', padding: '6px 10px', background: '#fff', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.04)' }}>
+                              <div key={pi} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto auto', gap: '8px', alignItems: 'center', padding: '6px 10px', background: '#fff', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.04)' }}>
                                 <span style={{ fontSize: '13px', color: '#0d1b2e' }}>{p.phrase}</span>
                                 <span style={{ fontSize: '10px', color: intentColor(p.intent), fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>{p.intent}</span>
                                 <span style={{ fontSize: '10px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>{p.suggested_page_type}</span>
                                 <button onClick={() => trackKeyword(p.phrase)} style={{ fontSize: '11px', background: 'transparent', border: '1px solid rgba(30,144,255,0.3)', color: '#1e90ff', borderRadius: '6px', padding: '2px 8px', cursor: 'pointer' }}>+ Track</button>
+                                <a href={`/sites/${params.id}/on-page-optimizer?keyword=${encodeURIComponent(p.phrase)}`} style={{ fontSize: '11px', background: 'transparent', border: '1px solid rgba(0,208,132,0.3)', color: '#00d084', borderRadius: '6px', padding: '2px 8px', cursor: 'pointer', textDecoration: 'none' }}>Optimize</a>
                               </div>
                             ))}
                           </div>
