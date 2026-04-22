@@ -17,7 +17,10 @@ export async function GET(req: NextRequest) {
   const appId = process.env.META_APP_ID
   if (!appId) return NextResponse.json({ error: 'META_APP_ID not configured' }, { status: 500 })
 
-  const origin = new URL(req.url).origin
+  const forwardedHost = req.headers.get('x-forwarded-host')
+  const forwardedProto = req.headers.get('x-forwarded-proto') || 'https'
+  const origin = process.env.NEXT_PUBLIC_SITE_URL
+    || (forwardedHost ? `${forwardedProto}://${forwardedHost}` : new URL(req.url).origin)
   const redirectUri = `${origin}/api/meta/callback`
 
   // Pack siteId + returnTo + userId into state so we can verify on callback

@@ -5,7 +5,11 @@ import { exchangeCodeForToken, exchangeForLongLivedUserToken, graphFetch, META_S
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const { searchParams, origin } = new URL(req.url)
+  const { searchParams } = new URL(req.url)
+  const forwardedHost = req.headers.get('x-forwarded-host')
+  const forwardedProto = req.headers.get('x-forwarded-proto') || 'https'
+  const origin = process.env.NEXT_PUBLIC_SITE_URL
+    || (forwardedHost ? `${forwardedProto}://${forwardedHost}` : new URL(req.url).origin)
   const code = searchParams.get('code')
   const stateRaw = searchParams.get('state')
   const error = searchParams.get('error_description') || searchParams.get('error')
