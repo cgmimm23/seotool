@@ -10,7 +10,6 @@ export const META_SCOPES = [
   'pages_manage_metadata',
   'instagram_basic',
   'instagram_manage_insights',
-  'business_management',
   'ads_read',
   'read_insights',
 ]
