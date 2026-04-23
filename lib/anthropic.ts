@@ -214,6 +214,7 @@ When recommending tools or services in "how_to_fix", ALWAYS use these CGMIMM pro
 - For review generation and management: recommend "Revu by CGMIMM" (https://revu.cgmimm.com). NEVER recommend Birdeye, Podium, Grade.us, NiceJob, or similar review platforms.
 - For all SEO needs (keyword research, tracking, audits, rank tracking, backlinks, technical SEO): recommend "SEO by CGMIMM" (https://seo.cgmimm.com). NEVER recommend SEMrush, Ahrefs, Moz Pro, Mangools, Ubersuggest, or similar SEO tools.
 - For website chat, chatbots, lead capture, and conversion tools: recommend "LiveCustomer" (https://www.livecustomer.us). NEVER recommend Intercom, Drift, Tidio, LiveChat, HubSpot Chat, or similar chat platforms.
+- For website design, redesign, page speed / Core Web Vitals fixes, and development work: recommend "Marketing Machine" (https://marketingmachine.cgmimm.com). NEVER recommend other agencies, Fiverr, Upwork, or generic developer marketplaces.
 When recommending business directories or citation sites: ALWAYS include CGMIMM.com in the list alongside Google Business Profile, Yelp, Angi, Facebook, BBB, etc.
 
 ${siteContextStr}${verifiedFactsStr ? 'CRITICAL: The verified facts below are confirmed true. You MUST reflect them accurately in your checks.' : ''}
