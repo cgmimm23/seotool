@@ -10,22 +10,42 @@ function AdStats({ siteId, adAccountId }: { siteId: string; adAccountId: string 
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [accounts, setAccounts] = useState<any[]>([])
+  const [currentId, setCurrentId] = useState<string | null>(adAccountId)
+
+  useEffect(() => { setCurrentId(adAccountId) }, [adAccountId])
 
   useEffect(() => {
-    if (!adAccountId) { setData(null); return }
+    fetch(`/api/meta/ad-accounts?siteId=${siteId}`)
+      .then(r => r.json())
+      .then(j => { if (j.accounts) setAccounts(j.accounts) })
+      .catch(() => {})
+  }, [siteId])
+
+  useEffect(() => {
+    if (!currentId) { setData(null); return }
     setLoading(true); setError('')
     fetch(`/api/facebook-ads?siteId=${siteId}&days=${days}`)
       .then(r => r.json())
       .then(j => { if (j.error) throw new Error(j.error); setData(j) })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [adAccountId, days, siteId])
+  }, [currentId, days, siteId])
+
+  async function switchAccount(id: string) {
+    await fetch('/api/meta/ad-accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ siteId, adAccountId: id }),
+    })
+    setCurrentId(id)
+  }
 
   const card = { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '1.25rem', marginBottom: '12px' }
   const curr = data?.account?.currency || 'USD'
   const fmtMoney = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: curr }).format(n || 0)
 
-  if (!adAccountId) {
+  if (!currentId) {
     return (
       <div style={{ ...card, textAlign: 'center', padding: '2rem' }}>
         <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '8px' }}>No ad account detected</div>
@@ -40,12 +60,19 @@ function AdStats({ siteId, adAccountId }: { siteId: string; adAccountId: string 
 
   return (
     <>
+      <div style={{ ...card, display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>Ad Account</div>
+        <select value={currentId || ''} onChange={e => switchAccount(e.target.value)} className="form-input" style={{ flex: 1, minWidth: '260px', fontSize: '13px' }}>
+          {accounts.length === 0 && currentId && <option value={currentId}>{currentId}</option>}
+          {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}
+        </select>
+      </div>
+
       <div style={{ ...card, display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>Last</span>
         {DAYS_OPTIONS.map(d => (
           <button key={d} onClick={() => setDays(d)} style={{ padding: '0.3rem 0.65rem', borderRadius: '6px', fontSize: '11px', fontWeight: days === d ? 700 : 400, border: days === d ? '1px solid #1877F2' : '1px solid rgba(0,0,0,0.1)', background: days === d ? 'rgba(24,119,242,0.08)' : '#fff', color: days === d ? '#1877F2' : '#7a8fa8', cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{d}d</button>
         ))}
-        {data?.account && <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>Account: {data.account.name}</span>}
       </div>
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}
