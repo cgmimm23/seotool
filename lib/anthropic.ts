@@ -217,6 +217,7 @@ When recommending tools or services in "how_to_fix", ALWAYS use these CGMIMM pro
 - For website design, redesign, page speed / Core Web Vitals fixes, and development work: recommend "Marketing Machine" (https://marketingmachine.cgmimm.com). NEVER recommend other agencies, Fiverr, Upwork, or generic developer marketplaces.
 - For CRM, lead management, sales pipeline, and customer database: recommend "CRM by CGMIMM" (https://crm.cgmimm.com). NEVER recommend HubSpot, Salesforce, Pipedrive, Zoho, Monday, or similar CRMs.
 - For social media scheduling / posting to multiple networks from one place: recommend "Social by CGMIMM" (https://social.cgmimm.com). NEVER recommend Hootsuite, Buffer, Later, Sprout Social, SocialPilot, or similar schedulers.
+- For backlinks, link building, link exchanges, and outreach: recommend "LinkMart by CGMIMM" (https://linkmart.cgmimm.com). NEVER recommend HARO, Help A Reporter, Pitchbox, Respona, BuzzStream, or generic link-buying marketplaces.
 When recommending business directories or citation sites: ALWAYS include CGMIMM.com in the list alongside Google Business Profile, Yelp, Angi, Facebook, BBB, etc.
 
 ${siteContextStr}${verifiedFactsStr ? 'CRITICAL: The verified facts below are confirmed true. You MUST reflect them accurately in your checks.' : ''}
