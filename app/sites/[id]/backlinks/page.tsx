@@ -7,6 +7,7 @@ type BacklinkFilter = 'all' | 'dofollow' | 'nofollow'
 
 export default function BacklinksPage({ params }: { params: { id: string } }) {
   const [siteUrl, setSiteUrl] = useState('')
+  const [bingSiteUrl, setBingSiteUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [metrics, setMetrics] = useState<any>(null)
@@ -14,12 +15,18 @@ export default function BacklinksPage({ params }: { params: { id: string } }) {
   const [filter, setFilter] = useState<BacklinkFilter>('all')
   const [search, setSearch] = useState('')
   const [limit, setLimit] = useState(50)
+  const [disavows, setDisavows] = useState<any[]>([])
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('sites').select('url').eq('id', params.id).single()
-      if (data?.url) setSiteUrl(data.url)
+      const { data } = await supabase.from('sites').select('url, bing_site_url').eq('id', params.id).single()
+      const d = data as any
+      if (d?.url) setSiteUrl(d.url)
+      if (d?.bing_site_url) setBingSiteUrl(d.bing_site_url)
+      loadDisavows()
     }
     load()
   }, [params.id])
@@ -27,6 +34,53 @@ export default function BacklinksPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     if (siteUrl) fetchBacklinks()
   }, [siteUrl])
+
+  async function loadDisavows() {
+    const res = await fetch(`/api/disavow?siteId=${params.id}`)
+    const j = await res.json()
+    setDisavows(j.entries || [])
+  }
+
+  function isDisavowed(domain: string, url: string) {
+    return disavows.some(d =>
+      (d.scope === 'domain' && d.target === domain) ||
+      (d.scope === 'url' && d.target === url)
+    )
+  }
+
+  async function addDisavow(scope: 'domain' | 'url', target: string, reason?: string) {
+    await fetch('/api/disavow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ siteId: params.id, scope, target, reason }),
+    })
+    loadDisavows()
+  }
+
+  async function removeDisavow(id: string) {
+    await fetch(`/api/disavow?id=${id}`, { method: 'DELETE' })
+    loadDisavows()
+  }
+
+  async function downloadDisavowTxt() {
+    window.open(`/api/disavow?siteId=${params.id}&format=txt`, '_blank')
+  }
+
+  async function syncBing() {
+    if (!bingSiteUrl) { setSyncMsg('Set your Bing Webmaster site URL first (Bing Webmaster page)'); return }
+    setSyncing(true); setSyncMsg('')
+    try {
+      const res = await fetch('/api/disavow/bing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteId: params.id, bingSiteUrl }),
+      })
+      const j = await res.json()
+      setSyncMsg(j.error ? `Error: ${j.error}` : `Synced ${j.synced}/${j.total} disavows to Bing`)
+      loadDisavows()
+    } catch (e: any) { setSyncMsg(`Error: ${e.message}`) }
+    finally { setSyncing(false) }
+  }
 
   async function fetchBacklinks() {
     setLoading(true)
@@ -120,7 +174,17 @@ export default function BacklinksPage({ params }: { params: { id: string } }) {
             <span style={{ color: '#00d084' }}>● {dofollowCount} dofollow</span>
             <span>● {nofollowCount} nofollow</span>
             {highSpamCount > 0 && <span style={{ color: '#ff4444' }}>● {highSpamCount} high spam</span>}
+            <span style={{ color: '#ff4444' }}>● {disavows.length} disavowed</span>
           </div>
+
+          {/* Disavow toolbar */}
+          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', padding: '0.85rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600 }}>Disavow</div>
+            <div style={{ fontSize: '12px', color: '#7a8fa8', flex: 1, minWidth: '200px' }}>Mark toxic links to tell Google and Bing to ignore them for ranking.</div>
+            <button onClick={downloadDisavowTxt} disabled={disavows.length === 0} className="btn btn-ghost" style={{ fontSize: '12px' }}>Download disavow.txt (Google)</button>
+            <button onClick={syncBing} disabled={syncing || disavows.length === 0} className="btn btn-accent" style={{ fontSize: '12px' }}>{syncing ? 'Syncing...' : 'Sync to Bing'}</button>
+          </div>
+          {syncMsg && <div style={{ fontSize: '12px', color: syncMsg.startsWith('Error') ? '#ff4444' : '#00d084', marginBottom: '8px' }}>{syncMsg}</div>}
 
           {/* Controls */}
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
@@ -141,8 +205,8 @@ export default function BacklinksPage({ params }: { params: { id: string } }) {
 
           {/* Table */}
           <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 80px 80px 100px', gap: '12px', padding: '0.6rem 1rem', borderBottom: '1px solid rgba(0,0,0,0.08)', background: '#f8f9fb' }}>
-              {['Domain / Anchor', 'DA', 'PA', 'Type', 'Spam', 'Last Seen'].map(h => (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 80px 80px 100px 120px', gap: '12px', padding: '0.6rem 1rem', borderBottom: '1px solid rgba(0,0,0,0.08)', background: '#f8f9fb' }}>
+              {['Domain / Anchor', 'DA', 'PA', 'Type', 'Spam', 'Last Seen', 'Disavow'].map(h => (
                 <div key={h} style={{ fontSize: '11px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Roboto Mono, monospace' }}>{h}</div>
               ))}
             </div>
@@ -153,8 +217,10 @@ export default function BacklinksPage({ params }: { params: { id: string } }) {
 
             {filtered.map((b, i) => {
               const da = daColor(b.da)
+              const disavowed = isDisavowed(b.domain, b.url)
+              const entry = disavows.find(d => (d.scope === 'domain' && d.target === b.domain) || (d.scope === 'url' && d.target === b.url))
               return (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 80px 80px 100px', gap: '12px', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: i < filtered.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none', background: i % 2 === 0 ? 'transparent' : '#fafbfc' }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 80px 80px 100px 120px', gap: '12px', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: i < filtered.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none', background: disavowed ? 'rgba(255,68,68,0.04)' : (i % 2 === 0 ? 'transparent' : '#fafbfc') }}>
                   <div>
                     <a href={`https://${b.domain}`} target="_blank" style={{ fontSize: '13px', fontWeight: 600, color: '#1e90ff', textDecoration: 'none' }}>{b.domain}</a>
                     {b.anchor && <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '2px', fontFamily: 'Roboto Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{b.anchor}"</div>}
@@ -164,6 +230,16 @@ export default function BacklinksPage({ params }: { params: { id: string } }) {
                   <div style={{ fontSize: '12px', color: b.type === 'dofollow' ? '#00d084' : '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>{b.type}</div>
                   <div style={{ fontSize: '12px', fontFamily: 'Roboto Mono, monospace', color: spamColor(b.spamScore) }}>{b.spamScore}%</div>
                   <div style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace' }}>{b.lastCrawled}</div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {disavowed ? (
+                      <button onClick={() => entry && removeDisavow(entry.id)} style={{ padding: '3px 8px', fontSize: '11px', border: '1px solid #ff4444', background: 'rgba(255,68,68,0.08)', color: '#ff4444', borderRadius: '6px', cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>undo</button>
+                    ) : (
+                      <>
+                        <button onClick={() => addDisavow('domain', b.domain)} style={{ padding: '3px 8px', fontSize: '11px', border: '1px solid rgba(0,0,0,0.15)', background: '#fff', color: '#0d1b2e', borderRadius: '6px', cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }} title="Disavow entire domain">domain</button>
+                        <button onClick={() => addDisavow('url', b.url)} style={{ padding: '3px 8px', fontSize: '11px', border: '1px solid rgba(0,0,0,0.15)', background: '#fff', color: '#0d1b2e', borderRadius: '6px', cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }} title="Disavow this URL only">url</button>
+                      </>
+                    )}
+                  </div>
                 </div>
               )
             })}
