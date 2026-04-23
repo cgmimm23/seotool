@@ -18,16 +18,36 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
   const [bingKey, setBingKey] = useState('')
   const [hasBingKey, setHasBingKey] = useState<boolean | null>(null)
   const [savingKey, setSavingKey] = useState(false)
+  const [bingSites, setBingSites] = useState<string[]>([])
   const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data: site } = await supabase.from('sites').select('url, bing_api_key').eq('id', params.id).single()
-      if (site?.url) { setSiteUrl(site.url); setSubmitUrl(site.url) }
-      setHasBingKey(!!site?.bing_api_key)
+      const { data: site } = await supabase.from('sites').select('url, bing_api_key, bing_site_url').eq('id', params.id).single()
+      const s = site as any
+      if (s?.bing_site_url) { setSiteUrl(s.bing_site_url); setSubmitUrl(s.bing_site_url) }
+      else if (s?.url) { setSiteUrl(s.url); setSubmitUrl(s.url) }
+      setHasBingKey(!!s?.bing_api_key)
+      if (s?.bing_api_key) loadBingSites()
     }
     load()
   }, [params.id])
+
+  async function loadBingSites() {
+    try {
+      const res = await fetch(`/api/bing-webmaster?endpoint=sites&siteUrl=&siteId=${params.id}`)
+      const j = await res.json()
+      const list = (j.d || []).map((s: any) => s.Url || s.url).filter(Boolean)
+      setBingSites(list)
+    } catch {}
+  }
+
+  async function changeBingSite(url: string) {
+    setSiteUrl(url)
+    setSubmitUrl(url)
+    setData(null)
+    await supabase.from('sites').update({ bing_site_url: url }).eq('id', params.id)
+  }
 
   async function saveBingKey() {
     if (!bingKey.trim()) return
@@ -139,6 +159,14 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem', padding: '8px 12px', background: 'rgba(0,208,132,0.08)', border: '1px solid rgba(0,208,132,0.2)', borderRadius: '8px', fontSize: '12px' }}>
         <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00d084' }} />
         <div style={{ color: '#0d1b2e', fontWeight: 600 }}>Bing connected for this site</div>
+      </div>
+
+      <div style={{ ...card, display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ fontSize: '11px', color: '#7a8fa8', fontFamily: 'Roboto Mono, monospace', textTransform: 'uppercase' }}>Site</div>
+        <select value={siteUrl} onChange={e => changeBingSite(e.target.value)} className="form-input" style={{ flex: 1, minWidth: '260px', fontSize: '13px' }}>
+          {bingSites.length === 0 && siteUrl && <option value={siteUrl}>{siteUrl}</option>}
+          {bingSites.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
       </div>
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}

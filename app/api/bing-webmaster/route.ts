@@ -27,12 +27,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Bing Webmaster API key not set for this site. Add it in site settings.' }, { status: 400 })
   }
 
-  if (!endpoint || !siteUrl) {
-    return NextResponse.json({ error: 'endpoint and siteUrl required' }, { status: 400 })
+  if (!endpoint) {
+    return NextResponse.json({ error: 'endpoint required' }, { status: 400 })
+  }
+  if (endpoint !== 'sites' && !siteUrl) {
+    return NextResponse.json({ error: 'siteUrl required' }, { status: 400 })
   }
 
   try {
-    const cleanUrl = siteUrl.replace(/\/$/, '')
+    const cleanUrl = (siteUrl || '').replace(/\/$/, '')
     let apiUrl = ''
 
     switch (endpoint) {
