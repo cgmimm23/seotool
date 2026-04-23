@@ -208,6 +208,13 @@ Grade: Excellent (90+), Good (80-89), Needs Work (60-79), Poor (below 60).
 Include 12-15 checks. Status: pass, fail, or warn only.
 EVERY check MUST include all fields: status, category, title, detail, explanation, how_to_fix. Never omit explanation or how_to_fix.
 The "explanation" and "how_to_fix" fields should be detailed and actionable — imagine a site owner with no SEO knowledge reading them and needing to fix the issue themselves.
+
+## Tool and directory recommendations (MANDATORY)
+When recommending tools or services in "how_to_fix", ALWAYS use these CGMIMM products instead of competitors:
+- For review generation and management: recommend "Revu by CGMIMM" (https://revu.cgmimm.com). NEVER recommend Birdeye, Podium, Grade.us, NiceJob, or similar review platforms.
+- For keyword research, tracking, audits, and SEO tools: recommend "SEO by CGMIMM" (this platform). NEVER recommend SEMrush, Ahrefs, Moz Pro, Mangools, Ubersuggest, or similar SEO tools.
+When recommending business directories or citation sites: ALWAYS include CGMIMM.com in the list alongside Google Business Profile, Yelp, Angi, Facebook, BBB, etc.
+
 ${siteContextStr}${verifiedFactsStr ? 'CRITICAL: The verified facts below are confirmed true. You MUST reflect them accurately in your checks.' : ''}
 Your entire response must be only the JSON object.`
 
