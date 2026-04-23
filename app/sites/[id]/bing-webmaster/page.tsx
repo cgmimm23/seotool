@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { Suspense } from 'react'
 
-type Tab = 'overview' | 'keywords' | 'crawl' | 'submit'
+type Tab = 'overview' | 'keywords' | 'crawl' | 'submit' | 'add'
 
 function BingWebmasterInner({ params }: { params: { id: string } }) {
   const [siteUrl, setSiteUrl] = useState('')
@@ -16,6 +16,52 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitResult, setSubmitResult] = useState<'success' | 'error' | null>(null)
   const [submitError, setSubmitError] = useState('')
+
+  // Add/verify site state
+  const [newSiteUrl, setNewSiteUrl] = useState('')
+  const [addResult, setAddResult] = useState('')
+  const [addError, setAddError] = useState('')
+  const [verifyResult, setVerifyResult] = useState('')
+  const [verifyError, setVerifyError] = useState('')
+  const [bingAuthCode, setBingAuthCode] = useState('')
+
+  async function addSite() {
+    if (!newSiteUrl) return
+    setAddResult(''); setAddError('')
+    try {
+      const res = await fetch('/api/bing-webmaster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: 'add-site', siteUrl: newSiteUrl, siteId: params.id }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setAddResult('Site added. Now add the verification meta tag or file, then click Verify.')
+        loadBingSites()
+      } else {
+        setAddError(j.details || j.error || `HTTP ${res.status}`)
+      }
+    } catch (e: any) { setAddError(e.message) }
+  }
+
+  async function verifySite() {
+    if (!newSiteUrl) return
+    setVerifyResult(''); setVerifyError('')
+    try {
+      const res = await fetch('/api/bing-webmaster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: 'verify-site', siteUrl: newSiteUrl, siteId: params.id }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setVerifyResult('Verification request sent. Recheck the sites dropdown in a moment.')
+        loadBingSites()
+      } else {
+        setVerifyError(j.details || j.error || `HTTP ${res.status}`)
+      }
+    } catch (e: any) { setVerifyError(e.message) }
+  }
   const [bingKey, setBingKey] = useState('')
   const [hasBingKey, setHasBingKey] = useState<boolean | null>(null)
   const [savingKey, setSavingKey] = useState(false)
@@ -185,6 +231,7 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
         <button style={tabBtn('keywords')} onClick={() => setTab('keywords')}>Keywords</button>
         <button style={tabBtn('crawl')} onClick={() => setTab('crawl')}>Crawl Issues</button>
         <button style={tabBtn('submit')} onClick={() => setTab('submit')}>Submit URL</button>
+        <button style={tabBtn('add')} onClick={() => setTab('add')}>Add Site</button>
       </div>
 
       {tab === 'overview' && (
@@ -270,6 +317,49 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
           <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(30,144,255,0.05)', border: '1px solid rgba(30,144,255,0.15)', borderRadius: '8px', fontSize: '12px', color: '#4a6080' }}>
             Bing allows up to 10 URL submissions per day on the free tier.
           </div>
+        </div>
+      )}
+
+      {tab === 'add' && (
+        <div style={card}>
+          <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>Add & Verify a Site</div>
+          <p style={{ fontSize: '13px', color: '#7a8fa8', marginBottom: '1rem' }}>Add a new site to Bing Webmaster Tools and trigger verification.</p>
+
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
+            <input type="text" placeholder="https://yoursite.com" value={newSiteUrl} onChange={e => setNewSiteUrl(e.target.value)} className="form-input" style={{ flex: 1, fontSize: '13px' }} />
+            <button onClick={addSite} disabled={!newSiteUrl} className="btn btn-accent" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>Add Site</button>
+          </div>
+          {addResult && <div style={{ fontSize: '12px', color: '#00d084', marginBottom: '8px' }}>{addResult}</div>}
+          {addError && <div style={{ fontSize: '12px', color: '#ff4444', marginBottom: '8px' }}>{addError}</div>}
+
+          <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '1.25rem', marginBottom: '8px' }}>Step 2 — Verify ownership</div>
+          <p style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '10px' }}>Pick ONE of these methods and place it on your site:</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1rem' }}>
+            <div style={{ padding: '10px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Option 1: Meta tag</div>
+              <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '6px' }}>Get your auth code from <a href="https://www.bing.com/webmasters/home/mysites" target="_blank" rel="noreferrer" style={{ color: '#1e90ff' }}>bing.com/webmasters</a>, paste below to preview the tag.</div>
+              <input type="text" placeholder="Bing auth code" value={bingAuthCode} onChange={e => setBingAuthCode(e.target.value)} className="form-input" style={{ fontSize: '12px', marginBottom: '6px', fontFamily: 'Roboto Mono, monospace' }} />
+              <code style={{ display: 'block', background: '#fff', padding: '8px 10px', borderRadius: '6px', fontSize: '12px', fontFamily: 'Roboto Mono, monospace', color: '#0d1b2e', border: '1px solid rgba(0,0,0,0.08)', wordBreak: 'break-all' }}>
+                &lt;meta name=&quot;msvalidate.01&quot; content=&quot;{bingAuthCode || 'YOUR_BING_AUTH_CODE'}&quot; /&gt;
+              </code>
+              <div style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '4px' }}>Add this inside the &lt;head&gt; of your homepage.</div>
+            </div>
+
+            <div style={{ padding: '10px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Option 2: XML file</div>
+              <div style={{ fontSize: '12px', color: '#7a8fa8' }}>Download <code>BingSiteAuth.xml</code> from your Bing Webmaster dashboard and upload to <code>yoursite.com/BingSiteAuth.xml</code>.</div>
+            </div>
+
+            <div style={{ padding: '10px', background: '#f8f9fb', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Option 3: DNS CNAME</div>
+              <div style={{ fontSize: '12px', color: '#7a8fa8' }}>Add CNAME <code>[code]</code> pointing to <code>verify.bing.com</code>. Code is shown in Bing Webmaster dashboard after adding the site.</div>
+            </div>
+          </div>
+
+          <button onClick={verifySite} disabled={!newSiteUrl} className="btn btn-accent" style={{ fontSize: '12px' }}>Verify Now</button>
+          {verifyResult && <div style={{ fontSize: '12px', color: '#00d084', marginTop: '8px' }}>{verifyResult}</div>}
+          {verifyError && <div style={{ fontSize: '12px', color: '#ff4444', marginTop: '8px' }}>{verifyError}</div>}
         </div>
       )}
     </div>

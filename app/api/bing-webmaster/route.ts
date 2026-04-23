@@ -91,6 +91,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
+    if (endpoint === 'add-site') {
+      const res = await fetch(`https://ssl.bing.com/webmaster/api.svc/json/AddSite?apikey=${BING_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ siteUrl: cleanSiteUrl }),
+      })
+      if (!res.ok) {
+        const err = await res.text()
+        return NextResponse.json({ error: `Bing API error: ${res.status}`, details: err }, { status: res.status })
+      }
+      return NextResponse.json({ success: true })
+    }
+
+    if (endpoint === 'verify-site') {
+      const res = await fetch(`https://ssl.bing.com/webmaster/api.svc/json/VerifySite?apikey=${BING_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ siteUrl: cleanSiteUrl }),
+      })
+      if (!res.ok) {
+        const err = await res.text()
+        return NextResponse.json({ error: `Bing API error: ${res.status}`, details: err }, { status: res.status })
+      }
+      const data = await res.json()
+      return NextResponse.json(data)
+    }
+
     return NextResponse.json({ error: 'Unknown endpoint' }, { status: 400 })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
