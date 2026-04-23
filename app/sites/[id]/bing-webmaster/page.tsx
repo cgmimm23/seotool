@@ -15,6 +15,7 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
   const [submitUrl, setSubmitUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitResult, setSubmitResult] = useState<'success' | 'error' | null>(null)
+  const [submitError, setSubmitError] = useState('')
   const [bingKey, setBingKey] = useState('')
   const [hasBingKey, setHasBingKey] = useState<boolean | null>(null)
   const [savingKey, setSavingKey] = useState(false)
@@ -94,14 +95,22 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
     if (!submitUrl) return
     setSubmitting(true)
     setSubmitResult(null)
+    setSubmitError('')
     try {
       const res = await fetch('/api/bing-webmaster', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ endpoint: 'submit-url', siteUrl, url: submitUrl, siteId: params.id }),
       })
-      setSubmitResult(res.ok ? 'success' : 'error')
-    } catch {
+      if (res.ok) {
+        setSubmitResult('success')
+      } else {
+        const j = await res.json().catch(() => ({}))
+        setSubmitError(j.details || j.error || `HTTP ${res.status}`)
+        setSubmitResult('error')
+      }
+    } catch (e: any) {
+      setSubmitError(e.message)
       setSubmitResult('error')
     } finally {
       setSubmitting(false)
@@ -257,7 +266,7 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
             </button>
           </div>
           {submitResult === 'success' && <div style={{ fontSize: '13px', color: '#00d084' }}>✓ URL successfully submitted to Bing for indexing.</div>}
-          {submitResult === 'error' && <div style={{ fontSize: '13px', color: '#ff4444' }}>Submission failed. Please try again.</div>}
+          {submitResult === 'error' && <div style={{ fontSize: '13px', color: '#ff4444' }}>Submission failed: {submitError || 'unknown error'}</div>}
           <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(30,144,255,0.05)', border: '1px solid rgba(30,144,255,0.15)', borderRadius: '8px', fontSize: '12px', color: '#4a6080' }}>
             Bing allows up to 10 URL submissions per day on the free tier.
           </div>
