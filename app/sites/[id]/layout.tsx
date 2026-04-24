@@ -19,6 +19,10 @@ export default function SiteLayout({
   const supabase = createClient()
 
   const [chatOpen, setChatOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Close mobile menu on route change
+  useEffect(() => { setMenuOpen(false) }, [pathname])
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: "Hi! I'm your SEO assistant. I have full access to this site's audit, keywords, rankings, and crawl data. Ask me anything — what to fix, how to use a tool, or how your site is performing." }
   ])
@@ -138,7 +142,18 @@ export default function SiteLayout({
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f9fb' }}>
-      <aside style={{ width: '220px', flexShrink: 0, background: '#0d1b2e', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 50, overflowY: 'auto' }}>
+      {/* Mobile top bar */}
+      <div className="mobile-topbar" style={{ display: 'none', position: 'fixed', top: 0, left: 0, right: 0, height: '52px', background: '#0d1b2e', zIndex: 60, alignItems: 'center', padding: '0 1rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <button onClick={() => setMenuOpen(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: '6px', marginRight: '10px', display: 'flex', alignItems: 'center' }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{site?.name || 'SEO'}</div>
+      </div>
+
+      {/* Mobile drawer backdrop */}
+      {menuOpen && <div onClick={() => setMenuOpen(false)} className="mobile-backdrop" style={{ display: 'none', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55 }} />}
+
+      <aside className="site-sidebar" data-open={menuOpen ? '1' : '0'} style={{ width: '220px', flexShrink: 0, background: '#0d1b2e', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 56, overflowY: 'auto' }}>
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', marginBottom: '10px' }}>
             <span style={{ color: '#7a8fa8', fontSize: '11px', fontFamily: 'Roboto Mono, monospace' }}>← All Sites</span>
@@ -186,8 +201,8 @@ export default function SiteLayout({
         </div>
       </aside>
 
-      <div style={{ marginLeft: '220px', flex: 1 }}>
-        <div style={{ padding: '2rem 1.5rem', maxWidth: '1200px' }}>
+      <div className="site-main" style={{ marginLeft: '220px', flex: 1 }}>
+        <div className="site-main-inner" style={{ padding: '2rem 1.5rem', maxWidth: '1200px' }}>
           {children}
         </div>
       </div>
@@ -242,7 +257,17 @@ export default function SiteLayout({
         </>
       )}
 
-      <style>{`@keyframes bounce { 0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; } 40% { transform: scale(1.2); opacity: 1; } }`}</style>
+      <style>{`
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; } 40% { transform: scale(1.2); opacity: 1; } }
+        @media (max-width: 900px) {
+          .mobile-topbar { display: flex !important; }
+          .mobile-backdrop { display: block !important; }
+          .site-sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
+          .site-sidebar[data-open="1"] { transform: translateX(0); }
+          .site-main { margin-left: 0 !important; padding-top: 52px; }
+          .site-main-inner { padding: 1rem !important; }
+        }
+      `}</style>
     </div>
   )
 }
