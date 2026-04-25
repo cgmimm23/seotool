@@ -458,8 +458,18 @@ export const articles: SEOArticle[] = [
 <h2>Measuring Your Improvements</h2>
 <p>After implementing optimizations, measure results using both lab data (controlled testing) and field data (real user metrics from Chrome User Experience Report). Track improvements over time and set benchmarks for each metric.</p>
 
-<h2>How AI SEO Powered by CGMIMM Helps</h2>
-<p>AI SEO powered by CGMIMM continuously monitors your site's Core Web Vitals and page speed metrics. When performance degrades, the AI identifies the specific cause — whether it's an unoptimized image, render-blocking script, or slow server response — and generates actionable fix instructions. You can track speed improvements over time and ensure your site consistently meets Google's performance thresholds.</p>
+<h2>How SEO by CGMIMM Diagnoses and Fixes Speed Issues</h2>
+<p>Inside <a href="https://seo.cgmimm.com">SEO by CGMIMM</a>, every site you add gets a dedicated <strong>Page Speed</strong> tab that pulls live data from Google PageSpeed Insights — the same engine Google uses for ranking. Here's exactly what you get and how each piece helps you fix problems:</p>
+<ul>
+<li><strong>Mobile and desktop scores side by side</strong> — A 0–100 performance grade for each, so you immediately see whether your problem is universal or device-specific. Mobile usually scores lower, and that's the one Google uses for ranking under <a href="/learn/mobile-first-indexing">mobile-first indexing</a>.</li>
+<li><strong>Real Core Web Vitals readings</strong> — Largest Contentful Paint (LCP), Cumulative Layout Shift (CLS), Total Blocking Time (TBT, the lab-data proxy for INP), Speed Index, and First Contentful Paint (FCP). Each one is color-coded green / amber / red so you know what's failing Google's thresholds.</li>
+<li><strong>Specific opportunities ranked by savings</strong> — The tool surfaces every Lighthouse opportunity (e.g. "Reduce unused JavaScript — 1.2s savings", "Properly size images — 800ms savings") so you can attack the biggest wins first instead of guessing.</li>
+<li><strong>AI-written fix steps</strong> — For each issue, our AI generates plain-English instructions tailored to your stack. If you flagged your site as WordPress, it tells you which plugin to install. If you said you're on Shopify, it points to the theme files. No generic "minify your CSS" advice.</li>
+<li><strong>Trend tracking</strong> — Every Page Speed run is saved, so you can see whether your scores are improving or regressing after deploys, plugin updates, or content changes. Catch performance regressions before they tank rankings.</li>
+<li><strong>Site Audit integration</strong> — Page speed signals are also factored into your overall SEO Audit grade in the Site Audit tab, alongside on-page, technical, and content checks.</li>
+<li><strong>Fix it for me</strong> — When the issues require code-level changes you don't want to handle, the tool links directly to <a href="https://marketingmachine.cgmimm.com">Marketing Machine</a>, our development team that fixes Core Web Vitals issues for clients.</li>
+</ul>
+<p>Open the Page Speed tab on any site you've added, hit "Run Speed Test", and the entire diagnosis runs in 30–60 seconds. Re-run it after each change to verify your fixes worked.</p>
 `,
   },
   {
@@ -907,7 +917,7 @@ Crawl-delay: 5</code></pre>
 </ul>
 
 <h2>How AI SEO Powered by CGMIMM Helps</h2>
-<p>AI SEO powered by CGMIMM monitors your Core Web Vitals continuously, tracking LCP, INP, and CLS across your entire site. When any metric falls below Google's thresholds, the AI diagnoses the root cause and generates specific fix instructions — telling you exactly which images to preload, which scripts to defer, and which elements need explicit dimensions. You can track improvements over time and verify that your changes are having the desired effect on real-user metrics.</p>
+<p>Inside <a href="https://seo.cgmimm.com">SEO by CGMIMM</a>, the <strong>Page Speed</strong> tab on every site you add runs Google's Lighthouse against your URL and shows each Core Web Vital with green/amber/red status against Google's official thresholds. You see mobile and desktop side by side, every Lighthouse opportunity ranked by potential time savings, and AI-generated fix instructions tailored to your platform — WordPress, Shopify, Wix, custom code, whichever you flagged when you added the site. Re-run the test after every change to verify the fix, and watch the trend chart so you catch regressions from new plugins or deploys before they cost you rankings. For deeper code-level fixes, the tool hands off directly to <a href="https://marketingmachine.cgmimm.com">Marketing Machine</a>.</p>
 `,
   },
 
