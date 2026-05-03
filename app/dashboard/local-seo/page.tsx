@@ -1,13 +1,88 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase'
 
 type Tab = 'gbp' | 'citations' | 'rankings'
 
+type GbpLocation = { name: string; title: string; address: string; phone: string; website: string }
+type GbpAccount = { accountName: string; accountDisplayName: string; accountType: string | null; locations: GbpLocation[] }
+type GbpStatus = { connected: boolean; email: string | null; scopes: string[]; accounts: GbpAccount[] }
+
 export default function LocalSEOPage() {
+  const supabase = createClient()
   const [tab, setTab] = useState<Tab>('gbp')
 
-  // GBP state
+  // GBP OAuth state
+  const [gbpStatus, setGbpStatus] = useState<GbpStatus | null>(null)
+  const [gbpStatusLoading, setGbpStatusLoading] = useState(true)
+  const [gbpDisconnecting, setGbpDisconnecting] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState('')
+  const [locationData, setLocationData] = useState<any>(null)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [locationError, setLocationError] = useState('')
+
+  useEffect(() => { loadGbpStatus() }, [])
+
+  async function loadGbpStatus() {
+    setGbpStatusLoading(true)
+    try {
+      const res = await fetch('/api/gbp/status')
+      const json = await res.json()
+      setGbpStatus(json)
+      const allLocs = (json.accounts || []).flatMap((a: GbpAccount) => a.locations)
+      if (json.connected && allLocs.length === 1) {
+        setSelectedLocation(allLocs[0].name)
+      }
+    } catch {
+      setGbpStatus({ connected: false, email: null, scopes: [], accounts: [] })
+    }
+    setGbpStatusLoading(false)
+  }
+
+  async function connectGoogle() {
+    document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly',
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      },
+    })
+  }
+
+  async function disconnectGoogle() {
+    if (!confirm('Disconnect Google Business Profile?')) return
+    setGbpDisconnecting(true)
+    try {
+      await fetch('/api/gbp/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      setLocationData(null)
+      setSelectedLocation('')
+      await loadGbpStatus()
+    } finally {
+      setGbpDisconnecting(false)
+    }
+  }
+
+  async function loadLocationData(locationName: string) {
+    if (!locationName) return
+    setLocationLoading(true)
+    setLocationError('')
+    setLocationData(null)
+    try {
+      const res = await fetch(`/api/gbp/data?locationName=${encodeURIComponent(locationName)}`)
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      setLocationData(json)
+    } catch (err: any) {
+      setLocationError(err.message)
+    } finally {
+      setLocationLoading(false)
+    }
+  }
+
+  // Public GBP lookup (SerpAPI) state
   const [gbpQuery, setGbpQuery] = useState('')
   const [gbpLoading, setGbpLoading] = useState(false)
   const [gbpData, setGbpData] = useState<any>(null)
@@ -187,8 +262,103 @@ ${JSON.stringify(place, null, 2)}`,
       {/* -- GBP TAB -- */}
       {tab === 'gbp' && (
         <div>
+          {/* OAuth-gated: user's own Google Business Profile */}
+          {gbpStatusLoading ? (
+            <div style={{ ...cardStyle, textAlign: 'center', padding: '2rem', color: '#7a8fa8', fontSize: '13px', fontFamily: 'Roboto Mono, monospace' }}>Checking Google connection...</div>
+          ) : !gbpStatus?.connected ? (
+            <div style={{ ...cardStyle, textAlign: 'center', padding: '2.5rem' }}>
+              <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '17px', fontWeight: 700, marginBottom: '6px' }}>Connect Your Google Business Profile</div>
+              <p style={{ fontSize: '13px', color: '#7a8fa8', marginBottom: '0.5rem', maxWidth: '460px', margin: '0 auto 0.5rem' }}>Sign in with Google to pull live insights — searches, calls, direction requests, website clicks, photos, and reviews — directly from your verified Google Business Profile.</p>
+              {gbpStatus?.email && (
+                <p style={{ fontSize: '12px', color: '#ff4444', marginBottom: '0.75rem' }}>
+                  Signed in as {gbpStatus.email}, but the Business Profile scope was not granted. Click below to grant access.
+                </p>
+              )}
+              <div style={{ marginTop: '1.25rem' }}>
+                <button onClick={connectGoogle} style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: '#fff', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '8px', padding: '0.7rem 1.4rem', fontSize: '14px', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  Connect with Google
+                </button>
+              </div>
+              <p style={{ fontSize: '11px', color: '#7a8fa8', marginTop: '0.85rem' }}>Read-only access to your Google Business Profile</p>
+            </div>
+          ) : (
+            <div style={cardStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '0.75rem' }}>
+                <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '14px', fontWeight: 600 }}>Your Google Business Profile</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '12px', background: 'rgba(0,208,132,0.1)', color: '#00a36b', fontFamily: 'Roboto Mono, monospace' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00d084' }} />
+                    {gbpStatus.email || 'Connected'}
+                  </span>
+                  <button onClick={disconnectGoogle} disabled={gbpDisconnecting} style={{ background: 'none', border: 'none', color: '#7a8fa8', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px', fontFamily: 'Open Sans, sans-serif' }}>
+                    {gbpDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                  </button>
+                </div>
+              </div>
+
+              {(() => {
+                const allLocs = (gbpStatus.accounts || []).flatMap(a => a.locations.map(l => ({ ...l, accountDisplayName: a.accountDisplayName })))
+                if (allLocs.length === 0) {
+                  return <div style={{ fontSize: '12px', color: '#7a8fa8', padding: '8px 12px', background: 'rgba(255,165,0,0.05)', border: '1px solid rgba(255,165,0,0.2)', borderRadius: '8px' }}>No verified locations found on this Google account. Verify your listing in Google Business Profile, then refresh.</div>
+                }
+                return (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <select
+                      value={selectedLocation}
+                      onChange={e => { setSelectedLocation(e.target.value); loadLocationData(e.target.value) }}
+                      className="form-input"
+                      style={{ width: 'auto', minWidth: '280px', fontFamily: 'Open Sans, sans-serif', fontSize: '13px' }}
+                    >
+                      <option value="">Select a location...</option>
+                      {allLocs.map(l => (
+                        <option key={l.name} value={l.name}>
+                          {l.title}{l.address ? ' — ' + l.address : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedLocation && (
+                      <button className="btn btn-accent" onClick={() => loadLocationData(selectedLocation)} disabled={locationLoading}>
+                        {locationLoading ? 'Loading...' : 'Refresh Insights'}
+                      </button>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {locationError && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '0.75rem', color: '#ff4444', fontSize: '12px', marginTop: '0.75rem' }}>{locationError}</div>}
+
+              {locationLoading && <div style={{ textAlign: 'center', padding: '2rem', color: '#7a8fa8', fontSize: '13px', fontFamily: 'Roboto Mono, monospace' }}>Loading insights...</div>}
+
+              {locationData && !locationLoading && (
+                <div style={{ marginTop: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                    {[
+                      { label: 'Impressions', value: locationData.totals?.total_impressions?.toLocaleString() || '0', color: '#0d1b2e' },
+                      { label: 'Calls', value: locationData.totals?.calls?.toLocaleString() || '0', color: '#1e90ff' },
+                      { label: 'Website Clicks', value: locationData.totals?.website_clicks?.toLocaleString() || '0', color: '#00d084' },
+                      { label: 'Direction Requests', value: locationData.totals?.direction_requests?.toLocaleString() || '0', color: '#ffa500' },
+                    ].map(s => (
+                      <div key={s.label} style={{ background: '#f8f9fb', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '10px', padding: '0.85rem 1rem' }}>
+                        <div style={{ fontSize: '10px', color: '#7a8fa8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', fontFamily: 'Roboto Mono, monospace' }}>{s.label}</div>
+                        <div style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Montserrat, sans-serif', color: s.color }}>{s.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '12px', color: '#4a6080', padding: '0.5rem 0' }}>
+                    {locationData.average_rating != null && <span>Rating: <strong>{locationData.average_rating}</strong></span>}
+                    {locationData.total_review_count != null && <span>Reviews: <strong>{locationData.total_review_count}</strong></span>}
+                    {locationData.posts && <span>Posts: <strong>{locationData.posts.length}</strong></span>}
+                  </div>
+                  {locationData.insights_error && <div style={{ fontSize: '11px', color: '#ffa500', marginTop: '0.5rem' }}>Insights API: {locationData.insights_error}</div>}
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={cardStyle}>
-            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '14px', fontWeight: 600, marginBottom: '0.75rem' }}>Search Google Business Profile</div>
+            <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '14px', fontWeight: 600, marginBottom: '0.5rem' }}>Look up any business (public)</div>
+            <div style={{ fontSize: '12px', color: '#7a8fa8', marginBottom: '0.75rem' }}>Audit any Google Business Profile — yours or a competitor's — using public Google Maps data. No login required.</div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input type="text" className="form-input" placeholder="Business name + city (e.g. Joe's Plumbing San Antonio TX)" value={gbpQuery} onChange={e => setGbpQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && checkGBP()} style={{ flex: 1 }} />
               <button className="btn btn-accent" onClick={checkGBP} disabled={gbpLoading}>{gbpLoading ? 'Searching...' : 'Check GBP'}</button>
