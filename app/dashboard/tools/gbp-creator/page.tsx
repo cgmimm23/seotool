@@ -71,7 +71,7 @@ export default function GBPCreatorPage() {
           'https://www.googleapis.com/auth/webmasters.readonly',
           'https://www.googleapis.com/auth/analytics.readonly',
         ].join(' '),
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
       },
     })
   }

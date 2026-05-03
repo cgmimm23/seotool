@@ -48,7 +48,7 @@ export default function ReviewsPage() {
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         scopes: 'https://www.googleapis.com/auth/business.manage',
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
       },
     })
   }

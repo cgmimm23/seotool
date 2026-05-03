@@ -4,6 +4,48 @@ import { getGoogleToken } from '@/lib/google-token'
 
 const GBP_SCOPE = 'https://www.googleapis.com/auth/business.manage'
 
+async function fetchAllAccounts(headers: HeadersInit) {
+  const all: any[] = []
+  let pageToken = ''
+  for (let i = 0; i < 20; i++) {
+    const url = new URL('https://mybusinessaccountmanagement.googleapis.com/v1/accounts')
+    url.searchParams.set('pageSize', '100')
+    if (pageToken) url.searchParams.set('pageToken', pageToken)
+    const res = await fetch(url.toString(), { headers })
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(body)
+    }
+    const data = await res.json()
+    if (data.accounts) all.push(...data.accounts)
+    pageToken = data.nextPageToken || ''
+    if (!pageToken) break
+  }
+  return all
+}
+
+async function fetchAllLocations(accountName: string, headers: HeadersInit) {
+  const all: any[] = []
+  let pageToken = ''
+  const readMask = 'name,title,storefrontAddress,phoneNumbers,websiteUri,categories,profile,metadata'
+  for (let i = 0; i < 50; i++) {
+    const url = new URL(`https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations`)
+    url.searchParams.set('readMask', readMask)
+    url.searchParams.set('pageSize', '100')
+    if (pageToken) url.searchParams.set('pageToken', pageToken)
+    const res = await fetch(url.toString(), { headers })
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(body)
+    }
+    const data = await res.json()
+    if (data.locations) all.push(...data.locations)
+    pageToken = data.nextPageToken || ''
+    if (!pageToken) break
+  }
+  return all
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabase()
@@ -34,28 +76,29 @@ export async function GET(request: NextRequest) {
 
     const headers = { Authorization: `Bearer ${accessToken}` }
 
-    const acctRes = await fetch('https://mybusinessaccountmanagement.googleapis.com/v1/accounts', { headers })
-    if (!acctRes.ok) {
-      const body = await acctRes.text()
+    let accounts: any[] = []
+    try {
+      accounts = await fetchAllAccounts(headers)
+    } catch (e: any) {
       return NextResponse.json({
-        connected: true,
-        email,
-        scopes,
-        accounts: [],
-        listError: body,
+        connected: true, email, scopes, accounts: [], listError: e.message,
       })
     }
-    const acctData = await acctRes.json()
-    const accounts = acctData.accounts || []
 
     const result = await Promise.all(accounts.map(async (acct: any) => {
+      let locations: any[] = []
+      let locError: string | null = null
       try {
-        const locRes = await fetch(
-          `https://mybusinessbusinessinformation.googleapis.com/v1/${acct.name}/locations?readMask=name,title,storefrontAddress,phoneNumbers,websiteUri`,
-          { headers }
-        )
-        const locData = await locRes.json()
-        const locations = (locData.locations || []).map((l: any) => ({
+        locations = await fetchAllLocations(acct.name, headers)
+      } catch (e: any) {
+        locError = e.message
+      }
+      return {
+        accountName: acct.name,
+        accountDisplayName: acct.accountName || acct.name,
+        accountType: acct.type || null,
+        verified: !!acct.verificationState && acct.verificationState !== 'UNVERIFIED',
+        locations: locations.map(l => ({
           name: l.name,
           title: l.title,
           address: l.storefrontAddress
@@ -63,24 +106,22 @@ export async function GET(request: NextRequest) {
             : '',
           phone: l.phoneNumbers?.primaryPhone || '',
           website: l.websiteUri || '',
-        }))
-        return {
-          accountName: acct.name,
-          accountDisplayName: acct.accountName || acct.name,
-          accountType: acct.type || null,
-          locations,
-        }
-      } catch {
-        return {
-          accountName: acct.name,
-          accountDisplayName: acct.accountName || acct.name,
-          accountType: acct.type || null,
-          locations: [],
-        }
+          primaryCategory: l.categories?.primaryCategory?.displayName || '',
+        })),
+        locError,
       }
     }))
 
-    return NextResponse.json({ connected: true, email, scopes, accounts: result })
+    const totalLocations = result.reduce((sum, a) => sum + a.locations.length, 0)
+
+    return NextResponse.json({
+      connected: true,
+      email,
+      scopes,
+      accounts: result,
+      accountCount: result.length,
+      locationCount: totalLocations,
+    })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

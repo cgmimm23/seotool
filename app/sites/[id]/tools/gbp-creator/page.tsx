@@ -47,7 +47,7 @@ export default function GBPCreatorPage({ params }: { params: { id: string } }) {
 
   async function connectGoogle() {
     document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback`, scopes: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/webmasters.readonly', queryParams: { access_type: 'offline', prompt: 'consent' } } })
+    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback`, scopes: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/webmasters.readonly', queryParams: { access_type: 'offline', prompt: 'select_account consent' } } })
   }
 
   async function fetchAccounts() {
