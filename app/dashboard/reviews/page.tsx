@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 
+type GbpStatus = { connected: boolean; email: string | null; scopes: string[]; accounts: { accountName: string; accountDisplayName: string; locations: { name: string; title: string; address: string }[] }[] }
+
 export default function ReviewsPage() {
-  const [connected, setConnected] = useState(false)
+  const [status, setStatus] = useState<GbpStatus | null>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [locations, setLocations] = useState<any[]>([])
-  const [selectedAccount, setSelectedAccount] = useState('')
+  const [disconnecting, setDisconnecting] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState('')
   const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -27,15 +27,22 @@ export default function ReviewsPage() {
 
   async function checkConnection() {
     setCheckingAuth(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.provider_token) {
-      setConnected(true)
-      fetchAccounts(session.provider_token)
+    try {
+      const res = await fetch('/api/gbp/status')
+      const json = await res.json()
+      setStatus(json)
+      if (json.connected) {
+        const allLocs = (json.accounts || []).flatMap((a: any) => a.locations || [])
+        if (allLocs.length === 1) setSelectedLocation(allLocs[0].name)
+      }
+    } catch {
+      setStatus({ connected: false, email: null, scopes: [], accounts: [] })
     }
     setCheckingAuth(false)
   }
 
   async function connectGoogle() {
+    document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -46,33 +53,17 @@ export default function ReviewsPage() {
     })
   }
 
-  async function fetchAccounts(token?: string) {
+  async function disconnect() {
+    if (!confirm('Disconnect Google Business Profile?')) return
+    setDisconnecting(true)
     try {
-      const res = await fetch('/api/reviews', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'accounts' }),
-      })
-      const data = await res.json()
-      const accs = data.accounts || []
-      setAccounts(accs)
-      if (accs.length > 0) {
-        setSelectedAccount(accs[0].name)
-        fetchLocations(accs[0].name)
-      }
-    } catch { setError('Could not fetch accounts') }
-  }
-
-  async function fetchLocations(accountName: string) {
-    try {
-      const res = await fetch('/api/reviews', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'locations', accountName }),
-      })
-      const data = await res.json()
-      const locs = data.locations || []
-      setLocations(locs)
-      if (locs.length > 0) setSelectedLocation(locs[0].name)
-    } catch { setError('Could not fetch locations') }
+      await fetch('/api/gbp/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      setReviews([])
+      setSelectedLocation('')
+      await checkConnection()
+    } finally {
+      setDisconnecting(false)
+    }
   }
 
   async function fetchReviews() {
@@ -178,7 +169,7 @@ export default function ReviewsPage() {
 
   if (checkingAuth) return <div style={{ textAlign: 'center', padding: '3rem', color: '#7a8fa8', fontSize: '13px', fontFamily: 'Roboto Mono, monospace' }}>Checking Google connection...</div>
 
-  if (!connected) return (
+  if (!status?.connected) return (
     <div>
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Google Reviews</h2>
@@ -186,37 +177,56 @@ export default function ReviewsPage() {
       </div>
       <div style={{ ...card, textAlign: 'center', padding: '3rem' }}>
         <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Connect Google Business Profile</div>
-        <p style={{ fontSize: '14px', color: '#7a8fa8', marginBottom: '1.5rem', maxWidth: '440px', margin: '0 auto 1.5rem' }}>Connect your Google account to view and respond to your Google Business reviews.</p>
-        <button onClick={connectGoogle} style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: '#fff', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '8px', padding: '0.75rem 1.5rem', fontSize: '14px', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif' }}>
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Connect with Google
-        </button>
+        <p style={{ fontSize: '14px', color: '#7a8fa8', marginBottom: '0.5rem', maxWidth: '460px', margin: '0 auto 0.5rem' }}>Reviews come from your Google Business Profile. Connect once and we'll pull all locations and reviews automatically.</p>
+        {status?.email && (
+          <p style={{ fontSize: '12px', color: '#ff4444', marginBottom: '0.75rem' }}>
+            Signed in as {status.email}, but the Business Profile scope was not granted. Click below to grant access.
+          </p>
+        )}
+        <div style={{ marginTop: '1.25rem' }}>
+          <button onClick={connectGoogle} style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: '#fff', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '8px', padding: '0.75rem 1.5rem', fontSize: '14px', cursor: 'pointer', fontFamily: 'Open Sans, sans-serif' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Connect with Google
+          </button>
+        </div>
       </div>
     </div>
   )
 
+  const allLocations = (status.accounts || []).flatMap(a => a.locations.map(l => ({ ...l, accountName: a.accountDisplayName })))
+
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>Google Reviews</h2>
           <p style={{ fontSize: '13px', color: '#7a8fa8' }}>Manage, respond to, and flag reviews</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {accounts.length > 0 && (
-            <select value={selectedAccount} onChange={e => { setSelectedAccount(e.target.value); fetchLocations(e.target.value) }} style={{ ...inputStyle, width: 'auto', fontSize: '12px', fontFamily: 'Roboto Mono, monospace' }}>
-              {accounts.map((a: any) => <option key={a.name} value={a.name}>{a.accountName || a.name}</option>)}
-            </select>
-          )}
-          {locations.length > 0 && (
-            <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)} style={{ ...inputStyle, width: 'auto', fontSize: '12px', fontFamily: 'Roboto Mono, monospace' }}>
-              {locations.map((l: any) => <option key={l.name} value={l.name}>{l.title || l.name}</option>)}
-            </select>
-          )}
-          <button onClick={fetchReviews} className="btn btn-accent" style={{ fontSize: '12px' }} disabled={!selectedLocation || loading}>
-            {loading ? 'Loading...' : 'Load Reviews'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '12px', background: 'rgba(0,208,132,0.1)', color: '#00a36b', fontFamily: 'Roboto Mono, monospace' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00d084' }} />
+            {status.email || 'Connected'}
+          </span>
+          <button onClick={disconnect} disabled={disconnecting} style={{ background: 'none', border: 'none', color: '#7a8fa8', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px', fontFamily: 'Open Sans, sans-serif' }}>
+            {disconnecting ? 'Disconnecting...' : 'Disconnect'}
           </button>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {allLocations.length > 0 ? (
+          <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)} className="form-input" style={{ width: 'auto', minWidth: '280px', fontSize: '13px', fontFamily: 'Open Sans, sans-serif' }}>
+            <option value="">Select a location...</option>
+            {allLocations.map((l: any) => (
+              <option key={l.name} value={l.name}>{l.title}{l.address ? ' — ' + l.address : ''}</option>
+            ))}
+          </select>
+        ) : (
+          <div style={{ fontSize: '12px', color: '#7a8fa8' }}>No verified locations found on this Google account.</div>
+        )}
+        <button onClick={fetchReviews} className="btn btn-accent" style={{ fontSize: '12px' }} disabled={!selectedLocation || loading}>
+          {loading ? 'Loading...' : 'Load Reviews'}
+        </button>
       </div>
 
       {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '1rem', color: '#ff4444', fontSize: '13px', marginBottom: '12px' }}>{error}</div>}
