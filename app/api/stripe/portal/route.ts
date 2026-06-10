@@ -1,19 +1,18 @@
 import { getStripe } from '@/lib/stripe'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST() {
-  const supabase = createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('stripe_customer_id')
-    .eq('id', user.id)
-    .single()
+  const profile = await prisma.profiles.findUnique({
+    where: { id: user.id },
+    select: { stripe_customer_id: true },
+  })
 
   if (!profile?.stripe_customer_id) {
     return NextResponse.json({ error: 'No subscription found' }, { status: 400 })

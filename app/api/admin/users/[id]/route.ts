@@ -1,5 +1,5 @@
 import { requireAdmin } from '@/lib/admin-auth'
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -8,30 +8,33 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const auth = await requireAdmin()
   if (auth.error) return auth.error
 
-  const supabase = auth.supabase
-
-  const [profileRes, sitesRes, auditsRes, keywordsRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', params.id).single(),
-    supabase.from('sites').select('id, url, name, active, created_at').eq('user_id', params.id),
-    supabase.from('audit_reports').select('id', { count: 'exact' }).eq('user_id', params.id),
-    supabase.from('keywords').select('id', { count: 'exact' }).eq('user_id', params.id),
+  // Admin route — intentionally cross-user (admin-gated by requireAdmin).
+  const [profile, sites, totalAudits, totalKeywords] = await Promise.all([
+    prisma.profiles.findUnique({ where: { id: params.id } }),
+    prisma.sites.findMany({
+      where: { user_id: params.id },
+      select: { id: true, url: true, name: true, active: true, created_at: true },
+    }),
+    prisma.audit_reports.count({ where: { user_id: params.id } }),
+    prisma.keywords.count({ where: { user_id: params.id } }),
   ])
 
-  if (profileRes.error) {
+  if (!profile) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  const { data: dupes } = await supabase
-    .from('profiles')
-    .select('id, plan, created_at')
-    .eq('email', profileRes.data.email)
-    .neq('id', params.id)
+  const dupes = profile.email
+    ? await prisma.profiles.findMany({
+        where: { email: profile.email, id: { not: params.id } },
+        select: { id: true, plan: true, created_at: true },
+      })
+    : []
 
   return NextResponse.json({
-    user: profileRes.data,
-    sites: sitesRes.data || [],
-    totalAudits: auditsRes.count || 0,
-    totalKeywords: keywordsRes.count || 0,
+    user: profile,
+    sites: sites || [],
+    totalAudits: totalAudits || 0,
+    totalKeywords: totalKeywords || 0,
     duplicates: dupes || [],
   })
 }
@@ -60,33 +63,41 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     updates.onboarding_completed = true
   }
 
-  updates.updated_at = new Date().toISOString()
+  // trial_ends_at arrives as a string/null; coerce to Date for Prisma.
+  if (updates.trial_ends_at) updates.trial_ends_at = new Date(updates.trial_ends_at)
 
-  const adminSupabase = createAdminSupabase()
+  updates.updated_at = new Date()
 
-  const { error } = await adminSupabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', params.id)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  // If suspending, ban the auth user too
-  if (updates.status === 'suspended') {
-    await adminSupabase.auth.admin.updateUserById(params.id, { ban_duration: '876000h' })
-  } else if (updates.status === 'active') {
-    await adminSupabase.auth.admin.updateUserById(params.id, { ban_duration: 'none' })
-  }
-
-  // Log activity
-  await auth.supabase.from('admin_activity_log').insert({
-    admin_id: auth.user!.id,
-    action: 'update_user',
-    target_user_id: params.id,
-    details: updates,
+  // Admin route — intentionally cross-user (admin-gated by requireAdmin).
+  await prisma.profiles.update({
+    where: { id: params.id },
+    data: updates,
   })
+
+  // If suspending, ban the auth user too (banned_until in auth.users);
+  // reactivating clears the ban.
+  if (updates.status === 'suspended') {
+    await prisma.users.update({
+      where: { id: params.id },
+      data: { banned_until: new Date('9999-12-31T00:00:00Z') },
+    }).catch(() => {})
+  } else if (updates.status === 'active') {
+    await prisma.users.update({
+      where: { id: params.id },
+      data: { banned_until: null },
+    }).catch(() => {})
+  }
+
+  // Log activity (non-fatal; admin_id references profiles in the schema, so
+  // swallow FK errors to preserve the prior fire-and-forget behavior).
+  await prisma.admin_activity_log.create({
+    data: {
+      admin_id: auth.user!.id,
+      action: 'update_user',
+      target_user_id: params.id,
+      details: updates,
+    },
+  }).catch(() => {})
 
   return NextResponse.json({ success: true })
 }
@@ -100,28 +111,28 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 })
   }
 
-  const adminSupabase = createAdminSupabase()
-
   // Get user info for logging
-  const { data: profile } = await adminSupabase
-    .from('profiles')
-    .select('email')
-    .eq('id', params.id)
-    .single()
+  const profile = await prisma.profiles.findUnique({
+    where: { id: params.id },
+    select: { email: true },
+  })
 
-  const { error } = await adminSupabase.auth.admin.deleteUser(params.id)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  // Delete the auth.users row; profiles (and downstream data) cascade via FK.
+  try {
+    await prisma.users.delete({ where: { id: params.id } })
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || 'Failed to delete user' }, { status: 500 })
   }
 
-  // Log activity
-  await auth.supabase.from('admin_activity_log').insert({
-    admin_id: auth.user!.id,
-    action: 'delete_user',
-    target_user_id: params.id,
-    details: { email: profile?.email },
-  })
+  // Log activity (non-fatal; see note in PATCH).
+  await prisma.admin_activity_log.create({
+    data: {
+      admin_id: auth.user!.id,
+      action: 'delete_user',
+      target_user_id: params.id,
+      details: { email: profile?.email },
+    },
+  }).catch(() => {})
 
   return NextResponse.json({ success: true })
 }

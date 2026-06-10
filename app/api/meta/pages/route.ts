@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSiteMeta, graphFetch } from '@/lib/meta'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,14 +40,17 @@ export async function POST(req: NextRequest) {
     const chosen = (pages.data || []).find((p: any) => p.id === pageId)
     if (!chosen) return NextResponse.json({ error: 'Page not found or not accessible' }, { status: 404 })
 
-    const supabase = createServerSupabase()
-    await supabase.from('sites').update({
-      meta_page_id: chosen.id,
-      meta_page_name: chosen.name,
-      meta_page_access_token: chosen.access_token,
-      meta_ig_user_id: chosen.instagram_business_account?.id || null,
-      meta_ig_username: chosen.instagram_business_account?.username || null,
-    }).eq('id', siteId)
+    // getSiteMeta already verified ownership; scope the write by owner too.
+    await prisma.sites.updateMany({
+      where: { id: siteId, user_id: ctx.site.user_id },
+      data: {
+        meta_page_id: chosen.id,
+        meta_page_name: chosen.name,
+        meta_page_access_token: chosen.access_token,
+        meta_ig_user_id: chosen.instagram_business_account?.id || null,
+        meta_ig_username: chosen.instagram_business_account?.username || null,
+      },
+    })
 
     return NextResponse.json({ success: true, page: chosen })
   } catch (err: any) {

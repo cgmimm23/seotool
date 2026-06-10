@@ -1,73 +1,54 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const res = NextResponse.next({ request })
+  const { pathname } = request.nextUrl
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+  const isAuthed = !!token
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const isAuthPage = pathname.startsWith('/login')
+  const isAdminPage = pathname.startsWith('/admin')
+  const isAdminLogin =
+    pathname === '/admin/login' ||
+    pathname === '/admin/forgot-password' ||
+    pathname === '/admin/reset-password'
+  const isDashboard =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/sites') ||
+    pathname.startsWith('/audit') ||
+    pathname.startsWith('/keywords') ||
+    pathname.startsWith('/serp') ||
+    pathname.startsWith('/backlinks') ||
+    pathname.startsWith('/analytics') ||
+    pathname.startsWith('/settings')
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login')
-  const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
-  const isAdminLogin = request.nextUrl.pathname === '/admin/login' || request.nextUrl.pathname === '/admin/forgot-password' || request.nextUrl.pathname === '/admin/reset-password'
-  const isDashboard = request.nextUrl.pathname.startsWith('/dashboard') ||
-    request.nextUrl.pathname.startsWith('/audit') ||
-    request.nextUrl.pathname.startsWith('/keywords') ||
-    request.nextUrl.pathname.startsWith('/serp') ||
-    request.nextUrl.pathname.startsWith('/backlinks') ||
-    request.nextUrl.pathname.startsWith('/analytics') ||
-    request.nextUrl.pathname.startsWith('/settings')
-
-  // Admin routes protection — requires BOTH admin role AND passkey verification
+  // Admin routes use a separate `admin_session` cookie (admin_accounts auth).
   if (isAdminPage && !isAdminLogin) {
     const adminSession = request.cookies.get('admin_session')?.value
-
     if (!adminSession) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
 
-  // Redirect unauthenticated users trying to access dashboard
-  if (!user && isDashboard) {
+  if (!isAuthed && isDashboard) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  // Redirect authenticated users away from login
-  if (user && isAuthPage) {
+  if (isAuthed && isAuthPage) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Prevent CDN from caching authenticated pages and ensure caches vary
-  // by the RSC request header so RSC-format responses aren't served for
-  // full-page navigations.
   if (isDashboard || isAdminPage) {
-    supabaseResponse.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate')
-    supabaseResponse.headers.set('Vary', 'RSC, Next-Router-State-Tree, Next-Router-Prefetch, Cookie')
+    res.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate')
+    res.headers.set('Vary', 'RSC, Next-Router-State-Tree, Next-Router-Prefetch, Cookie')
   }
 
-  return supabaseResponse
+  return res
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/cron|api/weekly-report|api/tracking|api/v1|api/reports|api/stripe/webhook|api/agent|reports).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/auth|api/cron|api/weekly-report|api/tracking|api/v1|api/reports|api/stripe/webhook|api/agent|reports).*)',
   ],
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { exchangeCodeForToken, exchangeForLongLivedUserToken, graphFetch, META_SCOPES } from '@/lib/meta'
 
 export const dynamic = 'force-dynamic'
@@ -22,15 +23,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${origin}/sites?meta_error=bad_state`)
   }
 
-  const supabase = createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user || user.id !== state.userId) {
     return NextResponse.redirect(`${origin}/login?next=${encodeURIComponent(state.returnTo || '/sites')}`)
   }
 
   // Verify site ownership
-  const { data: site } = await supabase.from('sites').select('id, user_id').eq('id', state.siteId).single()
-  if (!site || site.user_id !== user.id) {
+  const site = await prisma.sites.findFirst({
+    where: { id: state.siteId, user_id: user.id },
+    select: { id: true, user_id: true },
+  })
+  if (!site) {
     return NextResponse.redirect(`${origin}/sites?meta_error=bad_site`)
   }
 
@@ -72,19 +75,22 @@ export async function GET(req: NextRequest) {
       adAccountId = ads.data?.[0]?.id || null
     } catch {}
 
-    await supabase.from('sites').update({
-      meta_user_id: me.id,
-      meta_user_name: me.name,
-      meta_user_access_token: long.access_token,
-      meta_token_expires_at: expiresAt.toISOString(),
-      meta_page_id: pageId,
-      meta_page_name: pageName,
-      meta_page_access_token: pageAccessToken,
-      meta_ig_user_id: igUserId,
-      meta_ig_username: igUsername,
-      meta_ad_account_id: adAccountId,
-      meta_scopes: META_SCOPES.join(','),
-    }).eq('id', state.siteId).eq('user_id', user.id)
+    await prisma.sites.updateMany({
+      where: { id: state.siteId, user_id: user.id },
+      data: {
+        meta_user_id: me.id,
+        meta_user_name: me.name,
+        meta_user_access_token: long.access_token,
+        meta_token_expires_at: expiresAt,
+        meta_page_id: pageId,
+        meta_page_name: pageName,
+        meta_page_access_token: pageAccessToken,
+        meta_ig_user_id: igUserId,
+        meta_ig_username: igUsername,
+        meta_ad_account_id: adAccountId,
+        meta_scopes: META_SCOPES.join(','),
+      },
+    })
 
     return NextResponse.redirect(`${origin}${state.returnTo || '/sites'}?meta_connected=1`)
   } catch (err: any) {

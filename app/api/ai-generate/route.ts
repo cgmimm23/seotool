@@ -1,4 +1,4 @@
-import { createServerSupabase } from '@/lib/supabase-server'
+import { getUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -6,8 +6,7 @@ export const dynamic = 'force-dynamic'
 // Generic server-side AI generation endpoint
 // Replaces all direct browser-to-Anthropic calls
 export async function POST(req: NextRequest) {
-  const supabase = createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { prompt, max_tokens } = await req.json()

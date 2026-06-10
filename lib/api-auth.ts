@@ -1,4 +1,4 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 
@@ -26,16 +26,13 @@ export async function authenticateApiKey(request: NextRequest): Promise<ApiAuthR
   }
 
   const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex')
-  const supabase = createAdminSupabase()
 
-  const { data: apiKey, error } = await supabase
-    .from('api_keys')
-    .select('id, user_id, scopes, expires_at, revoked')
-    .eq('key_hash', keyHash)
-    .eq('revoked', false)
-    .single()
+  const apiKey = await prisma.api_keys.findFirst({
+    where: { key_hash: keyHash, revoked: false },
+    select: { id: true, user_id: true, scopes: true, expires_at: true },
+  })
 
-  if (error || !apiKey) {
+  if (!apiKey) {
     return { error: 'Invalid API key', status: 401 }
   }
 
@@ -44,21 +41,20 @@ export async function authenticateApiKey(request: NextRequest): Promise<ApiAuthR
   }
 
   // Check enterprise plan
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('plan')
-    .eq('id', apiKey.user_id)
-    .single()
+  const profile = await prisma.profiles.findUnique({
+    where: { id: apiKey.user_id },
+    select: { plan: true },
+  })
 
   if (!profile || profile.plan !== 'enterprise') {
     return { error: 'Enterprise plan required for API access', status: 403 }
   }
 
   // Update last used
-  await supabase
-    .from('api_keys')
-    .update({ last_used_at: new Date().toISOString() })
-    .eq('id', apiKey.id)
+  await prisma.api_keys.update({
+    where: { id: apiKey.id },
+    data: { last_used_at: new Date() },
+  })
 
   return {
     userId: apiKey.user_id,

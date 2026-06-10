@@ -1,4 +1,4 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
@@ -12,12 +12,10 @@ export async function GET() {
     return NextResponse.json({ role: null }, { status: 401 })
   }
 
-  const supabase = createAdminSupabase()
-  const { data: admin } = await supabase
-    .from('admin_accounts')
-    .select('email, name')
-    .eq('id', adminSession)
-    .single()
+  const admin = await prisma.admin_accounts.findUnique({
+    where: { id: adminSession },
+    select: { email: true, name: true },
+  })
 
   if (!admin) {
     return NextResponse.json({ role: null }, { status: 401 })

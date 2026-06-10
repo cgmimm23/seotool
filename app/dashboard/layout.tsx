@@ -1,36 +1,29 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { useSession, signOut as nextSignOut } from 'next-auth/react'
 import AiChat from '@/app/components/AiChat'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [email, setEmail] = useState('')
+  const { data: session } = useSession()
+  const email = session?.user?.email || ''
   const [unread, setUnread] = useState(0)
   const [notifications, setNotifications] = useState<any[]>([])
   const [showNotifs, setShowNotifs] = useState(false)
   const [firstSiteId, setFirstSiteId] = useState('')
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setEmail(session.user.email || '')
-        supabase.from('sites').select('id').eq('user_id', session.user.id).limit(1).single().then(({ data }) => {
-          if (data) setFirstSiteId(data.id)
-        })
-      }
-    })
+    fetch('/api/sites').then(r => r.json()).then(d => {
+      if (d.sites?.[0]?.id) setFirstSiteId(d.sites[0].id)
+    }).catch(() => {})
     fetch('/api/notifications').then(r => r.json()).then(d => {
       setUnread(d.unread || 0)
       setNotifications(d.notifications || [])
     }).catch(() => {})
   }, [])
 
-  async function signOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+  function signOut() {
+    nextSignOut({ callbackUrl: '/login' })
   }
 
   return (

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 type SourcePositions = {
   gsc: number | null
@@ -56,25 +55,17 @@ function RankHistoryInner() {
   const [search, setSearch] = useState('')
   const tableRef = useRef<HTMLDivElement>(null)
 
-  const supabase = createClient()
-
   useEffect(() => {
-    async function resolveSite() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      const decodedUrl = decodeURIComponent(siteParam)
-      const { data: site } = await supabase
-        .from('sites')
-        .select('id, name')
-        .eq('url', decodedUrl)
-        .eq('user_id', session.user.id)
-        .single()
-      if (site) {
-        setSiteId(site.id)
-        setSiteName(site.name)
-      }
-    }
-    if (siteParam) resolveSite()
+    if (!siteParam) return
+    fetch(`/api/sites/resolve?url=${encodeURIComponent(siteParam)}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d?.site) {
+          setSiteId(d.site.id)
+          setSiteName(d.site.name || '')
+        }
+      })
+      .catch(() => {})
   }, [siteParam])
 
   useEffect(() => {

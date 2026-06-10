@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { useSession, signOut as nextSignOut } from 'next-auth/react'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
@@ -14,9 +14,9 @@ export default function SiteLayout({
   params: { id: string }
 }) {
   const [site, setSite] = useState<any>(null)
-  const [email, setEmail] = useState('')
+  const { data: session } = useSession()
+  const email = session?.user?.email || ''
   const pathname = usePathname()
-  const supabase = createClient()
 
   const [chatOpen, setChatOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -32,11 +32,10 @@ export default function SiteLayout({
 
   useEffect(() => {
     async function load() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      setEmail(session.user.email || '')
-      const { data } = await supabase.from('sites').select('id, name, url').eq('id', params.id).single()
-      if (data) setSite(data)
+      const res = await fetch(`/api/sites/${params.id}`)
+      if (!res.ok) return
+      const { site } = await res.json()
+      if (site) setSite(site)
     }
     load()
   }, [params.id])
@@ -68,9 +67,8 @@ export default function SiteLayout({
     }
   }
 
-  async function signOut() {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+  function signOut() {
+    nextSignOut({ callbackUrl: '/login' })
   }
 
   const id = params.id

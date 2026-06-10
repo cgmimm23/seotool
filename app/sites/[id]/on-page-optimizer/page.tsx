@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 function OnPageOptimizerInner({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams()
@@ -16,11 +15,11 @@ function OnPageOptimizerInner({ params }: { params: { id: string } }) {
   const [reports, setReports] = useState<any[]>([])
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data: site } = await supabase.from('sites').select('url').eq('id', params.id).single()
+      const siteRes = await fetch(`/api/sites/${params.id}`)
+      const site = siteRes.ok ? (await siteRes.json()).site : null
 
       // Prefill from query params (handoff from Keyword Strategy etc.)
       const qKeyword = searchParams.get('keyword')
@@ -92,13 +91,11 @@ function OnPageOptimizerInner({ params }: { params: { id: string } }) {
   }
 
   async function trackKeyword(kw: string, pagePath: string = '/') {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    await supabase.from('keywords').insert({
-      site_id: params.id,
-      user_id: session.user.id,
-      page_path: pagePath,
-      keyword: kw,
+    // Server upserts into keywords (user-scoped) via the save action.
+    await fetch('/api/keywords', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ siteId: params.id, pagePath, keywords: [kw], action: 'save' }),
     })
   }
 

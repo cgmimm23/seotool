@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 type Tab = 'gbp' | 'citations' | 'rankings'
 
@@ -10,7 +10,6 @@ type GbpAccount = { accountName: string; accountDisplayName: string; accountType
 type GbpStatus = { connected: boolean; email: string | null; scopes: string[]; accounts: GbpAccount[] }
 
 export default function LocalSEOPage() {
-  const supabase = createClient()
   const [tab, setTab] = useState<Tab>('gbp')
 
   // GBP OAuth state
@@ -42,14 +41,9 @@ export default function LocalSEOPage() {
 
   async function connectGoogle() {
     document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly',
-        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
-      },
-    })
+    // NextAuth Google sign-in. Business/webmasters/analytics scopes are configured on the
+    // Google provider in lib/auth-options.ts; tokens are persisted to the profile on sign-in.
+    await signIn('google', { callbackUrl: window.location.pathname })
   }
 
   async function disconnectGoogle() {

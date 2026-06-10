@@ -1,18 +1,17 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+// Public share-link endpoint: resolved by unguessable share_token, no auth
+// (intentionally cross-user — anyone with the token may view).
 export async function GET(req: NextRequest, { params }: { params: { token: string } }) {
-  const supabase = createAdminSupabase()
+  const share = await prisma.report_shares.findUnique({
+    where: { share_token: params.token },
+    include: { audit_reports: true },
+  })
 
-  const { data: share, error } = await supabase
-    .from('report_shares')
-    .select('*, audit_reports(*)')
-    .eq('share_token', params.token)
-    .single()
-
-  if (error || !share) {
+  if (!share) {
     return NextResponse.json({ error: 'Report not found' }, { status: 404 })
   }
 
@@ -21,17 +20,15 @@ export async function GET(req: NextRequest, { params }: { params: { token: strin
   }
 
   // Increment view count
-  await supabase
-    .from('report_shares')
-    .update({ view_count: (share.view_count || 0) + 1 })
-    .eq('id', share.id)
+  await prisma.report_shares.update({
+    where: { id: share.id },
+    data: { view_count: (share.view_count || 0) + 1 },
+  })
 
   // Get white-label settings
-  const { data: whiteLabel } = await supabase
-    .from('white_label_settings')
-    .select('*')
-    .eq('user_id', share.user_id)
-    .single()
+  const whiteLabel = await prisma.white_label_settings.findUnique({
+    where: { user_id: share.user_id },
+  })
 
   return NextResponse.json({
     report: share.audit_reports,

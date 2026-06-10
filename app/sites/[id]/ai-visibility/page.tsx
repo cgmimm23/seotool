@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
 
 export default function AIVisibilityPage({ params }: { params: { id: string } }) {
   const [url, setUrl] = useState('')
@@ -14,17 +13,24 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
   const [copiedLlms, setCopiedLlms] = useState(false)
   const [copiedRobots, setCopiedRobots] = useState(false)
   const [lastScanned, setLastScanned] = useState<string | null>(null)
-  const supabase = createClient()
 
   const storageKey = `ai_visibility_${params.id}`
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('sites').select('url, name').eq('id', params.id).single()
-      if (data?.url) setUrl(data.url)
-      if (data?.name) setSiteName(data.name)
+      const res = await fetch(`/api/sites/${params.id}`)
+      if (res.ok) {
+        const { site } = await res.json()
+        if (site?.url) setUrl(site.url)
+        if (site?.name) setSiteName(site.name)
+      }
 
-      // Load last report from localStorage first (reliable, per-browser)
+      // Load last report from localStorage (reliable, per-browser).
+      // TODO(api): cross-device history previously read the latest
+      // ai_visibility_reports row for this site. No list route exists — add
+      // GET /api/ai-visibility/reports?siteId= returning the latest report
+      // (overall_score, ai_overview_likelihood, summary, checks, bot_status,
+      // llms_exists, robots_exists, created_at) to restore cross-device load.
       try {
         const saved = localStorage.getItem(storageKey)
         if (saved) {
@@ -33,31 +39,6 @@ export default function AIVisibilityPage({ params }: { params: { id: string } })
           if (parsed.lastScanned) setLastScanned(parsed.lastScanned)
         }
       } catch {}
-
-      // Also try Supabase (cross-device history)
-      const { data: report } = await supabase
-        .from('ai_visibility_reports')
-        .select('*')
-        .eq('site_id', params.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (report) {
-        setLastScanned(report.created_at)
-        setResult({
-          llms: { exists: report.llms_exists },
-          aiTxt: { exists: false },
-          robots: { exists: report.robots_exists },
-          botStatus: report.bot_status,
-          aiAnalysis: {
-            overall_score: report.overall_score,
-            ai_overview_likelihood: report.ai_overview_likelihood,
-            summary: report.summary,
-            checks: report.checks,
-          },
-        })
-      }
     }
     load()
   }, [params.id])
@@ -138,24 +119,12 @@ Schema:
         localStorage.setItem(storageKey, JSON.stringify({ result: newResult, lastScanned: scannedAt }))
       } catch {}
 
-      // Save to Supabase
-      if (aiAnalysis) {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase.from('ai_visibility_reports').insert({
-            site_id: params.id,
-            user_id: user.id,
-            url,
-            overall_score: aiAnalysis.overall_score,
-            ai_overview_likelihood: aiAnalysis.ai_overview_likelihood,
-            summary: aiAnalysis.summary,
-            checks: aiAnalysis.checks,
-            bot_status: botStatus,
-            llms_exists: llms.exists,
-            robots_exists: robots.exists,
-          })
-        }
-      }
+      // TODO(api): persist the report server-side for cross-device history.
+      // The client used to insert into ai_visibility_reports (site_id, user_id,
+      // url, overall_score, ai_overview_likelihood, summary, checks, bot_status,
+      // llms_exists, robots_exists). Add POST /api/ai-visibility/reports
+      // (owner-scoped) accepting that payload, then call it here with
+      // { siteId, url, ...aiAnalysis, bot_status, llms_exists, robots_exists }.
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
   }

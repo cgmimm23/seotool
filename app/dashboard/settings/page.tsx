@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
 
 export default function SettingsPage() {
   const [currentPlan, setCurrentPlan] = useState('free')
@@ -10,19 +9,16 @@ export default function SettingsPage() {
   const [annual, setAnnual] = useState(false)
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
-  const supabase = createClient()
 
   useEffect(() => {
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase.from('profiles').select('plan, subscription_cancel_at, email, full_name').eq('id', user.id).single()
-      if (data?.plan) setCurrentPlan(data.plan)
-      if (data?.subscription_cancel_at) setCancelAt(data.subscription_cancel_at)
-      if (data?.email) setEmail(data.email)
-      if (data?.full_name) setFullName(data.full_name)
-    }
-    load()
+    fetch('/api/profile').then(r => (r.ok ? r.json() : null)).then(d => {
+      const p = d?.profile
+      if (!p) return
+      setCurrentPlan(p.plan || 'free')
+      setCancelAt(p.subscription_cancel_at || null)
+      setEmail(p.email || '')
+      setFullName(p.full_name || '')
+    }).catch(() => {})
   }, [])
 
   async function handleCheckout(priceId: string, plan: string) {

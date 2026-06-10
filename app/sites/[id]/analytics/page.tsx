@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 type Property = { propertyId: string; displayName: string; accountName: string }
 
@@ -16,7 +16,6 @@ export default function AnalyticsPage({ params }: { params: { id: string } }) {
   const [loadingProperties, setLoadingProperties] = useState(false)
   const [days, setDays] = useState(30)
   const [checkingAuth, setCheckingAuth] = useState(true)
-  const supabase = createClient()
 
   useEffect(() => { checkConnection() }, [])
 
@@ -26,9 +25,8 @@ export default function AnalyticsPage({ params }: { params: { id: string } }) {
 
   async function checkConnection() {
     setCheckingAuth(true)
-    const { data: site } = await supabase.from('sites')
-      .select('google_email, google_access_token, ga4_property_id')
-      .eq('id', params.id).single()
+    const res = await fetch(`/api/sites/${params.id}`)
+    const site = res.ok ? (await res.json()).site : null
 
     if (site?.google_access_token) {
       setConnected(true)
@@ -54,24 +52,20 @@ export default function AnalyticsPage({ params }: { params: { id: string } }) {
     finally { setLoadingProperties(false) }
   }
 
-  async function connectGoogle() {
+  function connectGoogle() {
     document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
     document.cookie = `oauth_site_id=${params.id}; path=/; max-age=600; SameSite=Lax`
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/webmasters.readonly',
-        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
-      },
-    })
+    signIn('google', { callbackUrl: window.location.pathname })
   }
 
   async function disconnectGoogle() {
     if (!confirm('Disconnect Google from this site?')) return
-    await supabase.from('sites').update({
-      google_email: null, google_access_token: null, google_refresh_token: null, google_token_expires_at: null,
-    }).eq('id', params.id)
+    // Server clears the site's google_* token columns (owner-scoped) + revokes.
+    await fetch('/api/gbp/disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ siteId: params.id }),
+    })
     setConnected(false)
     setConnectedEmail('')
     setProperties([])
@@ -88,7 +82,14 @@ export default function AnalyticsPage({ params }: { params: { id: string } }) {
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
-      await supabase.from('sites').update({ ga4_property_id: propertyId }).eq('id', params.id)
+      // TODO(api): persist the selected GA4 property on the site (ga4_property_id).
+      // No PATCH route exists for sites — add PATCH /api/sites/[id] accepting
+      // { ga4_property_id } (owner-scoped). Until then the choice isn't remembered.
+      await fetch(`/api/sites/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ga4_property_id: propertyId }),
+      })
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
   }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 type Property = { propertyId: string; displayName: string; accountName: string }
 
@@ -15,29 +15,23 @@ export default function AnalyticsPage() {
   const [loadingProperties, setLoadingProperties] = useState(false)
   const [days, setDays] = useState(30)
   const [checkingAuth, setCheckingAuth] = useState(true)
-  const supabase = createClient()
 
   useEffect(() => { checkConnection() }, [])
 
   async function checkConnection() {
     setCheckingAuth(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setCheckingAuth(false); return }
-
-    if (session.provider_token) {
-      setConnected(true)
-      await loadProperties()
-    } else {
-      const { data: profile } = await supabase.from('profiles')
-        .select('google_access_token, ga4_property_id')
-        .eq('id', session.user.id).single()
-      if (profile?.google_access_token) {
-        setConnected(true)
-        if (profile.ga4_property_id) setPropertyId(profile.ga4_property_id)
-        await loadProperties()
+    try {
+      const res = await fetch('/api/profile')
+      if (res.ok) {
+        const d = await res.json()
+        if (d.googleConnected) {
+          setConnected(true)
+          if (d.profile?.ga4_property_id) setPropertyId(d.profile.ga4_property_id)
+          loadProperties()
+        }
       }
-    }
-    setCheckingAuth(false)
+    } catch {}
+    finally { setCheckingAuth(false) }
   }
 
   async function loadProperties() {
@@ -59,14 +53,9 @@ export default function AnalyticsPage() {
 
   async function connectGoogle() {
     document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/webmasters.readonly',
-        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
-      },
-    })
+    // NextAuth Google sign-in. Analytics/webmasters scopes are configured on the Google
+    // provider in lib/auth-options.ts; tokens are persisted to the profile on sign-in.
+    await signIn('google', { callbackUrl: window.location.pathname })
   }
 
   async function fetchData() {
@@ -78,11 +67,11 @@ export default function AnalyticsPage() {
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
-      // Remember selected property
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        await supabase.from('profiles').update({ ga4_property_id: propertyId }).eq('id', session.user.id)
-      }
+      fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ga4_property_id: propertyId }),
+      }).catch(() => {})
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
   }

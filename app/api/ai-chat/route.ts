@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { runSeoAudit } from '@/lib/anthropic'
 import { fetchSerpResults } from '@/lib/serpapi'
 
@@ -137,42 +137,60 @@ async function fetchPageSignals(siteUrl: string, pagePath: string) {
 
 async function executeTool(
   tool: { name: string; input: any },
-  ctx: { siteId: string; userId: string; site: any; serviceDb: any }
+  ctx: { siteId: string; userId: string; site: any }
 ): Promise<any> {
   const { name, input } = tool
-  const { siteId, userId, site, serviceDb } = ctx
+  const { siteId, userId, site } = ctx
 
   if (name === 'add_keywords') {
     const rows = (input.keywords || []).map((kw: string) => ({
       site_id: siteId, user_id: userId, page_path: input.page_path || '/', keyword: kw.trim(),
     })).filter((r: any) => r.keyword)
     if (rows.length === 0) return { added: 0 }
-    const { error } = await serviceDb.from('keywords').upsert(rows, { onConflict: 'site_id,page_path,keyword', ignoreDuplicates: true })
-    if (error) throw new Error(error.message)
+    // Upsert on unique (site_id, page_path, keyword); ignore duplicates.
+    for (const r of rows) {
+      await prisma.keywords.upsert({
+        where: { site_id_page_path_keyword: { site_id: r.site_id, page_path: r.page_path, keyword: r.keyword } },
+        create: r,
+        update: {},
+      })
+    }
     return { added: rows.length, page_path: input.page_path, keywords: rows.map((r: any) => r.keyword) }
   }
 
   if (name === 'remove_keyword') {
-    let q = serviceDb.from('keywords').delete().eq('site_id', siteId).eq('user_id', userId).eq('keyword', input.keyword)
-    if (input.page_path) q = q.eq('page_path', input.page_path)
-    const { data: deleted, error } = await q.select()
-    if (error) throw new Error(error.message)
-    return { removed: deleted?.length || 0, keyword: input.keyword }
+    const deleted = await prisma.keywords.deleteMany({
+      where: {
+        site_id: siteId, user_id: userId, keyword: input.keyword,
+        ...(input.page_path ? { page_path: input.page_path } : {}),
+      },
+    })
+    return { removed: deleted.count || 0, keyword: input.keyword }
   }
 
   if (name === 'list_keywords') {
-    const { data } = await serviceDb.from('keywords').select('keyword, page_path, target_position').eq('site_id', siteId).order('page_path')
-    return { count: data?.length || 0, keywords: data || [] }
+    const data = await prisma.keywords.findMany({
+      where: { site_id: siteId },
+      select: { keyword: true, page_path: true, target_position: true },
+      orderBy: { page_path: 'asc' },
+    })
+    return { count: data.length, keywords: data }
   }
 
   if (name === 'run_audit') {
     const audit = await runSeoAudit(site.url, site.site_type || null, site.platform || null, site.audit_notes || null)
-    const { data } = await serviceDb.from('audit_reports').insert({
-      site_id: siteId, user_id: userId, url: audit.url || site.url,
-      overall_score: audit.overall_score, grade: audit.grade, summary: audit.summary,
-      categories: audit.categories, checks: audit.checks,
-    }).select().single()
-    await serviceDb.from('scan_schedule').upsert({ site_id: siteId, user_id: userId, last_scanned_at: new Date().toISOString() })
+    const data = await prisma.audit_reports.create({
+      data: {
+        site_id: siteId, user_id: userId, url: audit.url || site.url,
+        overall_score: audit.overall_score, grade: audit.grade, summary: audit.summary,
+        categories: audit.categories, checks: audit.checks,
+      },
+    })
+    await prisma.scan_schedule.upsert({
+      where: { site_id: siteId },
+      create: { site_id: siteId, user_id: userId, last_scanned_at: new Date() },
+      update: { user_id: userId, last_scanned_at: new Date() },
+    })
     const fails = (audit.checks || []).filter((c: any) => c.status === 'fail')
     return {
       report_id: data?.id,
@@ -209,7 +227,7 @@ async function executeTool(
   }
 
   if (name === 'run_serp_check') {
-    const { data: profile } = await serviceDb.from('profiles').select('serp_api_key').eq('id', userId).single()
+    const profile = await prisma.profiles.findUnique({ where: { id: userId }, select: { serp_api_key: true } })
     const apiKey = profile?.serp_api_key || process.env.SERPAPI_KEY
     if (!apiKey) throw new Error('SerpAPI key not configured. Add one in profile settings.')
     const serp = await fetchSerpResults(input.keyword, apiKey)
@@ -218,11 +236,16 @@ async function executeTool(
     const mine = results.find((r: any) => r.link?.includes(domain))
 
     if (input.save_history) {
-      const { data: kw } = await serviceDb.from('keywords').select('id').eq('site_id', siteId).eq('keyword', input.keyword).limit(1).single()
+      const kw = await prisma.keywords.findFirst({
+        where: { site_id: siteId, keyword: input.keyword },
+        select: { id: true },
+      })
       if (kw?.id) {
-        await serviceDb.from('serp_rankings').insert({
-          keyword_id: kw.id, user_id: userId,
-          position: mine?.position || null, source: 'serp', results,
+        await prisma.serp_rankings.create({
+          data: {
+            keyword_id: kw.id, user_id: userId,
+            position: mine?.position || null, source: 'serp', results: results as any,
+          },
         })
       }
     }
@@ -275,16 +298,18 @@ Return JSON: {"score": 0-100, "verdict": "one sentence", "fixes": [{"priority": 
     const match = text.match(/\{[\s\S]*\}/)
     const analysis = match ? JSON.parse(match[0]) : null
     if (analysis) {
-      await serviceDb.from('keyword_analyses').insert({
-        site_id: siteId, user_id: userId, page_path: input.page_path,
-        keywords: input.keywords, score: analysis.score, verdict: analysis.verdict, fixes: analysis.fixes,
+      await prisma.keyword_analyses.create({
+        data: {
+          site_id: siteId, user_id: userId, page_path: input.page_path,
+          keywords: input.keywords, score: analysis.score, verdict: analysis.verdict, fixes: analysis.fixes,
+        },
       })
     }
     return analysis || { error: 'Analysis could not be parsed' }
   }
 
   if (name === 'sync_gsc') {
-    const { data: siteData } = await serviceDb.from('sites').select('gsc_site_url').eq('id', siteId).single()
+    const siteData = await prisma.sites.findUnique({ where: { id: siteId }, select: { gsc_site_url: true } })
     if (!siteData?.gsc_site_url) throw new Error('No GSC property selected. Connect Google and pick a property on the Rank History page first.')
     const days = input.days || 90
     const { getGoogleToken } = await import('@/lib/google-token')
@@ -307,26 +332,37 @@ Return JSON: {"score": 0-100, "verdict": "one sentence", "fixes": [{"priority": 
     if (rows.length === 0) return { synced: 0, message: 'No data returned' }
 
     const uniqueKeywords = Array.from(new Set(rows.map((r: any) => r.keys[0]))) as string[]
-    await serviceDb.from('keywords').upsert(
-      uniqueKeywords.map(kw => ({ site_id: siteId, user_id: userId, keyword: kw, page_path: '/' })),
-      { onConflict: 'site_id,page_path,keyword', ignoreDuplicates: true }
-    )
-    const { data: kws } = await serviceDb.from('keywords').select('id, keyword').eq('site_id', siteId).eq('user_id', userId)
+    for (const kw of uniqueKeywords) {
+      await prisma.keywords.upsert({
+        where: { site_id_page_path_keyword: { site_id: siteId, page_path: '/', keyword: kw } },
+        create: { site_id: siteId, user_id: userId, keyword: kw, page_path: '/' },
+        update: {},
+      })
+    }
+    const kws = await prisma.keywords.findMany({
+      where: { site_id: siteId, user_id: userId },
+      select: { id: true, keyword: true },
+    })
     const kwMap: Record<string, string> = {}
-    for (const kw of kws || []) kwMap[kw.keyword] = kw.id
+    for (const kw of kws) kwMap[kw.keyword] = kw.id
 
     const rankings = rows
       .map((r: any) => ({
         keyword_id: kwMap[r.keys[0]], user_id: userId,
-        position: Math.round(r.position), source: 'gsc', checked_at: new Date(r.keys[1]).toISOString(),
+        position: Math.round(r.position), source: 'gsc', checked_at: new Date(r.keys[1]),
       }))
       .filter((r: any) => r.keyword_id)
 
     let synced = 0
-    for (let i = 0; i < rankings.length; i += 500) {
-      const batch = rankings.slice(i, i + 500)
-      const { error } = await serviceDb.from('serp_rankings').upsert(batch, { onConflict: 'keyword_id,source,checked_at', ignoreDuplicates: true })
-      if (!error) synced += batch.length
+    for (const rk of rankings) {
+      try {
+        await prisma.serp_rankings.upsert({
+          where: { keyword_id_source_checked_at: { keyword_id: rk.keyword_id, source: rk.source, checked_at: rk.checked_at } },
+          create: rk,
+          update: {},
+        })
+        synced += 1
+      } catch {}
     }
     return { synced, total: rows.length, keywords_found: uniqueKeywords.length }
   }
@@ -339,27 +375,33 @@ export async function POST(req: NextRequest) {
     const { messages, siteId } = await req.json()
     if (!siteId) return NextResponse.json({ error: 'siteId required' }, { status: 400 })
 
-    // Auth via cookies
-    const userDb = createServerSupabase()
-    const { data: { user } } = await userDb.auth.getUser()
+    // Auth via session
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Verify site ownership
-    const serviceDb: any = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    const { data: site } = await serviceDb.from('sites').select('id, name, url, user_id, site_type, platform, audit_notes').eq('id', siteId).single()
+    // Verify site ownership (RLS is gone — enforce in code).
+    const site = await prisma.sites.findUnique({
+      where: { id: siteId },
+      select: { id: true, name: true, url: true, user_id: true, site_type: true, platform: true, audit_notes: true },
+    })
     if (!site || site.user_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     // Load context for system prompt
     const [auditRes, kwRes, serpRes, crawlRes] = await Promise.allSettled([
-      serviceDb.from('audit_reports').select('*').eq('site_id', siteId).order('created_at', { ascending: false }).limit(1),
-      serviceDb.from('keywords').select('keyword, page_path, target_position').eq('site_id', siteId),
-      serviceDb.from('serp_rankings').select('keyword_id, position, source, checked_at').eq('site_id', siteId).order('checked_at', { ascending: false }).limit(50),
-      serviceDb.from('crawl_reports').select('pages, summary, url').eq('site_id', siteId).order('created_at', { ascending: false }).limit(1),
+      prisma.audit_reports.findMany({ where: { site_id: siteId }, orderBy: { created_at: 'desc' }, take: 1 }),
+      prisma.keywords.findMany({ where: { site_id: siteId }, select: { keyword: true, page_path: true, target_position: true } }),
+      // serp_rankings has no site_id column; scope through the keyword relation.
+      prisma.serp_rankings.findMany({
+        where: { keywords: { site_id: siteId } },
+        select: { keyword_id: true, position: true, source: true, checked_at: true },
+        orderBy: { checked_at: 'desc' }, take: 50,
+      }),
+      prisma.crawl_reports.findMany({ where: { site_id: siteId }, select: { pages: true, summary: true, url: true }, orderBy: { created_at: 'desc' }, take: 1 }),
     ])
-    const latestAudit = auditRes.status === 'fulfilled' ? (auditRes.value as any).data?.[0] : null
-    const keywords = kwRes.status === 'fulfilled' ? (kwRes.value as any).data : []
-    const serpRankings = serpRes.status === 'fulfilled' ? (serpRes.value as any).data : []
-    const crawlReport = crawlRes.status === 'fulfilled' ? (crawlRes.value as any).data?.[0] : null
+    const latestAudit = auditRes.status === 'fulfilled' ? (auditRes.value as any)?.[0] : null
+    const keywords = kwRes.status === 'fulfilled' ? (kwRes.value as any) : []
+    const serpRankings = serpRes.status === 'fulfilled' ? (serpRes.value as any) : []
+    const crawlReport = crawlRes.status === 'fulfilled' ? (crawlRes.value as any)?.[0] : null
 
     const systemPrompt = `You are Jonathan, an expert SEO agent inside SEO by CGMIMM. You help the user understand their site's SEO performance AND you take action on their behalf — don't just describe how to do things, do them.
 
@@ -437,7 +479,7 @@ ${serpRankings?.length ? serpRankings.slice(0, 10).map((r: any) => `- kw ${r.key
 
         const call: ToolCall = { id: block.id, name: block.name, input: block.input }
         try {
-          call.result = await executeTool({ name: block.name, input: block.input }, { siteId, userId: user.id, site, serviceDb })
+          call.result = await executeTool({ name: block.name, input: block.input }, { siteId, userId: user.id, site })
           toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify(call.result) })
         } catch (e: any) {
           call.error = e.message

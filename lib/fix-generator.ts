@@ -1,4 +1,4 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 
 interface AuditCheck {
   status: string
@@ -80,18 +80,15 @@ No explanation, just the JSON array.`
 }
 
 export async function generateAndStoreFixes(siteId: string, auditId: string, siteUrl: string): Promise<number> {
-  const supabase = createAdminSupabase()
-
   // Get audit checks
-  const { data: audit } = await supabase
-    .from('audit_reports')
-    .select('checks, url')
-    .eq('id', auditId)
-    .single()
+  const audit = await prisma.audit_reports.findUnique({
+    where: { id: auditId },
+    select: { checks: true, url: true },
+  })
 
   if (!audit?.checks) return 0
 
-  const fixes = await generateFixes(siteId, auditId, audit.url || siteUrl, audit.checks)
+  const fixes = await generateFixes(siteId, auditId, audit.url || siteUrl, audit.checks as unknown as AuditCheck[])
   if (fixes.length === 0) return 0
 
   // Store fixes
@@ -101,8 +98,11 @@ export async function generateAndStoreFixes(siteId: string, auditId: string, sit
     ...f,
   }))
 
-  const { error } = await supabase.from('fix_instructions').insert(rows)
-  if (error) return 0
+  try {
+    await prisma.fix_instructions.createMany({ data: rows })
+  } catch {
+    return 0
+  }
 
   return fixes.length
 }

@@ -1,13 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 type Tab = 'gbp' | 'citations' | 'rankings'
 
 export default function LocalSEOPage({ params }: { params: { id: string } }) {
   const [tab, setTab] = useState<Tab>('gbp')
-  const supabase = createClient()
 
   // GBP connect + data
   const [checkingAuth, setCheckingAuth] = useState(true)
@@ -50,17 +49,10 @@ export default function LocalSEOPage({ params }: { params: { id: string } }) {
     setCheckingAuth(false)
   }
 
-  async function connect() {
+  function connect() {
     document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
     document.cookie = `oauth_site_id=${params.id}; path=/; max-age=600; SameSite=Lax`
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'https://www.googleapis.com/auth/business.manage',
-        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
-      },
-    })
+    signIn('google', { callbackUrl: window.location.pathname })
   }
 
   async function disconnect() {

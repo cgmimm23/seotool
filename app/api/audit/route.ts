@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { runSeoAudit } from '@/lib/anthropic'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { url, siteId, siteType: siteTypeOverride, platform: platformOverride } = await request.json()
@@ -20,13 +20,10 @@ export async function POST(request: NextRequest) {
       const cleanUrl = url.replace(/^https?:\/\//, '').split('/')[0]
       const baseUrl = url.startsWith('http') ? url.split('/').slice(0, 3).join('/') : 'https://' + cleanUrl
 
-      const { data: existing } = await supabase
-        .from('sites')
-        .select('id, site_type, platform, audit_notes')
-        .eq('user_id', user.id)
-        .ilike('url', `%${cleanUrl}%`)
-        .limit(1)
-        .single()
+      const existing = await prisma.sites.findFirst({
+        where: { user_id: user.id, url: { contains: cleanUrl, mode: 'insensitive' } },
+        select: { id: true, site_type: true, platform: true, audit_notes: true },
+      })
 
       if (existing) {
         resolvedSiteId = existing.id
@@ -34,26 +31,24 @@ export async function POST(request: NextRequest) {
         if (!resolvedPlatform) resolvedPlatform = existing.platform
         resolvedAuditNotes = existing.audit_notes || null
       } else {
-        const { data: newSite } = await supabase
-          .from('sites')
-          .insert({
+        const newSite = await prisma.sites.create({
+          data: {
             user_id: user.id,
             url: baseUrl,
             name: cleanUrl,
             active: true,
             site_type: resolvedSiteType,
             platform: resolvedPlatform,
-          })
-          .select()
-          .single()
+          },
+        })
         if (newSite) resolvedSiteId = newSite.id
       }
     } else {
-      const { data: siteRow } = await supabase
-        .from('sites')
-        .select('site_type, platform, audit_notes')
-        .eq('id', resolvedSiteId)
-        .single()
+      // Scope: only resolve a site the caller owns
+      const siteRow = await prisma.sites.findFirst({
+        where: { id: resolvedSiteId, user_id: user.id },
+        select: { site_type: true, platform: true, audit_notes: true },
+      })
       if (!resolvedSiteType) resolvedSiteType = siteRow?.site_type || null
       if (!resolvedPlatform) resolvedPlatform = siteRow?.platform || null
       resolvedAuditNotes = siteRow?.audit_notes || null
@@ -64,15 +59,14 @@ export async function POST(request: NextRequest) {
       const updates: any = {}
       if (siteTypeOverride) updates.site_type = siteTypeOverride
       if (platformOverride) updates.platform = platformOverride
-      await supabase.from('sites').update(updates).eq('id', resolvedSiteId).eq('user_id', user.id)
+      await prisma.sites.updateMany({ where: { id: resolvedSiteId, user_id: user.id }, data: updates })
     }
 
     const audit = await runSeoAudit(url, resolvedSiteType, resolvedPlatform, resolvedAuditNotes)
 
     // Save audit report
-    const { data, error } = await supabase
-      .from('audit_reports')
-      .insert({
+    const data = await prisma.audit_reports.create({
+      data: {
         site_id: resolvedSiteId,
         user_id: user.id,
         url: audit.url || url,
@@ -81,18 +75,22 @@ export async function POST(request: NextRequest) {
         summary: audit.summary,
         categories: audit.categories,
         checks: audit.checks,
-      })
-      .select()
-      .single()
-
-    if (error) throw error
+      },
+    })
 
     // Update scan schedule
     if (resolvedSiteId) {
-      await supabase.from('scan_schedule').upsert({
-        site_id: resolvedSiteId,
-        user_id: user.id,
-        last_scanned_at: new Date().toISOString(),
+      await prisma.scan_schedule.upsert({
+        where: { site_id: resolvedSiteId },
+        create: {
+          site_id: resolvedSiteId,
+          user_id: user.id,
+          last_scanned_at: new Date(),
+        },
+        update: {
+          user_id: user.id,
+          last_scanned_at: new Date(),
+        },
       })
     }
 
@@ -105,24 +103,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const siteId = searchParams.get('siteId')
 
-    let query = supabase
-      .from('audit_reports')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    if (siteId) query = query.eq('site_id', siteId)
-
-    const { data, error } = await query
-    if (error) throw error
+    const data = await prisma.audit_reports.findMany({
+      where: { user_id: user.id, ...(siteId ? { site_id: siteId } : {}) },
+      orderBy: { created_at: 'desc' },
+      take: 20,
+    })
 
     return NextResponse.json({ reports: data })
   } catch (err: any) {

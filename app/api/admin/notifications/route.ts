@@ -1,5 +1,5 @@
 import { requireAdmin } from '@/lib/admin-auth'
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -12,16 +12,16 @@ export async function POST(req: NextRequest) {
   const { title, message, type, filter, sendEmail, subject } = await req.json()
   if (!title || !message) return NextResponse.json({ error: 'title and message required' }, { status: 400 })
 
-  const supabase = createAdminSupabase()
-
   // Get recipients
-  let query = supabase.from('profiles').select('id, email, plan')
-  if (filter === 'starter') query = query.eq('plan', 'starter')
-  else if (filter === 'pro') query = query.eq('plan', 'pro')
-  else if (filter === 'enterprise') query = query.eq('plan', 'enterprise')
-  else if (filter === 'free') query = query.eq('plan', 'free')
+  const planFilter =
+    filter === 'starter' || filter === 'pro' || filter === 'enterprise' || filter === 'free'
+      ? { plan: filter }
+      : {}
 
-  const { data: users } = await query
+  const users = await prisma.profiles.findMany({
+    where: planFilter,
+    select: { id: true, email: true, plan: true },
+  })
 
   if (!users || users.length === 0) {
     return NextResponse.json({ error: 'No recipients found' }, { status: 400 })
@@ -30,11 +30,13 @@ export async function POST(req: NextRequest) {
   // Create in-app notifications
   if (filter === 'all') {
     // Broadcast to everyone — use NULL user_id
-    await supabase.from('notifications').insert({
-      user_id: null,
-      title,
-      message,
-      type: type || 'info',
+    await prisma.notifications.create({
+      data: {
+        user_id: null,
+        title,
+        message,
+        type: type || 'info',
+      },
     })
   } else {
     // Individual notifications
@@ -44,7 +46,7 @@ export async function POST(req: NextRequest) {
       message,
       type: type || 'info',
     }))
-    await supabase.from('notifications').insert(rows)
+    await prisma.notifications.createMany({ data: rows })
   }
 
   // Send emails via Resend if requested
@@ -85,12 +87,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Log broadcast
-  await supabase.from('email_broadcasts').insert({
-    admin_id: auth.user!.id,
-    subject: subject || title,
-    body: message,
-    recipient_filter: filter || 'all',
-    recipient_count: users.length,
+  await prisma.email_broadcasts.create({
+    data: {
+      admin_id: auth.user!.id,
+      subject: subject || title,
+      body: message,
+      recipient_filter: filter || 'all',
+      recipient_count: users.length,
+    },
   })
 
   return NextResponse.json({
@@ -105,12 +109,10 @@ export async function GET() {
   const auth = await requireAdmin()
   if (auth.error) return auth.error
 
-  const supabase = createAdminSupabase()
-  const { data } = await supabase
-    .from('email_broadcasts')
-    .select('*')
-    .order('sent_at', { ascending: false })
-    .limit(50)
+  const data = await prisma.email_broadcasts.findMany({
+    orderBy: { sent_at: 'desc' },
+    take: 50,
+  })
 
   return NextResponse.json({ broadcasts: data || [] })
 }

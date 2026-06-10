@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSiteMeta, graphFetch } from '@/lib/meta'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +30,10 @@ export async function POST(req: NextRequest) {
   const ctx = await getSiteMeta(siteId)
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const supabase = createServerSupabase()
-  await supabase.from('sites').update({ meta_ad_account_id: adAccountId }).eq('id', siteId)
+  // getSiteMeta already verified ownership; scope the write by owner too.
+  await prisma.sites.updateMany({
+    where: { id: siteId, user_id: ctx.site.user_id },
+    data: { meta_ad_account_id: adAccountId },
+  })
   return NextResponse.json({ success: true })
 }

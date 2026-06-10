@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 export default function CompetitorsPage() {
   const params = useParams()
@@ -16,9 +15,8 @@ export default function CompetitorsPage() {
   const [tab, setTab] = useState<'overview' | 'content-gap'>('overview')
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.from('sites').select('url').eq('id', siteId).single().then(({ data }) => {
-      if (data) setSiteUrl(data.url)
+    fetch(`/api/sites/${siteId}`).then(r => r.ok ? r.json() : null).then(j => {
+      if (j?.site?.url) setSiteUrl(j.site.url)
     })
   }, [siteId])
 

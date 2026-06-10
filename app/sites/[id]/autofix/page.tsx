@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 interface Fix {
   id: string
@@ -48,21 +47,28 @@ export default function AutoFixPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [siteUrl, setSiteUrl] = useState('')
-  const supabase = createClient()
+
+  // TODO(api): the fix list + generate-fixes use /api/v1/sites/[siteId]/fixes,
+  // which authenticates via API key (authenticateApiKey), NOT the browser
+  // session cookie — so these fetches will 401 from the dashboard. Add a
+  // session-scoped route (e.g. GET/POST /api/fixes?siteId=, returning
+  // fix_instructions ordered created_at desc, take 100) for in-app use.
+  async function loadFixes() {
+    const res = await fetch(`/api/v1/sites/${siteId}/fixes?status=all`)
+    if (res.ok) {
+      const j = await res.json()
+      setFixes(j.fixes || [])
+    }
+  }
 
   useEffect(() => {
     async function load() {
-      const { data: site } = await supabase.from('sites').select('url').eq('id', siteId).single()
-      if (site) setSiteUrl(site.url)
-
-      const { data } = await supabase
-        .from('fix_instructions')
-        .select('*')
-        .eq('site_id', siteId)
-        .order('created_at', { ascending: false })
-        .limit(100)
-
-      setFixes(data || [])
+      const siteRes = await fetch(`/api/sites/${siteId}`)
+      if (siteRes.ok) {
+        const { site } = await siteRes.json()
+        if (site?.url) setSiteUrl(site.url)
+      }
+      await loadFixes()
       setLoading(false)
     }
     load()
@@ -70,15 +76,8 @@ export default function AutoFixPage() {
 
   async function generateFixes() {
     setGenerating(true)
-    const res = await fetch(`/api/v1/sites/${siteId}/fixes`, { method: 'POST' })
-    // Reload fixes
-    const { data } = await supabase
-      .from('fix_instructions')
-      .select('*')
-      .eq('site_id', siteId)
-      .order('created_at', { ascending: false })
-      .limit(100)
-    setFixes(data || [])
+    await fetch(`/api/v1/sites/${siteId}/fixes`, { method: 'POST' })
+    await loadFixes()
     setGenerating(false)
   }
 

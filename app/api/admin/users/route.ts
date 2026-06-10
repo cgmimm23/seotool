@@ -1,6 +1,8 @@
 import { requireAdmin } from '@/lib/admin-auth'
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
+import { randomUUID } from 'crypto'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,38 +18,38 @@ export async function GET(req: NextRequest) {
   const statusFilter = searchParams.get('status') || ''
   const offset = (page - 1) * limit
 
-  const supabase = auth.supabase
-
-  let query = supabase
-    .from('profiles')
-    .select('*, sites:sites(count)', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1)
-
+  // Admin route — intentionally cross-user (admin-gated by requireAdmin).
+  const where: any = {}
   if (search) {
-    query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`)
+    where.OR = [
+      { email: { contains: search, mode: 'insensitive' } },
+      { full_name: { contains: search, mode: 'insensitive' } },
+    ]
   }
-  if (planFilter) {
-    query = query.eq('plan', planFilter)
-  }
-  if (statusFilter) {
-    query = query.eq('status', statusFilter)
-  }
+  if (planFilter) where.plan = planFilter
+  if (statusFilter) where.status = statusFilter
 
-  const { data: users, count, error } = await query
+  const [rows, count] = await Promise.all([
+    prisma.profiles.findMany({
+      where,
+      include: { _count: { select: { sites: true } } },
+      orderBy: { created_at: 'desc' },
+      skip: offset,
+      take: limit,
+    }),
+    prisma.profiles.count({ where }),
+  ])
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  const users = rows.map((u) => {
+    const { _count, ...rest } = u as any
+    return { ...rest, sites_count: _count?.sites || 0 }
+  })
 
   return NextResponse.json({
-    users: users?.map(u => ({
-      ...u,
-      sites_count: u.sites?.[0]?.count || 0,
-    })),
-    total: count || 0,
+    users,
+    total: count,
     page,
-    totalPages: Math.ceil((count || 0) / limit),
+    totalPages: Math.ceil(count / limit),
   })
 }
 
@@ -61,34 +63,58 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
   }
 
-  const adminSupabase = createAdminSupabase()
+  const normalizedEmail = String(email).toLowerCase().trim()
 
-  const { data: authUser, error: authError } = await adminSupabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { full_name },
+  // Reject if an auth user already exists with this email.
+  const existing = await prisma.users.findFirst({
+    where: { email: normalizedEmail },
+    select: { id: true },
   })
-
-  if (authError) {
-    return NextResponse.json({ error: authError.message }, { status: 400 })
+  if (existing) {
+    return NextResponse.json({ error: 'A user with this email already exists' }, { status: 400 })
   }
 
-  // Update profile with plan
-  if (plan && plan !== 'free') {
-    await adminSupabase
-      .from('profiles')
-      .update({ plan, full_name })
-      .eq('id', authUser.user.id)
-  }
+  // Create the auth.users row (NextAuth credentials provider authenticates
+  // against encrypted_password). The on_auth_user_created trigger provisions
+  // the matching profiles row.
+  const now = new Date()
+  const newId = randomUUID()
+  const encrypted_password = await bcrypt.hash(password, 10)
 
-  // Log activity
-  await auth.supabase.from('admin_activity_log').insert({
-    admin_id: auth.user!.id,
-    action: 'create_user',
-    target_user_id: authUser.user.id,
-    details: { email, plan: plan || 'free' },
+  const authUser = await prisma.users.create({
+    data: {
+      id: newId,
+      email: normalizedEmail,
+      encrypted_password,
+      email_confirmed_at: now,
+      aud: 'authenticated',
+      role: 'authenticated',
+      created_at: now,
+      updated_at: now,
+      raw_app_meta_data: { provider: 'email', providers: ['email'] },
+      raw_user_meta_data: { full_name: full_name ?? null },
+    },
+    select: { id: true, email: true },
   })
 
-  return NextResponse.json({ user: authUser.user })
+  // Update profile with plan / full_name (profile row created by trigger).
+  await prisma.profiles.update({
+    where: { id: authUser.id },
+    data: {
+      ...(plan && plan !== 'free' ? { plan } : {}),
+      ...(full_name !== undefined ? { full_name } : {}),
+    },
+  }).catch(() => {})
+
+  // Log activity (non-fatal; admin_id references profiles in the schema).
+  await prisma.admin_activity_log.create({
+    data: {
+      admin_id: auth.user!.id,
+      action: 'create_user',
+      target_user_id: authUser.id,
+      details: { email: normalizedEmail, plan: plan || 'free' },
+    },
+  }).catch(() => {})
+
+  return NextResponse.json({ user: authUser })
 }

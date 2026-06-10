@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 export default function SearchConsolePage() {
   const [connected, setConnected] = useState(false)
@@ -13,32 +13,31 @@ export default function SearchConsolePage() {
   const [days, setDays] = useState(30)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [sortBy, setSortBy] = useState<'clicks'|'impressions'|'position'>('clicks')
-  const supabase = createClient()
 
   useEffect(() => { checkConnection() }, [])
 
   async function checkConnection() {
     setCheckingAuth(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.provider_token) {
-      setConnected(true)
-      fetchSites(session.provider_token)
-    }
-    setCheckingAuth(false)
+    try {
+      const res = await fetch('/api/profile')
+      if (res.ok) {
+        const d = await res.json()
+        if (d.googleConnected) {
+          setConnected(true)
+          fetchSites()
+        }
+      }
+    } catch {}
+    finally { setCheckingAuth(false) }
   }
 
   async function connectGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly',
-        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
-      },
-    })
+    // NextAuth Google sign-in. Webmasters/analytics scopes are configured on the Google
+    // provider in lib/auth-options.ts; tokens are persisted to the profile on sign-in.
+    await signIn('google', { callbackUrl: window.location.pathname })
   }
 
-  async function fetchSites(token: string) {
+  async function fetchSites(token?: string) {
     try {
       const res = await fetch('/api/search-console/proxy', {
         method: 'POST',

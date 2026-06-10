@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 async function resolveBingKey(siteId?: string | null): Promise<string | null> {
   if (siteId) {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (user) {
-      const { data: site } = await supabase.from('sites')
-        .select('user_id, bing_api_key').eq('id', siteId).single()
+      // Scope: only return the per-site key if the caller owns the site.
+      const site = await prisma.sites.findUnique({
+        where: { id: siteId },
+        select: { user_id: true, bing_api_key: true },
+      })
       if (site && site.user_id === user.id && site.bing_api_key) return site.bing_api_key
     }
   }

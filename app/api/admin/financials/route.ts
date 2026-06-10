@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/admin-auth'
+import { prisma } from '@/lib/db'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -14,11 +15,10 @@ export async function GET() {
   const auth = await requireAdmin()
   if (auth.error) return auth.error
 
-  const supabase = auth.supabase
-
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, email, full_name, plan, status, created_at')
+  // Admin route — intentionally cross-user (admin-gated by requireAdmin).
+  const profiles = await prisma.profiles.findMany({
+    select: { id: true, email: true, full_name: true, plan: true, status: true, created_at: true },
+  })
 
   const users = profiles || []
 

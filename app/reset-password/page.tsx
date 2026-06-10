@@ -1,42 +1,56 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+
+export const dynamic = 'force-dynamic'
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordInner />
+    </Suspense>
+  )
+}
+
+function ResetPasswordInner() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
   const [success, setSuccess] = useState(false)
-  const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token') || ''
+  const email = searchParams.get('email') || ''
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange(event => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true)
-    })
-    // Also check if already in recovery session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true)
-    })
-  }, [supabase.auth])
+    // The reset email links here with ?token=…&email=…
+    if (token && email) setReady(true)
+    else router.replace('/login')
+  }, [token, email, router])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     if (password !== confirm) return setError('Passwords do not match')
-    if (password.length < 6) return setError('Password must be at least 6 characters')
+    if (password.length < 8) return setError('Password must be at least 8 characters')
 
     setLoading(true)
-    const { error } = await supabase.auth.updateUser({ password })
+    const res = await fetch('/api/account/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, email, password }),
+    })
     setLoading(false)
 
-    if (error) return setError(error.message)
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}))
+      return setError(j.error || 'Could not reset password.')
+    }
     setSuccess(true)
-    setTimeout(() => router.push('/dashboard'), 2000)
+    setTimeout(() => router.push('/login'), 2000)
   }
 
   return (

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 export default function BrandMonitorPage() {
   const params = useParams()
@@ -11,9 +10,8 @@ export default function BrandMonitorPage() {
   const [data, setData] = useState<any>(null)
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.from('sites').select('name').eq('id', params.id).single().then(({ data }) => {
-      if (data?.name) setBrandName(data.name)
+    fetch(`/api/sites/${params.id}`).then(r => r.ok ? r.json() : null).then(j => {
+      if (j?.site?.name) setBrandName(j.site.name)
     })
   }, [params.id])
 

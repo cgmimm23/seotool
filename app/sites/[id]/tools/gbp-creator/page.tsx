@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -18,7 +18,6 @@ export default function GBPCreatorPage({ params }: { params: { id: string } }) {
   const [submitResult, setSubmitResult] = useState<any>(null)
   const [submitError, setSubmitError] = useState('')
   const [aiGenerating, setAiGenerating] = useState(false)
-  const supabase = createClient()
 
   const [bizName, setBizName] = useState('')
   const [bizCategory, setBizCategory] = useState('')
@@ -34,20 +33,15 @@ export default function GBPCreatorPage({ params }: { params: { id: string } }) {
   const [description, setDescription] = useState('')
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return
-      if (session.provider_token) { setConnected(true); fetchAccounts() }
-      else {
-        supabase.from('profiles').select('google_access_token').eq('id', session.user.id).single().then(({ data }) => {
-          if (data?.google_access_token) { setConnected(true); fetchAccounts() }
-        })
-      }
+    // Google connection is derived server-side from the user's profile token.
+    fetch('/api/profile').then(r => r.ok ? r.json() : null).then(j => {
+      if (j?.googleConnected) { setConnected(true); fetchAccounts() }
     })
   }, [])
 
-  async function connectGoogle() {
+  function connectGoogle() {
     document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback`, scopes: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/webmasters.readonly', queryParams: { access_type: 'offline', prompt: 'select_account consent' } } })
+    signIn('google', { callbackUrl: window.location.pathname })
   }
 
   async function fetchAccounts() {

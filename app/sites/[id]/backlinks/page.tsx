@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
 
 type BacklinkFilter = 'all' | 'dofollow' | 'nofollow'
 
@@ -18,12 +17,11 @@ export default function BacklinksPage({ params }: { params: { id: string } }) {
   const [disavows, setDisavows] = useState<any[]>([])
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
-  const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('sites').select('url, bing_site_url').eq('id', params.id).single()
-      const d = data as any
+      const res = await fetch(`/api/sites/${params.id}`)
+      const d = res.ok ? (await res.json()).site : null
       if (d?.url) setSiteUrl(d.url)
       if (d?.bing_site_url) setBingSiteUrl(d.bing_site_url)
       loadDisavows()

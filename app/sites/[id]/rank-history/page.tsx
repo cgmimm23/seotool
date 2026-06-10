@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 type SourcePositions = { gsc: number | null; bing: number | null; serp: number | null }
 type KeywordRow = { keyword: string; positions: Record<string, SourcePositions> }
@@ -42,8 +42,6 @@ function RankHistoryInner({ params }: { params: { id: string } }) {
   const [trackedData, setTrackedData] = useState<RankData | null>(null)
   const [trackedSearch, setTrackedSearch] = useState('')
 
-  const supabase = createClient()
-
   useEffect(() => {
     checkGscConnection()
   }, [params.id])
@@ -55,7 +53,8 @@ function RankHistoryInner({ params }: { params: { id: string } }) {
 
   async function checkGscConnection() {
     setCheckingAuth(true)
-    const { data: site } = await supabase.from('sites').select('google_access_token, google_email, gsc_site_url').eq('id', params.id).single()
+    const res = await fetch(`/api/sites/${params.id}`)
+    const site = res.ok ? (await res.json()).site : null
     if (site?.google_access_token) {
       setGscConnected(true)
       if (site.gsc_site_url) setGscSiteUrl(site.gsc_site_url)
@@ -64,17 +63,10 @@ function RankHistoryInner({ params }: { params: { id: string } }) {
     setCheckingAuth(false)
   }
 
-  async function connectGoogle() {
+  function connectGoogle() {
     document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
     document.cookie = `oauth_site_id=${params.id}; path=/; max-age=600; SameSite=Lax`
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly',
-        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
-      },
-    })
+    signIn('google', { callbackUrl: window.location.pathname })
   }
 
   async function fetchGscSites() {
@@ -100,7 +92,14 @@ function RankHistoryInner({ params }: { params: { id: string } }) {
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setGscData(json)
-      await supabase.from('sites').update({ gsc_site_url: gscSiteUrl }).eq('id', params.id)
+      // TODO(api): persist the selected GSC property on the site (gsc_site_url).
+      // No PATCH route exists for sites — add PATCH /api/sites/[id] accepting
+      // { gsc_site_url } (owner-scoped). Until then the choice isn't remembered.
+      await fetch(`/api/sites/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gsc_site_url: gscSiteUrl }),
+      })
     } catch (e: any) { setGscError(e.message) }
     finally { setGscLoading(false) }
   }

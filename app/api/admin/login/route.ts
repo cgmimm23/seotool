@@ -1,4 +1,4 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
@@ -18,14 +18,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Look up admin in admin_accounts table — completely separate from customer auth
-  const supabase = createAdminSupabase()
-  const { data: admin, error } = await supabase
-    .from('admin_accounts')
-    .select('id, email, password_hash, name')
-    .eq('email', email)
-    .single()
+  const admin = await prisma.admin_accounts.findUnique({
+    where: { email },
+    select: { id: true, email: true, password_hash: true, name: true },
+  })
 
-  if (error || !admin) {
+  if (!admin) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
   }
 

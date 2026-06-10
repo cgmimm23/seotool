@@ -1,20 +1,30 @@
 import { requireEnterprise } from '@/lib/enterprise'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest, { params }: { params: { webhookId: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: { webhookId: string } }) {
   const auth = await requireEnterprise()
   if (auth.error) return auth.error
 
-  const { data, error } = await auth.supabase
-    .from('webhook_deliveries')
-    .select('id, event, payload, response_status, success, attempted_at')
-    .eq('webhook_id', params.webhookId)
-    .order('attempted_at', { ascending: false })
-    .limit(50)
+  // webhook_deliveries has no user_id; scope through the owning webhook.
+  const deliveries = await prisma.webhook_deliveries.findMany({
+    where: {
+      webhook_id: params.webhookId,
+      webhooks: { user_id: auth.user!.id },
+    },
+    select: {
+      id: true,
+      event: true,
+      payload: true,
+      response_status: true,
+      success: true,
+      attempted_at: true,
+    },
+    orderBy: { attempted_at: 'desc' },
+    take: 50,
+  })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  return NextResponse.json({ deliveries: data })
+  return NextResponse.json({ deliveries })
 }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Montserrat, Open_Sans, Roboto_Mono } from 'next/font/google'
 import './globals.css'
 import Tracking from '@/app/components/Tracking'
+import { Providers } from '@/app/providers'
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -117,7 +118,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <style dangerouslySetInnerHTML={{ __html: `#lc-box{display:none;position:fixed;bottom:96px;right:16px;z-index:999998;width:380px;height:580px;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.2);}#lc-toggle:checked~#lc-box{display:block;}` }} />
       </head>
       <body>
-        {children}
+        <Providers>{children}</Providers>
         <Tracking />
         <input type="checkbox" id="lc-toggle" style={{ display: 'none' }} />
         <label htmlFor="lc-toggle" style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 999999, width: '58px', height: '58px', borderRadius: '50%', background: '#1a3a5c', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>

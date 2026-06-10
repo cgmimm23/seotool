@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -33,7 +33,6 @@ export default function GBPCreatorPage() {
   const [verificationOptions, setVerificationOptions] = useState<any[]>([])
   const [aiGenerating, setAiGenerating] = useState(false)
   const [exported, setExported] = useState(false)
-  const supabase = createClient()
 
   // Form fields
   const [listingType, setListingType] = useState<'create' | 'claim'>('create')
@@ -52,28 +51,21 @@ export default function GBPCreatorPage() {
   const [description, setDescription] = useState('')
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.provider_token) {
-        setConnected(true)
-        fetchAccounts()
-      }
-    })
+    fetch('/api/gbp/status')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d?.connected) {
+          setConnected(true)
+          fetchAccounts()
+        }
+      })
+      .catch(() => {})
   }, [])
 
   async function connectGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: [
-          'https://www.googleapis.com/auth/business.manage',
-          'https://www.googleapis.com/auth/webmasters.readonly',
-          'https://www.googleapis.com/auth/analytics.readonly',
-        ].join(' '),
-        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
-      },
-    })
+    // NextAuth Google sign-in. Business/webmasters/analytics scopes are configured on the
+    // Google provider in lib/auth-options.ts; tokens are persisted to the profile on sign-in.
+    await signIn('google', { callbackUrl: window.location.pathname })
   }
 
   async function fetchAccounts() {

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
 
 type Props = {
   siteId: string
@@ -30,31 +29,24 @@ export default function MetaConnectBlock({ siteId, title, description, children 
   const [adAccountId, setAdAccountId] = useState<string | null>(null)
   const [pages, setPages] = useState<any[]>([])
   const [reloadKey, setReloadKey] = useState(0)
-  const supabase = createClient()
 
   useEffect(() => {
     (async () => {
       setLoading(true)
-      const { data } = await supabase
-        .from('sites')
-        .select('meta_user_access_token, meta_page_id, meta_page_name, meta_ig_user_id, meta_ig_username, meta_ad_account_id')
-        .eq('id', siteId)
-        .single()
-      const site = data as any
-      if (site?.meta_user_access_token) {
-        setConnected(true)
-        setPageId(site.meta_page_id)
-        setPageName(site.meta_page_name)
-        setIgUserId(site.meta_ig_user_id)
-        setIgUsername(site.meta_ig_username)
-        setAdAccountId(site.meta_ad_account_id)
-        // fetch all pages for the picker
-        try {
-          const res = await fetch(`/api/meta/pages?siteId=${siteId}`)
-          const j = await res.json()
-          if (j.pages) setPages(j.pages)
-        } catch {}
-      } else {
+      // Derive connection + the page list from /api/meta/pages: a 200 with a `pages`
+      // array means the user's Meta token is present (the route 400s when not connected).
+      // NOTE: the saved page selection / IG / ad-account fields (sites.meta_* columns) are
+      // not exposed by any existing route — see report for the /api/meta/status gap.
+      try {
+        const res = await fetch(`/api/meta/pages?siteId=${siteId}`)
+        const j = await res.json()
+        if (res.ok && j.pages) {
+          setConnected(true)
+          setPages(j.pages)
+        } else {
+          setConnected(false)
+        }
+      } catch {
         setConnected(false)
       }
       setLoading(false)

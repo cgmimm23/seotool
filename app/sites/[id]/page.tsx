@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
 
 type Tool = {
   key: string
@@ -27,36 +26,51 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [runningAudit, setRunningAudit] = useState(false)
   const [auditError, setAuditError] = useState('')
-  const supabase = createClient()
 
   useEffect(() => { loadSiteData() }, [params.id])
 
   async function loadSiteData() {
     setLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
 
-    const [siteRes, auditsRes, crawlsRes, psRes, aiRes, stratRes, pageOptRes, kwRes, rankRes] = await Promise.all([
-      supabase.from('sites').select('*').eq('id', params.id).eq('user_id', session.user.id).single(),
-      supabase.from('audit_reports').select('*').eq('site_id', params.id).order('created_at', { ascending: false }).limit(5),
-      supabase.from('crawl_reports').select('id, url, pages_crawled, total_issues, error_pages, clean_pages, summary, created_at').eq('site_id', params.id).order('created_at', { ascending: false }).limit(5),
-      supabase.from('pagespeed_reports').select('*').eq('site_id', params.id).order('created_at', { ascending: false }).limit(1),
-      supabase.from('ai_visibility_reports').select('*').eq('site_id', params.id).order('created_at', { ascending: false }).limit(1),
-      supabase.from('keyword_strategies').select('id, created_at, core_phrases').eq('site_id', params.id).order('created_at', { ascending: false }).limit(1),
-      supabase.from('page_optimization_reports').select('id, page_url, keyword, optimization_score, created_at').eq('site_id', params.id).order('created_at', { ascending: false }).limit(5),
-      supabase.from('keywords').select('*').eq('site_id', params.id),
-      supabase.from('serp_rankings').select('keyword_id, position, checked_at').eq('site_id', params.id).gte('checked_at', new Date(Date.now() - 30 * 86400000).toISOString()).order('checked_at', { ascending: false }),
+    // Site + recent audits/crawls/keywords from the owner-scoped site route.
+    // A non-OK response means the site isn't ours (or we're not logged in) — treat as not-found.
+    const siteRes = await fetch(`/api/sites/${params.id}`)
+    if (!siteRes.ok) {
+      setSite(null)
+      setLoading(false)
+      return
+    }
+    const { site, audits, crawls, keywords } = await siteRes.json()
+    setSite(site)
+    setAudits((audits || []).slice(0, 5))
+    setCrawls((crawls || []).slice(0, 5))
+    setKeywords(keywords || [])
+
+    // Keyword strategies (latest) + recent page-optimization reports via feature routes.
+    const [stratRes, pageOptRes] = await Promise.all([
+      fetch(`/api/keyword-strategy?siteId=${params.id}`),
+      fetch(`/api/page-optimizer?siteId=${params.id}`),
     ])
+    if (stratRes.ok) {
+      const j = await stratRes.json()
+      setStrategies((j.strategies || []).slice(0, 1))
+    }
+    if (pageOptRes.ok) {
+      const j = await pageOptRes.json()
+      setPageOpts((j.reports || []).slice(0, 5))
+    }
 
-    setSite(siteRes.data)
-    setAudits(auditsRes.data || [])
-    setCrawls(crawlsRes.data || [])
-    setPagespeeds(psRes.data || [])
-    setAiVis(aiRes.data || [])
-    setStrategies(stratRes.data || [])
-    setPageOpts(pageOptRes.data || [])
-    setKeywords(kwRes.data || [])
-    setSerpRankings(rankRes.data || [])
+    // TODO(api): site overview needs latest pagespeed_reports (1), latest
+    // ai_visibility_reports (1), and recent serp_rankings (last 30d:
+    // keyword_id, position, checked_at) for this site_id. No list route exists
+    // for these; add them (e.g. GET /api/pagespeed/reports?siteId, GET
+    // /api/ai-visibility/reports?siteId, GET /api/serp/rankings?siteId&days=30)
+    // or include them in GET /api/sites/[id]. Until then the PageSpeed/AI
+    // health cards and Top-3/Top-10 ranking counts render empty.
+    setPagespeeds([])
+    setAiVis([])
+    setSerpRankings([])
+
     setLoading(false)
   }
 

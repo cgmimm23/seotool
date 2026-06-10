@@ -1,32 +1,29 @@
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const auditId = searchParams.get('id')
   if (!auditId) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const { data: audit } = await supabase
-    .from('audit_reports')
-    .select('*')
-    .eq('id', auditId)
-    .eq('user_id', user.id)
-    .single()
+  const audit = await prisma.audit_reports.findFirst({
+    where: { id: auditId, user_id: user.id },
+  })
 
   if (!audit) return NextResponse.json({ error: 'Audit not found' }, { status: 404 })
 
-  const checks = audit.checks || []
+  const checks: any[] = (audit.checks as any) || []
   const passing = checks.filter((c: any) => c.status === 'pass')
   const warnings = checks.filter((c: any) => c.status === 'warn')
   const failing = checks.filter((c: any) => c.status === 'fail')
 
-  const categoriesHtml = audit.categories ? Object.entries(audit.categories).map(([cat, score]) =>
+  const categoriesHtml = audit.categories ? Object.entries(audit.categories as any).map(([cat, score]) =>
     `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">${cat}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;font-weight:700;color:${(score as number) >= 80 ? '#00d084' : (score as number) >= 50 ? '#ffa500' : '#ff4444'}">${score}/100</td></tr>`
   ).join('') : ''
 
@@ -55,7 +52,7 @@ export async function GET(req: NextRequest) {
 
   <div style="display:flex;gap:16px;margin-bottom:24px;">
     <div style="flex:1;background:#f8f9fb;border-radius:10px;padding:20px;text-align:center;">
-      <div style="font-size:42px;font-weight:800;color:${audit.overall_score >= 80 ? '#00d084' : audit.overall_score >= 50 ? '#ffa500' : '#ff4444'}">${audit.overall_score}</div>
+      <div style="font-size:42px;font-weight:800;color:${(audit.overall_score ?? 0) >= 80 ? '#00d084' : (audit.overall_score ?? 0) >= 50 ? '#ffa500' : '#ff4444'}">${audit.overall_score}</div>
       <div style="font-size:12px;color:#999;">Overall Score</div>
     </div>
     <div style="flex:1;background:#f8f9fb;border-radius:10px;padding:20px;text-align:center;">
@@ -73,7 +70,7 @@ export async function GET(req: NextRequest) {
   </div>
 
   <p><strong>URL:</strong> ${audit.url}</p>
-  <p><strong>Date:</strong> ${new Date(audit.created_at).toLocaleString()}</p>
+  <p><strong>Date:</strong> ${audit.created_at ? new Date(audit.created_at).toLocaleString() : 'N/A'}</p>
   ${audit.summary ? `<p style="line-height:1.7;">${audit.summary}</p>` : ''}
 
   ${categoriesHtml ? `

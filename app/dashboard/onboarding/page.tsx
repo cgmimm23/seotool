@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 export default function OnboardingPage() {
@@ -12,7 +11,6 @@ export default function OnboardingPage() {
   const [auditing, setAuditing] = useState(false)
   const [siteId, setSiteId] = useState('')
   const [error, setError] = useState('')
-  const supabase = createClient()
   const router = useRouter()
 
   async function addSite() {
@@ -20,23 +18,25 @@ export default function OnboardingPage() {
     setAdding(true)
     setError('')
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
     let url = siteUrl.trim()
     if (!url.startsWith('http')) url = 'https://' + url
 
-    const { data, error: err } = await supabase
-      .from('sites')
-      .insert({ user_id: user.id, url, name: siteName || url })
-      .select()
-      .single()
-
-    if (err) { setError(err.message); setAdding(false); return }
-
-    setSiteId(data.id)
-    setAdding(false)
-    setStep(2)
+    try {
+      const res = await fetch('/api/sites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, name: siteName || undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) { setError(data.error || 'Could not add site. Try again.'); setAdding(false); return }
+      setSiteUrl(url)
+      if (data.site?.id) setSiteId(data.site.id)
+      setStep(2)
+    } catch (err: any) {
+      setError(err.message || 'Could not add site. Try again.')
+    } finally {
+      setAdding(false)
+    }
   }
 
   async function runAudit() {
@@ -51,11 +51,11 @@ export default function OnboardingPage() {
 
     if (!res.ok) { setError('Audit failed. Try again.'); setAuditing(false); return }
 
-    // Mark onboarding complete
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', user.id)
-    }
+    await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ onboarding_completed: true }),
+    }).catch(() => {})
 
     setAuditing(false)
     setStep(3)

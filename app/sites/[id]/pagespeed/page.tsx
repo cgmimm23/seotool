@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { createClient } from '@/lib/supabase'
 
 function PageSpeedPageInner({ params }: { params: { id: string } }) {
   const [url, setUrl] = useState('')
@@ -11,14 +10,16 @@ function PageSpeedPageInner({ params }: { params: { id: string } }) {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<'mobile' | 'desktop'>('mobile')
   const [lastTested, setLastTested] = useState<string | null>(null)
-  const supabase = createClient()
 
   const storageKey = `pagespeed_${params.id}`
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('sites').select('url').eq('id', params.id).single()
-      if (data?.url) setUrl(data.url)
+      const res = await fetch(`/api/sites/${params.id}`)
+      if (res.ok) {
+        const { site } = await res.json()
+        if (site?.url) setUrl(site.url)
+      }
       try {
         const saved = localStorage.getItem(storageKey)
         if (saved) {

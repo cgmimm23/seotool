@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect, Suspense } from 'react'
-import { createClient } from '@/lib/supabase'
 
 interface PageResult {
   url: string
@@ -106,12 +105,14 @@ function SiteCrawlerPageInner({ params }: { params: { id: string } }) {
   const [aiSummary, setAiSummary] = useState('')
   const [generatingSummary, setGeneratingSummary] = useState(false)
   const stopRef = useRef(false)
-  const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('sites').select('url').eq('id', params.id).single()
-      if (data?.url) setUrl(data.url)
+      const res = await fetch(`/api/sites/${params.id}`)
+      if (res.ok) {
+        const { site } = await res.json()
+        if (site?.url) setUrl(site.url)
+      }
       loadLastReport()
     }
     load()

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
 import { Suspense } from 'react'
 
 type Tab = 'overview' | 'keywords' | 'crawl' | 'submit' | 'add'
@@ -66,12 +65,11 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
   const [hasBingKey, setHasBingKey] = useState<boolean | null>(null)
   const [savingKey, setSavingKey] = useState(false)
   const [bingSites, setBingSites] = useState<string[]>([])
-  const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data: site } = await supabase.from('sites').select('url, bing_api_key, bing_site_url').eq('id', params.id).single()
-      const s = site as any
+      const res = await fetch(`/api/sites/${params.id}`)
+      const s = res.ok ? (await res.json()).site : null
       if (s?.bing_site_url) { setSiteUrl(s.bing_site_url); setSubmitUrl(s.bing_site_url) }
       else if (s?.url) { setSiteUrl(s.url); setSubmitUrl(s.url) }
       setHasBingKey(!!s?.bing_api_key)
@@ -89,26 +87,43 @@ function BingWebmasterInner({ params }: { params: { id: string } }) {
     } catch {}
   }
 
+  // TODO(api): all three of these persist Bing fields on the site
+  // (bing_site_url, bing_api_key set/clear). No PATCH route exists for sites
+  // (GET /api/sites/[id] is GET/DELETE only). Add PATCH /api/sites/[id]
+  // accepting { bing_site_url, bing_api_key } (owner-scoped) — bing_api_key is
+  // sensitive, so the route should accept a value to store and `null` to clear.
   async function changeBingSite(url: string) {
     setSiteUrl(url)
     setSubmitUrl(url)
     setData(null)
-    await supabase.from('sites').update({ bing_site_url: url }).eq('id', params.id)
+    await fetch(`/api/sites/${params.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bing_site_url: url }),
+    })
   }
 
   async function saveBingKey() {
     if (!bingKey.trim()) return
     setSavingKey(true)
-    const { error: e } = await supabase.from('sites').update({ bing_api_key: bingKey.trim() }).eq('id', params.id)
+    const res = await fetch(`/api/sites/${params.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bing_api_key: bingKey.trim() }),
+    })
     setSavingKey(false)
-    if (e) { alert('Could not save key: ' + e.message); return }
+    if (!res.ok) { alert('Could not save key'); return }
     setBingKey('')
     setHasBingKey(true)
   }
 
   async function disconnectBing() {
     if (!confirm('Remove Bing Webmaster API key from this site?')) return
-    await supabase.from('sites').update({ bing_api_key: null }).eq('id', params.id)
+    await fetch(`/api/sites/${params.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bing_api_key: null }),
+    })
     setHasBingKey(false)
     setData(null)
   }

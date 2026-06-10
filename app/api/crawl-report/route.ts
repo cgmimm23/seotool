@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { url, pages, summary } = await request.json()
@@ -14,11 +14,16 @@ export async function POST(request: NextRequest) {
     const baseUrl = url.startsWith('http') ? url.split('/').slice(0, 3).join('/') : 'https://' + cleanUrl
 
     let siteId: string | null = null
-    const { data: existing } = await supabase.from('sites').select('id').eq('user_id', user.id).ilike('url', '%' + cleanUrl + '%').limit(1).single()
+    const existing = await prisma.sites.findFirst({
+      where: { user_id: user.id, url: { contains: cleanUrl, mode: 'insensitive' } },
+      select: { id: true },
+    })
     if (existing) {
       siteId = existing.id
     } else {
-      const { data: newSite } = await supabase.from('sites').insert({ user_id: user.id, url: baseUrl, name: cleanUrl, active: true }).select().single()
+      const newSite = await prisma.sites.create({
+        data: { user_id: user.id, url: baseUrl, name: cleanUrl, active: true },
+      })
       if (newSite) siteId = newSite.id
     }
 
@@ -26,13 +31,14 @@ export async function POST(request: NextRequest) {
     const errorPages = pages.filter((p: any) => p.status >= 400).length
     const cleanPages = pages.filter((p: any) => p.issues?.length === 0 && p.status < 400).length
 
-    const { data, error } = await supabase.from('crawl_reports').insert({
-      site_id: siteId, user_id: user.id, url: baseUrl,
-      pages_crawled: pages.length, total_issues: totalIssues,
-      error_pages: errorPages, clean_pages: cleanPages, pages, summary: summary || null,
-    }).select().single()
+    const data = await prisma.crawl_reports.create({
+      data: {
+        site_id: siteId, user_id: user.id, url: baseUrl,
+        pages_crawled: pages.length, total_issues: totalIssues,
+        error_pages: errorPages, clean_pages: cleanPages, pages, summary: summary || null,
+      },
+    })
 
-    if (error) throw error
     return NextResponse.json({ report: data })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
@@ -41,24 +47,25 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const siteId = searchParams.get('siteId')
     const full = searchParams.get('full')
 
-    let query = supabase.from('crawl_reports')
-      .select(full ? '*' : 'id, url, pages_crawled, total_issues, error_pages, clean_pages, summary, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
+    const data = await prisma.crawl_reports.findMany({
+      where: { user_id: user.id, ...(siteId ? { site_id: siteId } : {}) },
+      orderBy: { created_at: 'desc' },
+      take: 1,
+      ...(full ? {} : {
+        select: {
+          id: true, url: true, pages_crawled: true, total_issues: true,
+          error_pages: true, clean_pages: true, summary: true, created_at: true,
+        },
+      }),
+    })
 
-    if (siteId) query = query.eq('site_id', siteId)
-
-    const { data, error } = await query
-    if (error) throw error
     return NextResponse.json({ reports: data })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

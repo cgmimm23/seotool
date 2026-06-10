@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 // GET /api/disavow?siteId=...&format=json|txt
 export async function GET(req: NextRequest) {
-  const supabase = createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
@@ -14,9 +14,10 @@ export async function GET(req: NextRequest) {
   const format = searchParams.get('format') || 'json'
   if (!siteId) return NextResponse.json({ error: 'siteId required' }, { status: 400 })
 
-  const { data } = await supabase.from('disavowed_backlinks')
-    .select('*').eq('site_id', siteId).eq('user_id', user.id).order('created_at', { ascending: false })
-  const rows = data || []
+  const rows = await prisma.disavowed_backlinks.findMany({
+    where: { site_id: siteId, user_id: user.id },
+    orderBy: { created_at: 'desc' },
+  })
 
   if (format === 'txt') {
     const lines: string[] = [
@@ -43,33 +44,43 @@ export async function GET(req: NextRequest) {
 
 // POST /api/disavow — add entry. body: { siteId, scope, target, reason? }
 export async function POST(req: NextRequest) {
-  const supabase = createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { siteId, scope, target, reason } = await req.json()
   if (!siteId || !scope || !target) return NextResponse.json({ error: 'siteId, scope, target required' }, { status: 400 })
   if (!['domain', 'url'].includes(scope)) return NextResponse.json({ error: 'scope must be domain or url' }, { status: 400 })
 
-  const { error } = await supabase.from('disavowed_backlinks').upsert(
-    { site_id: siteId, user_id: user.id, scope, target, reason: reason || null },
-    { onConflict: 'site_id,scope,target', ignoreDuplicates: true }
-  )
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Scope: ensure the caller owns the site before writing.
+  const site = await prisma.sites.findFirst({ where: { id: siteId, user_id: user.id }, select: { id: true } })
+  if (!site) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  try {
+    // onConflict (site_id,scope,target) + ignoreDuplicates: insert, no-op on existing
+    await prisma.disavowed_backlinks.upsert({
+      where: { site_id_scope_target: { site_id: siteId, scope, target } },
+      create: { site_id: siteId, user_id: user.id, scope, target, reason: reason || null },
+      update: {},
+    })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }
 
 // DELETE /api/disavow?id=...
 export async function DELETE(req: NextRequest) {
-  const supabase = createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const { error } = await supabase.from('disavowed_backlinks').delete().eq('id', id).eq('user_id', user.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  try {
+    await prisma.disavowed_backlinks.deleteMany({ where: { id, user_id: user.id } })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }

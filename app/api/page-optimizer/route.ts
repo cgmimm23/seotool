@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { analyzePageOptimization } from '@/lib/anthropic'
 import { fetchSerpResults } from '@/lib/serpapi'
 
@@ -7,8 +8,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { siteId, pageUrl, keyword, secondaryKeywords } = await request.json()
@@ -16,13 +16,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'siteId, pageUrl, and keyword are required' }, { status: 400 })
     }
 
-    // Pull site context for platform + type
-    const { data: site } = await supabase
-      .from('sites')
-      .select('platform, site_type')
-      .eq('id', siteId)
-      .eq('user_id', user.id)
-      .single()
+    // Pull site context for platform + type — scoped to the caller's site.
+    const site = await prisma.sites.findFirst({
+      where: { id: siteId, user_id: user.id },
+      select: { platform: true, site_type: true },
+    })
+    if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
 
     // Fetch top SERP competitors (best-effort — don't block if SerpAPI is unavailable)
     let competitors: any[] = []
@@ -50,23 +49,20 @@ export async function POST(request: NextRequest) {
       site?.site_type || null,
     )
 
-    const { data: report, error } = await supabase
-      .from('page_optimization_reports')
-      .insert({
+    const report = await prisma.page_optimization_reports.create({
+      data: {
         site_id: siteId,
         user_id: user.id,
         page_url: pageUrl,
         keyword,
-        secondary_keywords: secondaryKeywords || null,
+        secondary_keywords: secondaryKeywords || [],
         optimization_score: analysis.optimization_score,
         summary: analysis.summary,
-        ideas: analysis.ideas,
-        competitors,
-      })
-      .select()
-      .single()
+        ideas: analysis.ideas as any,
+        competitors: competitors as any,
+      },
+    })
 
-    if (error) throw error
     return NextResponse.json({ report, analysis, competitors })
   } catch (err: any) {
     console.error('Page optimizer error:', err)
@@ -76,8 +72,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
@@ -85,18 +80,12 @@ export async function GET(request: NextRequest) {
     const pageUrl = searchParams.get('pageUrl')
     if (!siteId) return NextResponse.json({ error: 'siteId required' }, { status: 400 })
 
-    let query = supabase
-      .from('page_optimization_reports')
-      .select('*')
-      .eq('site_id', siteId)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(50)
+    const data = await prisma.page_optimization_reports.findMany({
+      where: { site_id: siteId, user_id: user.id, ...(pageUrl ? { page_url: pageUrl } : {}) },
+      orderBy: { created_at: 'desc' },
+      take: 50,
+    })
 
-    if (pageUrl) query = query.eq('page_url', pageUrl)
-
-    const { data, error } = await query
-    if (error) throw error
     return NextResponse.json({ reports: data })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

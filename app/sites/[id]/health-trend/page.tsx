@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 interface AuditSnapshot {
   id: string
@@ -19,13 +18,19 @@ export default function HealthTrendPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.from('audit_reports')
-      .select('id, overall_score, grade, categories, created_at')
-      .eq('site_id', siteId)
-      .order('created_at', { ascending: true })
-      .limit(50)
-      .then(({ data }) => { setAudits(data || []); setLoading(false) })
+    // /api/sites/[id] returns the caller's audit_reports (newest-first, take 20).
+    // TODO(api): this view wants up to 50 audit snapshots ordered oldest→newest;
+    // the site route currently caps at 20. Add a GET /api/audit?siteId&limit=50
+    // (or raise the take) for the full health trend.
+    fetch(`/api/sites/${siteId}`)
+      .then(r => r.ok ? r.json() : { audits: [] })
+      .then(j => {
+        const sorted = (j.audits || []).slice().sort(
+          (a: AuditSnapshot, b: AuditSnapshot) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
+        setAudits(sorted)
+        setLoading(false)
+      })
   }, [siteId])
 
   if (loading) return <div style={{ padding: '2rem', color: '#7a8fa8' }}>Loading health trend...</div>

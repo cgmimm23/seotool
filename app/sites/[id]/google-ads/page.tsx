@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 type Tab = 'overview' | 'campaigns' | 'keywords' | 'search-terms'
 
@@ -17,7 +17,6 @@ export default function GoogleAdsPage({ params }: { params: { id: string } }) {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [disconnecting, setDisconnecting] = useState(false)
   const [tab, setTab] = useState<Tab>('overview')
-  const supabase = createClient()
 
   useEffect(() => { checkConnection() }, [])
 
@@ -36,17 +35,10 @@ export default function GoogleAdsPage({ params }: { params: { id: string } }) {
     setCheckingAuth(false)
   }
 
-  async function connectGoogle() {
+  function connectGoogle() {
     document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
     document.cookie = `oauth_site_id=${params.id}; path=/; max-age=600; SameSite=Lax`
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'https://www.googleapis.com/auth/adwords https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly',
-        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
-      },
-    })
+    signIn('google', { callbackUrl: window.location.pathname })
   }
 
   async function disconnect() {

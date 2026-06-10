@@ -1,5 +1,5 @@
 import { requireAdmin } from '@/lib/admin-auth'
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
@@ -19,14 +19,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 })
   }
 
-  const supabase = createAdminSupabase()
-
   // Get current hash
-  const { data: admin } = await supabase
-    .from('admin_accounts')
-    .select('password_hash')
-    .eq('id', auth.user!.id)
-    .single()
+  const admin = await prisma.admin_accounts.findUnique({
+    where: { id: auth.user!.id },
+    select: { password_hash: true },
+  })
 
   if (!admin) return NextResponse.json({ error: 'Account not found' }, { status: 404 })
 
@@ -36,10 +33,10 @@ export async function POST(req: NextRequest) {
 
   // Hash and save new password
   const newHash = await bcrypt.hash(newPassword, 10)
-  await supabase
-    .from('admin_accounts')
-    .update({ password_hash: newHash })
-    .eq('id', auth.user!.id)
+  await prisma.admin_accounts.update({
+    where: { id: auth.user!.id },
+    data: { password_hash: newHash },
+  })
 
   return NextResponse.json({ success: true })
 }

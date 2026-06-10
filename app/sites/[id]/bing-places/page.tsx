@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
@@ -24,11 +23,11 @@ function BingPlacesInner({ params }: { params: { id: string } }) {
   const [saving, setSaving] = useState(false)
   const [saveResult, setSaveResult] = useState<'success' | 'error' | null>(null)
   const searchParams = useSearchParams()
-  const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data: site } = await supabase.from('sites').select('url, name').eq('id', params.id).single()
+      const siteRes = await fetch(`/api/sites/${params.id}`)
+      const site = siteRes.ok ? (await siteRes.json()).site : null
       if (site?.name) setBizName(site.name)
       if (site?.url) setBizWebsite(site.url)
 

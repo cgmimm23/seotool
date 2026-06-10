@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 function KeywordsPageInner() {
   const [pages, setPages] = useState<any[]>([])
@@ -17,20 +16,20 @@ function KeywordsPageInner() {
   const [siteUrl, setSiteUrl] = useState('')
   const [siteId, setSiteId] = useState<string | null>(null)
   const searchParams = useSearchParams()
-  const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
       // Get site from URL param
       const siteParam = searchParams.get('site') || searchParams.get('url')
       if (siteParam) {
         setSiteUrl(siteParam)
-        // Find site_id for this URL
-        const { data: siteData } = await supabase.from('sites').select('id').ilike('url', '%' + siteParam.replace(/^https?:\/\//, '').split('/')[0] + '%').eq('user_id', user.id).limit(1).single()
-        if (siteData) setSiteId(siteData.id)
+        try {
+          const resolveRes = await fetch(`/api/sites/resolve?url=${encodeURIComponent(siteParam)}`)
+          if (resolveRes.ok) {
+            const resolved = await resolveRes.json()
+            if (resolved?.site?.id) setSiteId(resolved.site.id)
+          }
+        } catch {}
       }
 
       // Load existing keywords grouped by page

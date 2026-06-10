@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { prisma } from '@/lib/db'
 import { runSeoAudit } from '@/lib/anthropic'
 import { isDueForScan, Plan } from '@/lib/scheduler'
-
-// Use service role for cron (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export async function GET(request: NextRequest) {
   // Verify cron secret
@@ -17,19 +11,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get all active sites with their schedule, site context, and user plan
-    const { data: schedules, error } = await supabaseAdmin
-      .from('scan_schedule')
-      .select(`
-        *,
-        sites ( url, name, site_type, platform, audit_notes ),
-        profiles ( plan )
-      `)
-
-    if (error) throw error
+    // Cron-authed: runs across all users intentionally (bypasses tenant scoping).
+    // Get all active sites with their schedule, site context, and user plan.
+    const schedules = await prisma.scan_schedule.findMany({
+      include: {
+        sites: { select: { url: true, name: true, site_type: true, platform: true, audit_notes: true } },
+        profiles: { select: { plan: true } },
+      },
+    })
 
     const results = []
-    for (const schedule of schedules || []) {
+    for (const schedule of schedules) {
       const plan = (schedule as any).profiles?.plan as Plan
       const lastScanned = schedule.last_scanned_at
         ? new Date(schedule.last_scanned_at)
@@ -43,35 +35,38 @@ export async function GET(request: NextRequest) {
 
       try {
         // Pull the previous audit for delta comparison and notification
-        const { data: prevReports } = await supabaseAdmin
-          .from('audit_reports')
-          .select('overall_score, checks, created_at')
-          .eq('site_id', schedule.site_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
+        const prevReports = await prisma.audit_reports.findMany({
+          where: { site_id: schedule.site_id },
+          select: { overall_score: true, checks: true, created_at: true },
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        })
         const prevAudit = prevReports?.[0]
 
         const audit = await runSeoAudit(url, site.site_type, site.platform, site.audit_notes)
 
-        await supabaseAdmin.from('audit_reports').insert({
-          site_id: schedule.site_id,
-          user_id: schedule.user_id,
-          url,
-          overall_score: audit.overall_score,
-          grade: audit.grade,
-          summary: audit.summary,
-          categories: audit.categories,
-          checks: audit.checks,
+        await prisma.audit_reports.create({
+          data: {
+            site_id: schedule.site_id,
+            user_id: schedule.user_id,
+            url,
+            overall_score: audit.overall_score,
+            grade: audit.grade,
+            summary: audit.summary,
+            categories: audit.categories,
+            checks: audit.checks,
+          },
         })
 
-        await supabaseAdmin.from('scan_schedule').update({
-          last_scanned_at: new Date().toISOString(),
-        }).eq('site_id', schedule.site_id)
+        await prisma.scan_schedule.update({
+          where: { site_id: schedule.site_id },
+          data: { last_scanned_at: new Date() },
+        })
 
         // Create a notification if the score changed significantly or errors were added
         if (prevAudit) {
-          const scoreDelta = audit.overall_score - prevAudit.overall_score
-          const prevFail = (prevAudit.checks || []).filter((c: any) => c.status === 'fail').length
+          const scoreDelta = (audit.overall_score || 0) - (prevAudit.overall_score || 0)
+          const prevFail = ((prevAudit.checks as any[]) || []).filter((c: any) => c.status === 'fail').length
           const currFail = (audit.checks || []).filter((c: any) => c.status === 'fail').length
           const failDelta = currFail - prevFail
 
@@ -80,20 +75,24 @@ export async function GET(request: NextRequest) {
               ? `Score held steady at ${audit.overall_score}`
               : `Score ${scoreDelta > 0 ? 'improved' : 'dropped'} by ${Math.abs(scoreDelta)} points (now ${audit.overall_score})`
             const failLine = failDelta > 0 ? ` · ${failDelta} new error${failDelta > 1 ? 's' : ''}` : failDelta < 0 ? ` · ${Math.abs(failDelta)} error${Math.abs(failDelta) > 1 ? 's' : ''} fixed` : ''
-            await supabaseAdmin.from('notifications').insert({
-              user_id: schedule.user_id,
-              title: `Audit complete: ${site.name || url}`,
-              message: `${scoreLine}${failLine}`,
-              type: scoreDelta < 0 || failDelta > 0 ? 'warning' : 'info',
+            await prisma.notifications.create({
+              data: {
+                user_id: schedule.user_id,
+                title: `Audit complete: ${site.name || url}`,
+                message: `${scoreLine}${failLine}`,
+                type: scoreDelta < 0 || failDelta > 0 ? 'warning' : 'info',
+              },
             })
           }
         } else {
           // First audit — always notify
-          await supabaseAdmin.from('notifications').insert({
-            user_id: schedule.user_id,
-            title: `First audit complete: ${site.name || url}`,
-            message: `Overall score: ${audit.overall_score}/100 (${audit.grade}). Open the Site Audit page for details.`,
-            type: 'info',
+          await prisma.notifications.create({
+            data: {
+              user_id: schedule.user_id,
+              title: `First audit complete: ${site.name || url}`,
+              message: `Overall score: ${audit.overall_score}/100 (${audit.grade}). Open the Site Audit page for details.`,
+              type: 'info',
+            },
           })
         }
 

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { createClient } from '@/lib/supabase'
 
 type ImportSource = 'gsc' | 'bing' | 'manual'
 
@@ -32,13 +31,15 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
   const [lastScanned, setLastScanned] = useState<string | null>(null)
   const [analysisPage, setAnalysisPage] = useState<string | null>(null)
 
-  const supabase = createClient()
-
   useEffect(() => {
     async function load() {
-      const { data: site } = await supabase.from('sites').select('url').eq('id', params.id).single()
-      if (site?.url) setSiteUrl(site.url)
+      const siteRes = await fetch(`/api/sites/${params.id}`)
+      if (siteRes.ok) {
+        const { site } = await siteRes.json()
+        if (site?.url) setSiteUrl(site.url)
+      }
 
+      // /api/keywords returns both the tracked keywords and recent keyword_analyses.
       const res = await fetch(`/api/keywords?siteId=${params.id}`)
       const data = await res.json()
       const pageMap: any = {}
@@ -52,15 +53,8 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
       setSelectedPage(pageList[0].path)
       setKeywords(pageList[0].keywords)
 
-      // Load last analysis report
-      const { data: lastReport } = await supabase
-        .from('keyword_analyses')
-        .select('*')
-        .eq('site_id', params.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
+      // Last analysis report (analyses come back newest-first from the same route)
+      const lastReport = (data.analyses || [])[0]
       if (lastReport) {
         setAnalysis({ score: lastReport.score, verdict: lastReport.verdict, fixes: lastReport.fixes })
         setLastScanned(lastReport.created_at)
@@ -99,11 +93,10 @@ function KeywordsPageInner({ params }: { params: { id: string } }) {
 
     try {
       if (importSource === 'gsc') {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.provider_token) throw new Error('Google not connected. Connect Google in Search Console first.')
-
+        // The search-console route enforces the Google connection server-side
+        // (401 "No Google access token..." if this site isn't connected).
         const url = gscSiteUrl || siteUrl
-        const res = await fetch(`/api/search-console?siteUrl=${encodeURIComponent(url)}&days=90`)
+        const res = await fetch(`/api/search-console?siteId=${params.id}&siteUrl=${encodeURIComponent(url)}&days=90`)
         const data = await res.json()
         if (data.error) throw new Error(data.error)
 

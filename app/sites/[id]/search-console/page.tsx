@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 
 export default function SearchConsolePage({ params }: { params: { id: string } }) {
   const [connected, setConnected] = useState(false)
@@ -15,7 +15,6 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
   const [sortBy, setSortBy] = useState<'clicks'|'impressions'|'position'>('clicks')
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<string | null>(null)
-  const supabase = createClient()
 
   useEffect(() => { checkConnection() }, [])
 
@@ -23,9 +22,8 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
 
   async function checkConnection() {
     setCheckingAuth(true)
-    const { data: site } = await supabase.from('sites')
-      .select('google_email, google_access_token, gsc_site_url')
-      .eq('id', params.id).single()
+    const res = await fetch(`/api/sites/${params.id}`)
+    const site = res.ok ? (await res.json()).site : null
     if (site?.google_access_token) {
       setConnected(true)
       setConnectedEmail(site.google_email || '')
@@ -35,24 +33,20 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
     setCheckingAuth(false)
   }
 
-  async function connectGoogle() {
+  function connectGoogle() {
     document.cookie = `oauth_return=${encodeURIComponent(window.location.pathname)}; path=/; max-age=600; SameSite=Lax`
     document.cookie = `oauth_site_id=${params.id}; path=/; max-age=600; SameSite=Lax`
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly',
-        queryParams: { access_type: 'offline', prompt: 'select_account consent' },
-      }
-    })
+    signIn('google', { callbackUrl: window.location.pathname })
   }
 
   async function disconnectGoogle() {
     if (!confirm('Disconnect Google from this site?')) return
-    await supabase.from('sites').update({
-      google_email: null, google_access_token: null, google_refresh_token: null, google_token_expires_at: null,
-    }).eq('id', params.id)
+    // Server clears the site's google_* token columns (owner-scoped) + revokes.
+    await fetch('/api/gbp/disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ siteId: params.id }),
+    })
     setConnected(false)
     setConnectedEmail('')
     setSites([])
@@ -83,7 +77,14 @@ export default function SearchConsolePage({ params }: { params: { id: string } }
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
-      await supabase.from('sites').update({ gsc_site_url: siteUrl }).eq('id', params.id)
+      // TODO(api): persist the selected GSC property on the site (gsc_site_url).
+      // No PATCH route exists for sites — add PATCH /api/sites/[id] accepting
+      // { gsc_site_url } (owner-scoped). Until then the choice isn't remembered.
+      await fetch(`/api/sites/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gsc_site_url: siteUrl }),
+      })
     } catch (err: any) { setError(err.message) }
     finally { setLoading(false) }
   }

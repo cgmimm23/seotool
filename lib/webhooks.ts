@@ -1,16 +1,16 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import crypto from 'crypto'
 
 export async function dispatchWebhook(event: string, userId: string, payload: object) {
   try {
-    const supabase = createAdminSupabase()
-
-    const { data: webhooks } = await supabase
-      .from('webhooks')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('active', true)
-      .contains('events', [event])
+    // TENANT SCOPING: only this user's active webhooks subscribed to `event`.
+    const webhooks = await prisma.webhooks.findMany({
+      where: {
+        user_id: userId,
+        active: true,
+        events: { has: event },
+      },
+    })
 
     if (!webhooks || webhooks.length === 0) return
 
@@ -33,42 +33,55 @@ export async function dispatchWebhook(event: string, userId: string, payload: ob
           signal: AbortSignal.timeout(10000),
         })
 
-        await supabase.from('webhook_deliveries').insert({
-          webhook_id: webhook.id,
-          event,
-          payload,
-          response_status: res.status,
-          response_body: (await res.text()).slice(0, 500),
-          success: res.ok,
+        await prisma.webhook_deliveries.create({
+          data: {
+            webhook_id: webhook.id,
+            event,
+            payload: payload as object,
+            response_status: res.status,
+            response_body: (await res.text()).slice(0, 500),
+            success: res.ok,
+          },
         })
 
         if (res.ok) {
-          await supabase.from('webhooks').update({
-            last_triggered_at: new Date().toISOString(),
-            failure_count: 0,
-          }).eq('id', webhook.id)
+          await prisma.webhooks.update({
+            where: { id: webhook.id },
+            data: {
+              last_triggered_at: new Date(),
+              failure_count: 0,
+            },
+          })
         } else {
           const newCount = (webhook.failure_count || 0) + 1
-          await supabase.from('webhooks').update({
-            failure_count: newCount,
-            active: newCount < 10,
-          }).eq('id', webhook.id)
+          await prisma.webhooks.update({
+            where: { id: webhook.id },
+            data: {
+              failure_count: newCount,
+              active: newCount < 10,
+            },
+          })
         }
       } catch (err: any) {
-        await supabase.from('webhook_deliveries').insert({
-          webhook_id: webhook.id,
-          event,
-          payload,
-          response_status: 0,
-          response_body: err.message?.slice(0, 500) || 'Connection failed',
-          success: false,
+        await prisma.webhook_deliveries.create({
+          data: {
+            webhook_id: webhook.id,
+            event,
+            payload: payload as object,
+            response_status: 0,
+            response_body: err.message?.slice(0, 500) || 'Connection failed',
+            success: false,
+          },
         })
 
         const newCount = (webhook.failure_count || 0) + 1
-        await supabase.from('webhooks').update({
-          failure_count: newCount,
-          active: newCount < 10,
-        }).eq('id', webhook.id)
+        await prisma.webhooks.update({
+          where: { id: webhook.id },
+          data: {
+            failure_count: newCount,
+            active: newCount < 10,
+          },
+        })
       }
     }
   } catch (err) {

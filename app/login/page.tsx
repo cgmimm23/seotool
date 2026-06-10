@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -11,26 +11,27 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin')
   const [resetSent, setResetSent] = useState(false)
-  const supabase = createClient()
   const router = useRouter()
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${location.origin}/reset-password`,
-    })
-    if (error) setError(error.message)
-    else setResetSent(true)
+    try {
+      await fetch('/api/account/forgot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      setResetSent(true)
+    } catch {
+      setError('Could not send reset email. Try again.')
+    }
     setLoading(false)
   }
 
   async function handleGoogleLogin() {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${location.origin}/auth/callback` },
-    })
+    await signIn('google', { callbackUrl: '/dashboard' })
   }
 
   async function handleEmailAuth(e: React.FormEvent) {
@@ -38,12 +39,23 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const { error } = mode === 'signin'
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password })
+    if (mode === 'signup') {
+      const res = await fetch('/api/account/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        setError(j.error || 'Could not create account.')
+        setLoading(false)
+        return
+      }
+    }
 
-    if (error) {
-      setError(error.message)
+    const result = await signIn('credentials', { redirect: false, email, password })
+    if (result?.error) {
+      setError(mode === 'signup' ? 'Account created, but sign-in failed. Try logging in.' : 'Invalid email or password.')
       setLoading(false)
     } else {
       router.push('/dashboard')

@@ -1,5 +1,6 @@
 import { requireEnterprise } from '@/lib/enterprise'
 import { generateApiKey } from '@/lib/api-auth'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -8,13 +9,19 @@ export async function GET() {
   const auth = await requireEnterprise()
   if (auth.error) return auth.error
 
-  const { data, error } = await auth.supabase
-    .from('api_keys')
-    .select('id, name, key_prefix, scopes, last_used_at, revoked, created_at')
-    .eq('user_id', auth.user!.id)
-    .order('created_at', { ascending: false })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const data = await prisma.api_keys.findMany({
+    where: { user_id: auth.user!.id },
+    select: {
+      id: true,
+      name: true,
+      key_prefix: true,
+      scopes: true,
+      last_used_at: true,
+      revoked: true,
+      created_at: true,
+    },
+    orderBy: { created_at: 'desc' },
+  })
 
   return NextResponse.json({ keys: data })
 }
@@ -26,15 +33,15 @@ export async function POST(req: NextRequest) {
   const { name, scopes } = await req.json()
   const { raw, hash, prefix } = generateApiKey()
 
-  const { error } = await auth.supabase.from('api_keys').insert({
-    user_id: auth.user!.id,
-    name: name || 'Default',
-    key_hash: hash,
-    key_prefix: prefix,
-    scopes: scopes || ['read'],
+  await prisma.api_keys.create({
+    data: {
+      user_id: auth.user!.id,
+      name: name || 'Default',
+      key_hash: hash,
+      key_prefix: prefix,
+      scopes: scopes || ['read'],
+    },
   })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ key: raw, prefix, message: 'Save this key — it will not be shown again.' }, { status: 201 })
 }
@@ -46,13 +53,11 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const { error } = await auth.supabase
-    .from('api_keys')
-    .update({ revoked: true })
-    .eq('id', id)
-    .eq('user_id', auth.user!.id)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Scope revoke to the authenticated enterprise user.
+  await prisma.api_keys.updateMany({
+    where: { id, user_id: auth.user!.id },
+    data: { revoked: true },
+  })
 
   return NextResponse.json({ success: true })
 }

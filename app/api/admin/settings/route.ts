@@ -1,5 +1,5 @@
 import { requireAdmin } from '@/lib/admin-auth'
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -11,13 +11,12 @@ export async function GET() {
   const auth = await requireAdmin()
   if (auth.error) return auth.error
 
-  const supabase = createAdminSupabase()
-  const { data } = await supabase
-    .from('platform_settings')
-    .select('key, value')
+  const data = await prisma.platform_settings.findMany({
+    select: { key: true, value: true },
+  })
 
   const settings: Record<string, string> = {}
-  ;(data || []).forEach((row: any) => { settings[row.key] = row.value })
+  ;(data || []).forEach((row) => { settings[row.key] = row.value })
 
   return NextResponse.json({ settings })
 }
@@ -29,12 +28,11 @@ export async function POST(req: NextRequest) {
   const { key, value } = await req.json()
   if (!key) return NextResponse.json({ error: 'key required' }, { status: 400 })
 
-  const supabase = createAdminSupabase()
-
-  await supabase.from('platform_settings').upsert(
-    { key, value: value || '' },
-    { onConflict: 'key' }
-  )
+  await prisma.platform_settings.upsert({
+    where: { key },
+    create: { key, value: value || '' },
+    update: { value: value || '' },
+  })
 
   return NextResponse.json({ success: true })
 }

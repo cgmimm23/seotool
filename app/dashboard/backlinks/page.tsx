@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
 
 export default function BacklinksPage() {
   const [filter, setFilter] = useState<'all' | 'dofollow' | 'nofollow'>('all')
@@ -12,13 +11,13 @@ export default function BacklinksPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return
-      supabase.from('sites').select('url').eq('user_id', session.user.id).limit(1).single().then(({ data }) => {
-        if (data?.url) { setSiteUrl(data.url); fetchBacklinks(data.url) }
-      })
-    })
+    fetch('/api/sites').then(r => r.json()).then(d => {
+      const first = d.sites?.[0]
+      if (first?.url) {
+        setSiteUrl(first.url)
+        fetchBacklinks(first.url)
+      }
+    }).catch(() => {})
   }, [])
 
   async function fetchBacklinks(url: string) {

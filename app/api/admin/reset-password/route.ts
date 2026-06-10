@@ -1,4 +1,4 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
@@ -12,14 +12,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
   }
 
-  const supabase = createAdminSupabase()
-
   // Find admin by token
-  const { data: admin } = await supabase
-    .from('admin_accounts')
-    .select('id, reset_token_expires_at')
-    .eq('reset_token', token)
-    .single()
+  const admin = await prisma.admin_accounts.findFirst({
+    where: { reset_token: token },
+    select: { id: true, reset_token_expires_at: true },
+  })
 
   if (!admin) return NextResponse.json({ error: 'Invalid or expired reset link' }, { status: 400 })
 
@@ -29,14 +26,14 @@ export async function POST(req: NextRequest) {
 
   // Hash new password and clear token
   const newHash = await bcrypt.hash(newPassword, 10)
-  await supabase
-    .from('admin_accounts')
-    .update({
+  await prisma.admin_accounts.update({
+    where: { id: admin.id },
+    data: {
       password_hash: newHash,
       reset_token: null,
       reset_token_expires_at: null,
-    })
-    .eq('id', admin.id)
+    },
+  })
 
   return NextResponse.json({ success: true })
 }

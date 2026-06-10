@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 const diffColors: Record<string, string> = { easy: '#00d084', medium: '#ffa500', hard: '#ff4444' }
 const typeLabels: Record<string, string> = { guest_post: 'Guest Post', resource_page: 'Resource Page', directory: 'Directory', partnership: 'Partnership', broken_link: 'Broken Link', skyscraper: 'Skyscraper' }
@@ -15,9 +14,8 @@ export default function LinkBuildingPage() {
   const [prospects, setProspects] = useState<any[]>([])
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.from('sites').select('url').eq('id', params.id).single().then(({ data }) => {
-      if (data) setSiteUrl(data.url)
+    fetch(`/api/sites/${params.id}`).then(r => r.ok ? r.json() : null).then(j => {
+      if (j?.site?.url) setSiteUrl(j.site.url)
     })
   }, [params.id])
 

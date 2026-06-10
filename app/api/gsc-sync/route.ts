@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { getGoogleToken } from '@/lib/google-token'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { siteUrl, siteId, days = 90 } = await request.json()
     const accessToken = await getGoogleToken(siteId)
     if (!accessToken) return NextResponse.json({ error: 'No Google access token. Please connect Google for this site.' }, { status: 401 })
     if (!siteUrl || !siteId) return NextResponse.json({ error: 'siteUrl and siteId required' }, { status: 400 })
+
+    // Scope by owner: only the site's owner may sync its keywords/rankings.
+    const ownedSite = await prisma.sites.findFirst({
+      where: { id: siteId, user_id: user.id },
+      select: { id: true },
+    })
+    if (!ownedSite) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
 
     const endDate = new Date()
     const startDate = new Date()
@@ -55,25 +62,26 @@ export async function POST(request: NextRequest) {
     // Get or create keywords in the keywords table
     const uniqueKeywords = Array.from(new Set(rows.map((r: any) => r.keys[0]))) as string[]
 
-    // Upsert keywords
-    const keywordUpserts = uniqueKeywords.map(kw => ({
-      site_id: siteId,
-      user_id: user.id,
-      keyword: kw,
-      page_path: '/',
-    }))
-
-    await supabase.from('keywords').upsert(keywordUpserts, { onConflict: 'site_id,page_path,keyword', ignoreDuplicates: true })
+    // Upsert keywords (skip existing — matches Supabase upsert ignoreDuplicates on
+    // the (site_id, page_path, keyword) unique constraint).
+    await prisma.keywords.createMany({
+      data: uniqueKeywords.map(kw => ({
+        site_id: siteId,
+        user_id: user.id,
+        keyword: kw,
+        page_path: '/',
+      })),
+      skipDuplicates: true,
+    })
 
     // Fetch all keywords for this site to get their IDs
-    const { data: kwData } = await supabase
-      .from('keywords')
-      .select('id, keyword')
-      .eq('site_id', siteId)
-      .eq('user_id', user.id)
+    const kwData = await prisma.keywords.findMany({
+      where: { site_id: siteId, user_id: user.id },
+      select: { id: true, keyword: true },
+    })
 
     const kwMap: Record<string, string> = {}
-    for (const kw of kwData || []) kwMap[kw.keyword] = kw.id
+    for (const kw of kwData) kwMap[kw.keyword] = kw.id
 
     // Build serp_rankings inserts
     const rankings = rows
@@ -88,19 +96,27 @@ export async function POST(request: NextRequest) {
           position: Math.round(r.position),
           previous_position: null,
           source: 'gsc',
-          checked_at: new Date(date).toISOString(),
+          checked_at: new Date(date),
         }
       })
-      .filter(Boolean)
+      .filter(Boolean) as {
+        keyword_id: string
+        user_id: string
+        position: number
+        previous_position: null
+        source: string
+        checked_at: Date
+      }[]
 
-    // Insert in batches of 500
+    // Insert in batches of 500 (skipDuplicates on keyword_id,source,checked_at)
     let synced = 0
     for (let i = 0; i < rankings.length; i += 500) {
       const batch = rankings.slice(i, i + 500)
-      const { error } = await (supabase as any)
-        .from('serp_rankings')
-        .upsert(batch, { onConflict: 'keyword_id,source,checked_at', ignoreDuplicates: true })
-      if (!error) synced += batch.length
+      const result = await prisma.serp_rankings.createMany({
+        data: batch,
+        skipDuplicates: true,
+      })
+      synced += result.count
     }
 
     return NextResponse.json({ synced, total: rows.length, message: `Synced ${synced} ranking data points from Search Console.` })

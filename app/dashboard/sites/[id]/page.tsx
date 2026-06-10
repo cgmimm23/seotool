@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
 
 export default function SiteDetailPage({ params }: { params: { id: string } }) {
   const [site, setSite] = useState<any>(null)
@@ -12,27 +11,33 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState<'overview' | 'audits' | 'crawls' | 'keywords'>('overview')
   const [runningAudit, setRunningAudit] = useState(false)
   const [auditError, setAuditError] = useState('')
-  const supabase = createClient()
 
   useEffect(() => { loadSiteData() }, [params.id])
 
   async function loadSiteData() {
     setLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-
-    const [siteRes, auditsRes, crawlsRes, keywordsRes] = await Promise.all([
-      supabase.from('sites').select('*').eq('id', params.id).eq('user_id', session.user.id).single(),
-      supabase.from('audit_reports').select('*').eq('site_id', params.id).order('created_at', { ascending: false }).limit(10),
-      supabase.from('crawl_reports').select('id, url, pages_crawled, total_issues, error_pages, clean_pages, summary, created_at').eq('site_id', params.id).order('created_at', { ascending: false }).limit(10),
-      supabase.from('keywords').select('*').eq('site_id', params.id).limit(50),
-    ])
-
-    setSite(siteRes.data)
-    setAuditReports(auditsRes.data || [])
-    setCrawlReports(crawlsRes.data || [])
-    setKeywords(keywordsRes.data || [])
-    setLoading(false)
+    try {
+      const res = await fetch(`/api/sites/${params.id}`)
+      if (!res.ok) {
+        setSite(null)
+        setAuditReports([])
+        setCrawlReports([])
+        setKeywords([])
+        return
+      }
+      const data = await res.json()
+      setSite(data.site || null)
+      setAuditReports(data.audits || [])
+      setCrawlReports(data.crawls || [])
+      setKeywords(data.keywords || [])
+    } catch {
+      setSite(null)
+      setAuditReports([])
+      setCrawlReports([])
+      setKeywords([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function runAudit() {

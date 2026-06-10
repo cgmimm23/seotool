@@ -1,5 +1,5 @@
 import { authenticateApiKey } from '@/lib/api-auth'
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -8,15 +8,11 @@ export async function GET(req: NextRequest, { params }: { params: { siteId: stri
   const auth = await authenticateApiKey(req)
   if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
-  const supabase = createAdminSupabase()
-  const { data, error } = await supabase
-    .from('sites')
-    .select('*')
-    .eq('id', params.siteId)
-    .eq('user_id', auth.userId)
-    .single()
+  const data = await prisma.sites.findFirst({
+    where: { id: params.siteId, user_id: auth.userId },
+  })
 
-  if (error || !data) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+  if (!data) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
 
   return NextResponse.json({ site: data })
 }
@@ -28,14 +24,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { siteId: s
     return NextResponse.json({ error: 'Write scope required' }, { status: 403 })
   }
 
-  const supabase = createAdminSupabase()
-  const { error } = await supabase
-    .from('sites')
-    .delete()
-    .eq('id', params.siteId)
-    .eq('user_id', auth.userId)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Scope delete to the key's user so a site can't be deleted cross-tenant.
+  await prisma.sites.deleteMany({
+    where: { id: params.siteId, user_id: auth.userId },
+  })
 
   return NextResponse.json({ success: true })
 }

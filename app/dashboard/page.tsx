@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 export default function Dashboard() {
+  const router = useRouter()
   const [sites, setSites] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddSite, setShowAddSite] = useState(false)
@@ -14,104 +15,57 @@ export default function Dashboard() {
   const [addingsite, setAddingSite] = useState(false)
   const [scanningId, setScanningId] = useState<string | null>(null)
   const [trialDays, setTrialDays] = useState<number | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     loadSites()
-    // Check trial and onboarding
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user) return
-      supabase.from('profiles').select('trial_ends_at, onboarding_completed, plan, stripe_subscription_id').eq('id', session.user.id).single().then(({ data }) => {
-        const paidPlans = ['starter', 'pro', 'agency', 'enterprise']
-        const hasPaidAccess = data && (data.stripe_subscription_id || paidPlans.includes(data.plan))
-        if (data && !data.onboarding_completed && !hasPaidAccess) {
-          window.location.href = '/dashboard/onboarding'
-          return
-        }
-        if (data?.trial_ends_at && !hasPaidAccess) {
-          const days = Math.ceil((new Date(data.trial_ends_at).getTime() - Date.now()) / 86400000)
-          if (days > 0) setTrialDays(days)
-        }
-      })
-    })
+    fetch('/api/profile').then(r => (r.ok ? r.json() : null)).then(d => {
+      const p = d?.profile
+      if (!p) return
+      if (!p.onboarding_completed) { router.push('/dashboard/onboarding'); return }
+      const isPaid = p.plan && p.plan !== 'free'
+      if (!isPaid && p.trial_ends_at) {
+        const days = Math.ceil((new Date(p.trial_ends_at).getTime() - Date.now()) / 86400000)
+        if (days > 0) setTrialDays(days)
+      }
+    }).catch(() => {})
   }, [])
 
   async function loadSites() {
     setLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setLoading(false); return }
-
-    const { data: sitesData } = await supabase
-      .from('sites')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false })
-
-    if (!sitesData || sitesData.length === 0) {
+    try {
+      const res = await fetch('/api/sites')
+      const data = await res.json()
+      const baseSites = data.sites || []
+      // Enrich each site with its latest audit report + keyword count.
+      const enriched = await Promise.all(baseSites.map(async (s: any) => {
+        try {
+          const detRes = await fetch(`/api/sites/${s.id}`)
+          if (!detRes.ok) return { ...s, latestReport: null, keywordCount: 0 }
+          const det = await detRes.json()
+          return { ...s, latestReport: det.audits?.[0] || null, keywordCount: (det.keywords || []).length }
+        } catch {
+          return { ...s, latestReport: null, keywordCount: 0 }
+        }
+      }))
+      setSites(enriched)
+    } catch {
       setSites([])
+    } finally {
       setLoading(false)
-      return
     }
-
-    // For each site get latest audit report
-    const sitesWithData = await Promise.all(sitesData.map(async (site: any) => {
-      const { data: reports } = await supabase
-        .from('audit_reports')
-        .select('*')
-        .eq('site_id', site.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-
-      const { data: keywords } = await supabase
-        .from('keywords')
-        .select('*')
-        .eq('site_id', site.id)
-
-      const { data: schedule } = await supabase
-        .from('scan_schedule')
-        .select('*')
-        .eq('site_id', site.id)
-        .single()
-
-      return {
-        ...site,
-        latestReport: reports?.[0] || null,
-        keywordCount: keywords?.length || 0,
-        schedule: schedule || null,
-      }
-    }))
-
-    setSites(sitesWithData)
-    setLoading(false)
   }
 
   async function addSite() {
     if (!newSiteUrl) return
     setAddingSite(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { alert('Session expired — please sign in again.'); return }
-
-      const url = newSiteUrl.startsWith('http') ? newSiteUrl : 'https://' + newSiteUrl
-
-      const { data, error } = await supabase.from('sites').insert({
-        user_id: session.user.id,
-        url,
-        name: newSiteName || url.replace(/^https?:\/\//, ''),
-        site_type: newSiteType || null,
-        platform: newPlatform || null,
-        active: true,
-      }).select().single()
-
-      if (error) { alert('Could not add site: ' + error.message); return }
-
-      // Best-effort scan schedule — don't block site creation if it fails.
-      await supabase.from('scan_schedule').insert({
-        site_id: data.id,
-        user_id: session.user.id,
-        plan: 'free',
+      const res = await fetch('/api/sites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: newSiteUrl.trim(), name: newSiteName || undefined }),
       })
-
+      const data = await res.json()
+      if (!res.ok || data.error) { alert('Add site failed: ' + (data.error || res.statusText)); return }
       setNewSiteUrl('')
       setNewSiteName('')
       setNewSiteType('')
@@ -143,7 +97,8 @@ export default function Dashboard() {
 
   async function deleteSite(siteId: string) {
     if (!confirm('Remove this site?')) return
-    await supabase.from('sites').delete().eq('id', siteId)
+    const res = await fetch(`/api/sites?id=${encodeURIComponent(siteId)}`, { method: 'DELETE' })
+    if (!res.ok) { alert('Could not remove site'); return }
     loadSites()
   }
 

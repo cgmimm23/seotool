@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { getUser } from '@/lib/auth'
 import { getGoogleToken } from '@/lib/google-token'
 
 export const dynamic = 'force-dynamic'
@@ -7,8 +7,7 @@ export const dynamic = 'force-dynamic'
 // GET /api/gbp/data?siteId=...&locationName=accounts/X/locations/Y&days=28
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -102,11 +103,19 @@ async function fetchPageSignals(siteUrl: string, pagePath: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { siteId, siteUrl, pagePath, keywords, action } = await request.json()
+
+    // Scope: writes target a site_id; confirm the caller owns it (RLS is gone).
+    if (siteId) {
+      const owned = await prisma.sites.findFirst({
+        where: { id: siteId, user_id: user.id },
+        select: { id: true },
+      })
+      if (!owned) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+    }
 
     if (action === 'analyze') {
       // Fetch real page signals first
@@ -202,28 +211,30 @@ Rules:
       }
 
       // Save analysis
-      await supabase.from('keyword_analyses').insert({
-        site_id: siteId,
-        user_id: user.id,
-        page_path: pagePath,
-        keywords,
-        score: analysis.score,
-        verdict: analysis.verdict,
-        fixes: analysis.fixes,
+      await prisma.keyword_analyses.create({
+        data: {
+          site_id: siteId,
+          user_id: user.id,
+          page_path: pagePath,
+          keywords,
+          score: analysis.score,
+          verdict: analysis.verdict,
+          fixes: analysis.fixes,
+        },
       })
 
       return NextResponse.json({ analysis, signals })
     }
 
     if (action === 'save') {
-      const upserts = keywords.map((kw: string) => ({
-        site_id: siteId,
-        user_id: user.id,
-        page_path: pagePath,
-        keyword: kw,
-      }))
-      const { error } = await supabase.from('keywords').upsert(upserts, { onConflict: 'site_id,page_path,keyword' })
-      if (error) throw error
+      // Upsert on unique (site_id, page_path, keyword).
+      for (const kw of keywords as string[]) {
+        await prisma.keywords.upsert({
+          where: { site_id_page_path_keyword: { site_id: siteId, page_path: pagePath, keyword: kw } },
+          create: { site_id: siteId, user_id: user.id, page_path: pagePath, keyword: kw },
+          update: {},
+        })
+      }
       return NextResponse.json({ success: true })
     }
 
@@ -236,28 +247,27 @@ Rules:
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const siteId = searchParams.get('siteId')
     const pagePath = searchParams.get('pagePath')
 
-    const query = supabase.from('keywords').select('*').eq('user_id', user.id)
-    if (siteId) query.eq('site_id', siteId)
-    if (pagePath) query.eq('page_path', pagePath)
+    const data = await prisma.keywords.findMany({
+      where: {
+        user_id: user.id,
+        ...(siteId ? { site_id: siteId } : {}),
+        ...(pagePath ? { page_path: pagePath } : {}),
+      },
+      orderBy: { page_path: 'asc' },
+    })
 
-    const { data, error } = await query.order('page_path')
-    if (error) throw error
-
-    const { data: analyses } = await supabase
-      .from('keyword_analyses')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('site_id', siteId || '')
-      .order('created_at', { ascending: false })
-      .limit(20)
+    const analyses = await prisma.keyword_analyses.findMany({
+      where: { user_id: user.id, site_id: siteId || '' },
+      orderBy: { created_at: 'desc' },
+      take: 20,
+    })
 
     return NextResponse.json({ keywords: data, analyses })
   } catch (err: any) {

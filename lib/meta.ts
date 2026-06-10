@@ -1,4 +1,5 @@
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 
 export const META_API_VERSION = 'v19.0'
 export const META_GRAPH = `https://graph.facebook.com/${META_API_VERSION}`
@@ -27,16 +28,31 @@ export type MetaSiteTokens = {
 }
 
 export async function getSiteMeta(siteId: string): Promise<{ site: any; tokens: MetaSiteTokens } | null> {
-  const supabase = createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) return null
 
-  const { data: site } = await supabase
-    .from('sites')
-    .select('id, user_id, url, name, meta_user_id, meta_user_name, meta_user_access_token, meta_token_expires_at, meta_page_id, meta_page_name, meta_page_access_token, meta_ig_user_id, meta_ig_username, meta_ad_account_id, meta_scopes')
-    .eq('id', siteId)
-    .single()
+  const site = await prisma.sites.findUnique({
+    where: { id: siteId },
+    select: {
+      id: true,
+      user_id: true,
+      url: true,
+      name: true,
+      meta_user_id: true,
+      meta_user_name: true,
+      meta_user_access_token: true,
+      meta_token_expires_at: true,
+      meta_page_id: true,
+      meta_page_name: true,
+      meta_page_access_token: true,
+      meta_ig_user_id: true,
+      meta_ig_username: true,
+      meta_ad_account_id: true,
+      meta_scopes: true,
+    },
+  })
 
+  // TENANT SCOPING: only return a site's Meta tokens to its owner.
   if (!site || site.user_id !== user.id) return null
 
   return {
@@ -45,7 +61,7 @@ export async function getSiteMeta(siteId: string): Promise<{ site: any; tokens: 
       user_id: site.meta_user_id,
       user_name: site.meta_user_name,
       user_access_token: site.meta_user_access_token,
-      token_expires_at: site.meta_token_expires_at,
+      token_expires_at: site.meta_token_expires_at ? site.meta_token_expires_at.toISOString() : null,
       page_id: site.meta_page_id,
       page_name: site.meta_page_name,
       page_access_token: site.meta_page_access_token,

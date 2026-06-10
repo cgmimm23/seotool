@@ -2,30 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 export default function SiteContextBar() {
   const searchParams = useSearchParams()
   const [site, setSite] = useState<any>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     const siteParam = searchParams.get('site') || searchParams.get('url')
     if (!siteParam) return
 
-    async function findSite() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      const clean = siteParam!.replace(/^https?:\/\//, '').split('/')[0]
-      const { data } = await supabase
-        .from('sites')
-        .select('id, name, url')
-        .ilike('url', '%' + clean + '%')
-        .limit(1)
-        .single()
-      if (data) setSite(data)
-    }
-    findSite()
+    fetch(`/api/sites/resolve?url=${encodeURIComponent(siteParam)}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d?.site) setSite(d.site) })
+      .catch(() => {})
   }, [searchParams])
 
   if (!site) return null

@@ -1,17 +1,17 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const supabase = createAdminSupabase()
-  const { data } = await supabase
-    .from('platform_settings')
-    .select('key, value')
-    .in('key', ['ga_measurement_id', 'gtm_id', 'fb_pixel_id', 'custom_head_script'])
+  // Platform-wide tracking config — global, not user-scoped (public site settings).
+  const data = await prisma.platform_settings.findMany({
+    where: { key: { in: ['ga_measurement_id', 'gtm_id', 'fb_pixel_id', 'custom_head_script'] } },
+    select: { key: true, value: true },
+  })
 
   const settings: Record<string, string> = {}
-  ;(data || []).forEach((row: any) => { if (row.value) settings[row.key] = row.value })
+  data.forEach((row) => { if (row.value) settings[row.key] = row.value })
 
   let scripts = ''
 

@@ -1,4 +1,4 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 
@@ -8,14 +8,11 @@ export async function POST(req: NextRequest) {
   const { email } = await req.json()
   if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 })
 
-  const supabase = createAdminSupabase()
-
   // Find admin account
-  const { data: admin } = await supabase
-    .from('admin_accounts')
-    .select('id, email, name')
-    .eq('email', email)
-    .single()
+  const admin = await prisma.admin_accounts.findUnique({
+    where: { email },
+    select: { id: true, email: true, name: true },
+  })
 
   // Always return success to avoid email enumeration
   if (!admin) {
@@ -24,12 +21,12 @@ export async function POST(req: NextRequest) {
 
   // Generate reset token
   const token = crypto.randomBytes(32).toString('hex')
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
-  await supabase
-    .from('admin_accounts')
-    .update({ reset_token: token, reset_token_expires_at: expiresAt })
-    .eq('id', admin.id)
+  await prisma.admin_accounts.update({
+    where: { id: admin.id },
+    data: { reset_token: token, reset_token_expires_at: expiresAt },
+  })
 
   // Send email via Resend
   const resendKey = process.env.RESEND_API_KEY

@@ -1,4 +1,4 @@
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -13,13 +13,12 @@ export async function GET(req: NextRequest) {
   const resendKey = process.env.RESEND_API_KEY
   if (!resendKey) return NextResponse.json({ error: 'Resend not configured' }, { status: 500 })
 
-  const supabase = createAdminSupabase()
-
+  // Cron-authed: runs across all users intentionally.
   // Get users with weekly reports enabled
-  const { data: users } = await supabase
-    .from('profiles')
-    .select('id, email, full_name, weekly_report_enabled')
-    .eq('weekly_report_enabled', true)
+  const users = await prisma.profiles.findMany({
+    where: { weekly_report_enabled: true },
+    select: { id: true, email: true, full_name: true, weekly_report_enabled: true },
+  })
 
   if (!users || users.length === 0) return NextResponse.json({ sent: 0 })
 
@@ -29,28 +28,23 @@ export async function GET(req: NextRequest) {
     if (!user.email) continue
 
     // Get their sites
-    const { data: sites } = await supabase
-      .from('sites')
-      .select('id, url, name')
-      .eq('user_id', user.id)
+    const sites = await prisma.sites.findMany({
+      where: { user_id: user.id },
+      select: { id: true, url: true, name: true },
+    })
 
     if (!sites || sites.length === 0) continue
 
     // Get latest audit for each site
     const siteReports = []
     for (const site of sites) {
-      const { data: audit } = await supabase
-        .from('audit_reports')
-        .select('overall_score, grade, summary, created_at')
-        .eq('site_id', site.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
+      const audit = await prisma.audit_reports.findFirst({
+        where: { site_id: site.id },
+        select: { overall_score: true, grade: true, summary: true, created_at: true },
+        orderBy: { created_at: 'desc' },
+      })
 
-      const { count: keywordCount } = await supabase
-        .from('keywords')
-        .select('id', { count: 'exact' })
-        .eq('site_id', site.id)
+      const keywordCount = await prisma.keywords.count({ where: { site_id: site.id } })
 
       siteReports.push({
         name: site.name || site.url,

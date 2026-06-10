@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { fetchSerpResults } from '@/lib/serpapi'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { keyword, keywordId, saveHistory } = await request.json()
     if (!keyword) return NextResponse.json({ error: 'Keyword required' }, { status: 400 })
 
     // Get user's SerpAPI key from profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('serp_api_key')
-      .eq('id', user.id)
-      .single()
+    const profile = await prisma.profiles.findUnique({
+      where: { id: user.id },
+      select: { serp_api_key: true },
+    })
 
     const apiKey = profile?.serp_api_key || process.env.SERPAPI_KEY
     if (!apiKey) return NextResponse.json({ error: 'SerpAPI key not configured' }, { status: 400 })
@@ -26,13 +25,22 @@ export async function POST(request: NextRequest) {
 
     // Save to history if keywordId provided
     if (keywordId && saveHistory) {
-      const topResult = serpData.organic_results?.[0]
-      await supabase.from('serp_rankings').insert({
-        keyword_id: keywordId,
-        user_id: user.id,
-        position: topResult?.position || null,
-        results: serpData.organic_results,
+      // Scope: only persist rankings for a keyword the caller owns.
+      const owned = await prisma.keywords.findFirst({
+        where: { id: keywordId, user_id: user.id },
+        select: { id: true },
       })
+      if (owned) {
+        const topResult = serpData.organic_results?.[0]
+        await prisma.serp_rankings.create({
+          data: {
+            keyword_id: keywordId,
+            user_id: user.id,
+            position: topResult?.position || null,
+            results: serpData.organic_results as any,
+          },
+        })
+      }
     }
 
     return NextResponse.json({ results: serpData.organic_results })
@@ -44,29 +52,22 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const siteId = searchParams.get('siteId')
 
     // Get tracked keywords with latest rankings
-    const { data: keywords, error } = await supabase
-      .from('keywords')
-      .select(`
-        *,
-        serp_rankings (
-          position,
-          previous_position,
-          checked_at
-        )
-      `)
-      .eq('user_id', user.id)
-      .eq('site_id', siteId || '')
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
+    const keywords = await prisma.keywords.findMany({
+      where: { user_id: user.id, site_id: siteId || '' },
+      orderBy: { created_at: 'desc' },
+      include: {
+        serp_rankings: {
+          select: { position: true, previous_position: true, checked_at: true },
+        },
+      },
+    })
 
     return NextResponse.json({ keywords })
   } catch (err: any) {

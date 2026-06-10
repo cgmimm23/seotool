@@ -1,5 +1,5 @@
 import { getStripe } from '@/lib/stripe'
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -18,8 +18,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  const supabase = createAdminSupabase()
-
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as any
@@ -27,12 +25,15 @@ export async function POST(req: NextRequest) {
       const plan = session.metadata?.plan
 
       if (userId && plan) {
-        await supabase.from('profiles').update({
-          plan,
-          stripe_customer_id: session.customer,
-          stripe_subscription_id: session.subscription,
-          updated_at: new Date().toISOString(),
-        }).eq('id', userId)
+        await prisma.profiles.updateMany({
+          where: { id: userId },
+          data: {
+            plan,
+            stripe_customer_id: session.customer,
+            stripe_subscription_id: session.subscription,
+            updated_at: new Date(),
+          },
+        })
       }
       break
     }
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       if (userId) {
         const updates: Record<string, any> = {
           stripe_subscription_id: subscription.id,
-          updated_at: new Date().toISOString(),
+          updated_at: new Date(),
         }
 
         if (subscription.status === 'active' && plan) {
@@ -53,12 +54,12 @@ export async function POST(req: NextRequest) {
         }
 
         if (subscription.cancel_at_period_end) {
-          updates.subscription_cancel_at = new Date(subscription.current_period_end * 1000).toISOString()
+          updates.subscription_cancel_at = new Date(subscription.current_period_end * 1000)
         } else {
           updates.subscription_cancel_at = null
         }
 
-        await supabase.from('profiles').update(updates).eq('id', userId)
+        await prisma.profiles.updateMany({ where: { id: userId }, data: updates })
       }
       break
     }
@@ -68,12 +69,15 @@ export async function POST(req: NextRequest) {
       const userId = subscription.metadata?.supabase_user_id
 
       if (userId) {
-        await supabase.from('profiles').update({
-          plan: 'free',
-          stripe_subscription_id: null,
-          subscription_cancel_at: null,
-          updated_at: new Date().toISOString(),
-        }).eq('id', userId)
+        await prisma.profiles.updateMany({
+          where: { id: userId },
+          data: {
+            plan: 'free',
+            stripe_subscription_id: null,
+            subscription_cancel_at: null,
+            updated_at: new Date(),
+          },
+        })
       }
       break
     }
@@ -83,11 +87,10 @@ export async function POST(req: NextRequest) {
       const customerId = invoice.customer
 
       // Find user by Stripe customer ID
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('stripe_customer_id', customerId)
-        .single()
+      const profile = await prisma.profiles.findFirst({
+        where: { stripe_customer_id: customerId },
+        select: { id: true },
+      })
 
       if (profile) {
         // Log the failed payment — could also send notification

@@ -1,13 +1,15 @@
-import { createClient } from '@supabase/supabase-js'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  // Scope: this route previously ran with the service-role key and no auth,
+  // so any caller could read any site's rankings. Require login + site ownership.
+  const user = await getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(req.url)
   const siteId = searchParams.get('siteId')
   const days = parseInt(searchParams.get('days') || '30')
@@ -16,17 +18,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'siteId param required' }, { status: 400 })
   }
 
+  const ownedSite = await prisma.sites.findFirst({
+    where: { id: siteId, user_id: user.id },
+    select: { id: true },
+  })
+  if (!ownedSite) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const since = new Date()
   since.setDate(since.getDate() - days)
 
-  const { data: keywords, error: kwError } = await supabase
-    .from('keywords')
-    .select('id, keyword')
-    .eq('site_id', siteId)
-
-  if (kwError) {
-    return NextResponse.json({ error: kwError.message }, { status: 500 })
-  }
+  const keywords = await prisma.keywords.findMany({
+    where: { site_id: siteId },
+    select: { id: true, keyword: true },
+  })
 
   if (!keywords || keywords.length === 0) {
     return NextResponse.json({ keywords: [], dates: [], rows: [] })
@@ -34,16 +38,13 @@ export async function GET(req: NextRequest) {
 
   const keywordIds = keywords.map((k) => k.id)
 
-  const { data: rankings, error: rankError } = await supabase
-    .from('serp_rankings')
-    .select('keyword_id, position, source, checked_at')
-    .in('keyword_id', keywordIds)
-    .gte('checked_at', since.toISOString())
-    .order('checked_at', { ascending: true })
+  const rankings = await prisma.serp_rankings.findMany({
+    where: { keyword_id: { in: keywordIds }, checked_at: { gte: since } },
+    select: { keyword_id: true, position: true, source: true, checked_at: true },
+    orderBy: { checked_at: 'asc' },
+  })
 
-  if (rankError) {
-    return NextResponse.json({ error: rankError.message }, { status: 500 })
-  }
+  const toDateKey = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : '')
 
   const kwMap: Record<string, string> = {}
   for (const kw of keywords) {
@@ -51,8 +52,8 @@ export async function GET(req: NextRequest) {
   }
 
   const dateSet = new Set<string>()
-  for (const r of rankings || []) {
-    dateSet.add(r.checked_at.slice(0, 10))
+  for (const r of rankings) {
+    dateSet.add(toDateKey(r.checked_at))
   }
   const dates = Array.from(dateSet).sort()
 
@@ -71,8 +72,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  for (const r of rankings || []) {
-    const dateKey = r.checked_at.slice(0, 10)
+  for (const r of rankings) {
+    const dateKey = toDateKey(r.checked_at)
     const row = rowMap[r.keyword_id]
     if (!row) continue
 

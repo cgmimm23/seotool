@@ -1,24 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/auth'
 import { generateKeywordStrategy } from '@/lib/anthropic'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { siteId } = await request.json()
     if (!siteId) return NextResponse.json({ error: 'siteId required' }, { status: 400 })
 
-    const { data: site } = await supabase
-      .from('sites')
-      .select('url, site_type, platform, audit_notes')
-      .eq('id', siteId)
-      .eq('user_id', user.id)
-      .single()
+    const site = await prisma.sites.findFirst({
+      where: { id: siteId, user_id: user.id },
+      select: { url: true, site_type: true, platform: true, audit_notes: true },
+    })
 
     if (!site?.url) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
 
@@ -29,20 +27,17 @@ export async function POST(request: NextRequest) {
       site.audit_notes,
     )
 
-    const { data: report, error } = await supabase
-      .from('keyword_strategies')
-      .insert({
+    const report = await prisma.keyword_strategies.create({
+      data: {
         site_id: siteId,
         user_id: user.id,
         summary: strategy.summary,
         core_phrases: strategy.core_phrases,
         long_tail_clusters: strategy.long_tail_clusters,
         deployment_strategy: strategy.deployment_strategy,
-      })
-      .select()
-      .single()
+      },
+    })
 
-    if (error) throw error
     return NextResponse.json({ strategy, report })
   } catch (err: any) {
     console.error('Keyword strategy error:', err)
@@ -52,23 +47,19 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const siteId = searchParams.get('siteId')
     if (!siteId) return NextResponse.json({ error: 'siteId required' }, { status: 400 })
 
-    const { data, error } = await supabase
-      .from('keyword_strategies')
-      .select('*')
-      .eq('site_id', siteId)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(10)
+    const data = await prisma.keyword_strategies.findMany({
+      where: { site_id: siteId, user_id: user.id },
+      orderBy: { created_at: 'desc' },
+      take: 10,
+    })
 
-    if (error) throw error
     return NextResponse.json({ strategies: data })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

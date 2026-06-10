@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { createClient } from '@/lib/supabase'
 
 function KeywordStrategyInner({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(false)
@@ -11,7 +10,6 @@ function KeywordStrategyInner({ params }: { params: { id: string } }) {
   const [error, setError] = useState('')
   const [openCluster, setOpenCluster] = useState<string | null>(null)
   const [openCore, setOpenCore] = useState<string | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     async function load() {
@@ -60,13 +58,11 @@ function KeywordStrategyInner({ params }: { params: { id: string } }) {
   }
 
   async function trackKeyword(keyword: string, pagePath: string = '/') {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    await supabase.from('keywords').insert({
-      site_id: params.id,
-      user_id: session.user.id,
-      page_path: pagePath,
-      keyword,
+    // Server upserts into keywords (user-scoped) via the save action.
+    await fetch('/api/keywords', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ siteId: params.id, pagePath, keywords: [keyword], action: 'save' }),
     })
   }
 

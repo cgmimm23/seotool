@@ -1,4 +1,5 @@
 import { requireEnterprise } from '@/lib/enterprise'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 
@@ -8,15 +9,22 @@ export async function GET() {
   const auth = await requireEnterprise()
   if (auth.error) return auth.error
 
-  const { data, error } = await auth.supabase
-    .from('webhooks')
-    .select('id, url, events, active, description, last_triggered_at, failure_count, created_at')
-    .eq('user_id', auth.user!.id)
-    .order('created_at', { ascending: false })
+  const webhooks = await prisma.webhooks.findMany({
+    where: { user_id: auth.user!.id },
+    select: {
+      id: true,
+      url: true,
+      events: true,
+      active: true,
+      description: true,
+      last_triggered_at: true,
+      failure_count: true,
+      created_at: true,
+    },
+    orderBy: { created_at: 'desc' },
+  })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  return NextResponse.json({ webhooks: data })
+  return NextResponse.json({ webhooks })
 }
 
 export async function POST(req: NextRequest) {
@@ -28,15 +36,15 @@ export async function POST(req: NextRequest) {
 
   const secret = crypto.randomBytes(32).toString('hex')
 
-  const { data, error } = await auth.supabase.from('webhooks').insert({
-    user_id: auth.user!.id,
-    url,
-    secret,
-    events,
-    description: description || '',
-  }).select().single()
+  const webhook = await prisma.webhooks.create({
+    data: {
+      user_id: auth.user!.id,
+      url,
+      secret,
+      events,
+      description: description || '',
+    },
+  })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  return NextResponse.json({ webhook: data, secret, message: 'Save this secret — it will not be shown again.' }, { status: 201 })
+  return NextResponse.json({ webhook, secret, message: 'Save this secret — it will not be shown again.' }, { status: 201 })
 }

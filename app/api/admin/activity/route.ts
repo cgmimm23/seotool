@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/admin-auth'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -10,15 +11,11 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const limit = parseInt(searchParams.get('limit') || '20')
 
-  const { data, error } = await auth.supabase
-    .from('admin_activity_log')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(limit)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  // Admin route — intentionally cross-user (admin-gated by requireAdmin).
+  const data = await prisma.admin_activity_log.findMany({
+    orderBy: { created_at: 'desc' },
+    take: limit,
+  })
 
   return NextResponse.json({ activities: data || [] })
 }

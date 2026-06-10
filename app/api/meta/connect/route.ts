@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { getUser } from '@/lib/auth'
 import { META_API_VERSION, META_SCOPES } from '@/lib/meta'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) return NextResponse.redirect(new URL('/login', req.url))
 
   const { searchParams } = new URL(req.url)

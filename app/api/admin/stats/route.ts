@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/admin-auth'
+import { prisma } from '@/lib/db'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -7,49 +8,49 @@ export async function GET() {
   const auth = await requireAdmin()
   if (auth.error) return auth.error
 
-  const supabase = auth.supabase
+  // New signups in last 30 days
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
+  // Admin route — intentionally cross-user (admin-gated by requireAdmin).
   const [
-    profilesRes,
-    activeRes,
-    sitesRes,
-    auditsRes,
-    keywordsRes,
-    recentSignupsRes,
-    planBreakdownRes,
+    totalUsers,
+    activeUsers,
+    totalSites,
+    totalAudits,
+    totalKeywords,
+    recentSignups,
+    planRows,
+    newSignups30d,
   ] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact' }),
-    supabase.from('profiles').select('id', { count: 'exact' }).eq('status', 'active'),
-    supabase.from('sites').select('id', { count: 'exact' }),
-    supabase.from('audit_reports').select('id', { count: 'exact' }),
-    supabase.from('keywords').select('id', { count: 'exact' }),
-    supabase.from('profiles').select('id, email, full_name, plan, created_at')
-      .order('created_at', { ascending: false }).limit(10),
-    supabase.from('profiles').select('plan'),
+    prisma.profiles.count(),
+    prisma.profiles.count({ where: { status: 'active' } }),
+    prisma.sites.count(),
+    prisma.audit_reports.count(),
+    prisma.keywords.count(),
+    prisma.profiles.findMany({
+      select: { id: true, email: true, full_name: true, plan: true, created_at: true },
+      orderBy: { created_at: 'desc' },
+      take: 10,
+    }),
+    prisma.profiles.groupBy({ by: ['plan'], _count: { plan: true } }),
+    prisma.profiles.count({ where: { created_at: { gte: thirtyDaysAgo } } }),
   ])
 
   // Calculate plan breakdown
   const planCounts: Record<string, number> = { free: 0, starter: 0, pro: 0, agency: 0 }
-  planBreakdownRes.data?.forEach((p: any) => {
-    planCounts[p.plan] = (planCounts[p.plan] || 0) + 1
+  planRows.forEach((row) => {
+    planCounts[row.plan] = (planCounts[row.plan] || 0) + row._count.plan
   })
 
-  // New signups in last 30 days
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-  const { count: newSignups30d } = await supabase
-    .from('profiles')
-    .select('id', { count: 'exact' })
-    .gte('created_at', thirtyDaysAgo.toISOString())
-
   return NextResponse.json({
-    totalUsers: profilesRes.count || 0,
-    activeUsers: activeRes.count || 0,
-    totalSites: sitesRes.count || 0,
-    totalAudits: auditsRes.count || 0,
-    totalKeywords: keywordsRes.count || 0,
+    totalUsers: totalUsers || 0,
+    activeUsers: activeUsers || 0,
+    totalSites: totalSites || 0,
+    totalAudits: totalAudits || 0,
+    totalKeywords: totalKeywords || 0,
     newSignups30d: newSignups30d || 0,
-    recentSignups: recentSignupsRes.data || [],
+    recentSignups: recentSignups || [],
     planBreakdown: planCounts,
   })
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { useSession, signOut as nextSignOut } from 'next-auth/react'
 
 export default function SiteLayout({
   children,
@@ -12,24 +12,19 @@ export default function SiteLayout({
   params: { id: string }
 }) {
   const [site, setSite] = useState<any>(null)
-  const [email, setEmail] = useState('')
+  const { data: session } = useSession()
+  const email = session?.user?.email || ''
   const pathname = usePathname()
-  const supabase = createClient()
 
   useEffect(() => {
-    async function load() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      setEmail(session.user.email || '')
-      const { data } = await supabase.from('sites').select('id, name, url').eq('id', params.id).single()
-      if (data) setSite(data)
-    }
-    load()
+    fetch(`/api/sites/${params.id}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d?.site) setSite(d.site) })
+      .catch(() => {})
   }, [params.id])
 
-  async function signOut() {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+  function signOut() {
+    nextSignOut({ callbackUrl: '/login' })
   }
 
   const id = params.id

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabase } from '@/lib/supabase-server'
+import { getUser } from '@/lib/auth'
 import { getGoogleToken } from '@/lib/google-token'
 
 const GBP_SCOPE = 'https://www.googleapis.com/auth/business.manage'
@@ -48,8 +48,7 @@ async function fetchAllLocations(accountName: string, headers: HeadersInit) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)

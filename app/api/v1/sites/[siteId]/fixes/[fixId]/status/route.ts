@@ -1,5 +1,5 @@
 import { authenticateApiKey } from '@/lib/api-auth'
-import { createAdminSupabase } from '@/lib/supabase-admin'
+import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -14,24 +14,18 @@ export async function PUT(req: NextRequest, { params }: { params: { siteId: stri
     return NextResponse.json({ error: 'Invalid status. Must be: applied, failed, skipped, manual_review' }, { status: 400 })
   }
 
-  const supabase = createAdminSupabase()
-
   // Verify ownership
-  const { data: fix } = await supabase
-    .from('fix_instructions')
-    .select('id, site_id')
-    .eq('id', params.fixId)
-    .eq('site_id', params.siteId)
-    .single()
+  const fix = await prisma.fix_instructions.findFirst({
+    where: { id: params.fixId, site_id: params.siteId },
+    select: { id: true, site_id: true },
+  })
 
   if (!fix) return NextResponse.json({ error: 'Fix not found' }, { status: 404 })
 
-  const { data: site } = await supabase
-    .from('sites')
-    .select('id')
-    .eq('id', params.siteId)
-    .eq('user_id', auth.userId)
-    .single()
+  const site = await prisma.sites.findFirst({
+    where: { id: params.siteId, user_id: auth.userId },
+    select: { id: true },
+  })
 
   if (!site) return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
 
@@ -41,15 +35,13 @@ export async function PUT(req: NextRequest, { params }: { params: { siteId: stri
     plugin_version: plugin_version || null,
   }
 
-  if (status === 'applied') updates.applied_at = new Date().toISOString()
+  if (status === 'applied') updates.applied_at = new Date()
   if (status === 'failed') updates.error_message = error_message || null
 
-  const { error } = await supabase
-    .from('fix_instructions')
-    .update(updates)
-    .eq('id', params.fixId)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await prisma.fix_instructions.update({
+    where: { id: params.fixId },
+    data: updates,
+  })
 
   return NextResponse.json({ success: true })
 }

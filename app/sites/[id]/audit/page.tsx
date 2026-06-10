@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { createClient } from '@/lib/supabase'
 import { BUSINESS_CATEGORIES } from '@/lib/business-categories'
 
 const PLATFORM_OPTIONS: { value: string; label: string }[] = [
@@ -36,23 +35,19 @@ function AuditPageInner({ params }: { params: { id: string } }) {
   const [lastScanned, setLastScanned] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     async function load() {
-      const { data: site } = await supabase.from('sites').select('url, site_type, platform, audit_notes').eq('id', params.id).single()
+      const res = await fetch(`/api/sites/${params.id}`)
+      if (!res.ok) return
+      const { site, audits } = await res.json()
       if (site?.url) setUrl(site.url)
       if (site?.site_type) setSiteType(site.site_type)
       if (site?.platform) setPlatform(site.platform)
       if (site?.audit_notes) setAuditNotes(site.audit_notes)
 
-      // Load the two most recent audits — we use the second one for deltas
-      const { data: reports } = await supabase
-        .from('audit_reports')
-        .select('*')
-        .eq('site_id', params.id)
-        .order('created_at', { ascending: false })
-        .limit(2)
+      // The two most recent audits — we use the second one for deltas
+      const reports = (audits || []).slice(0, 2)
 
       if (reports?.[0]) {
         const r = reports[0]
@@ -99,14 +94,26 @@ function AuditPageInner({ params }: { params: { id: string } }) {
   }
 
   async function saveContext() {
-    await supabase.from('sites').update({ site_type: siteType || null, platform: platform || null }).eq('id', params.id)
+    // TODO(api): persist site_type + platform on the site. No PATCH route exists
+    // for sites yet (GET /api/sites/[id] only supports GET/DELETE). Add
+    // PATCH /api/sites/[id] accepting { site_type, platform } (owner-scoped).
+    await fetch(`/api/sites/${params.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ site_type: siteType || null, platform: platform || null }),
+    })
     setEditing(false)
   }
 
   async function saveNotes() {
     setSavingNotes(true)
     setNotesSaved(false)
-    await supabase.from('sites').update({ audit_notes: auditNotes || null }).eq('id', params.id)
+    // TODO(api): persist audit_notes on the site (see PATCH /api/sites/[id] above).
+    await fetch(`/api/sites/${params.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audit_notes: auditNotes || null }),
+    })
     setSavingNotes(false)
     setNotesSaved(true)
     setTimeout(() => setNotesSaved(false), 2500)
