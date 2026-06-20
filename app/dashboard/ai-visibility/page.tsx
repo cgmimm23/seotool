@@ -87,7 +87,7 @@ function AIVisibilityPageInner() {
           headers: { 'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-sonnet-4-6',
             max_tokens: 1000,
             tools: [{ type: 'web_search_20250305', name: 'web_search' }],
             system: `You are an AI search optimization expert. Analyze the given URL for AI visibility signals. Return ONLY valid JSON, no markdown, no backticks.
