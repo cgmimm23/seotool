@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendMail } from '@/lib/sendmail'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,9 +10,6 @@ export async function GET(req: NextRequest) {
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-
-  const resendKey = process.env.RESEND_API_KEY
-  if (!resendKey) return NextResponse.json({ error: 'Resend not configured' }, { status: 500 })
 
   // Cron-authed: runs across all users intentionally.
   // Get users with weekly reports enabled
@@ -102,19 +100,12 @@ export async function GET(req: NextRequest) {
       </div>
     `
 
-    try {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: 'SEO by CGMIMM <noreply@cgmimm.com>',
-          to: user.email,
-          subject: `Your Weekly SEO Report — ${siteReports.map(s => s.score).join(', ')} scores`,
-          html,
-        }),
-      })
-      sent++
-    } catch {}
+    await sendMail({
+      to: user.email,
+      subject: `Your Weekly SEO Report — ${siteReports.map(s => s.score).join(', ')} scores`,
+      html,
+    })
+    sent++
   }
 
   return NextResponse.json({ sent })

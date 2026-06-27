@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
+import { sendMail } from '@/lib/sendmail'
 
 // Token-based password reset (replaces supabase.auth.resetPasswordForEmail).
 // Stores a bcrypt hash of a random token in auth.users.recovery_token + stamps
@@ -22,19 +23,11 @@ export async function POST(req: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'
     const link = `${appUrl}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`
-    const apiKey = process.env.RESEND_API_KEY
-    if (apiKey) {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: 'SEO by CGMIMM <no-reply@seo.cgmimm.com>',
-          to: [email],
-          subject: 'Reset your password',
-          html: `<p>Reset your password:</p><p><a href="${link}">${link}</a></p><p style="color:#777;font-size:12px">This link expires in 1 hour. If you didn't request this, ignore this email.</p>`,
-        }),
-      }).catch((e) => console.error('[forgot] resend failed:', e))
-    }
+    await sendMail({
+      to: email,
+      subject: 'Reset your password',
+      html: `<p>Reset your password:</p><p><a href="${link}">${link}</a></p><p style="color:#777;font-size:12px">This link expires in 1 hour. If you didn't request this, ignore this email.</p>`,
+    })
   }
 
   // Always report success (anti-enumeration).

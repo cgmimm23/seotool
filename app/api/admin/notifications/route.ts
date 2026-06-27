@@ -1,6 +1,7 @@
 import { requireAdmin } from '@/lib/admin-auth'
 import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendMail } from '@/lib/sendmail'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,22 +53,12 @@ export async function POST(req: NextRequest) {
   // Send emails via Resend if requested
   let emailsSent = 0
   if (sendEmail) {
-    const resendKey = process.env.RESEND_API_KEY
-    if (resendKey) {
-      for (const user of users) {
-        if (!user.email) continue
-        try {
-          await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${resendKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              from: 'SEO by CGMIMM <noreply@cgmimm.com>',
-              to: user.email,
-              subject: subject || title,
-              html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:2rem;">
+    for (const user of users) {
+      if (!user.email) continue
+      await sendMail({
+        to: user.email,
+        subject: subject || title,
+        html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:2rem;">
                 <div style="background:#2367a0;padding:1.5rem;border-radius:12px 12px 0 0;text-align:center;">
                   <h1 style="color:#fff;margin:0;font-size:20px;">AI SEO <span style="color:#68ccd1;">powered by CGMIMM</span></h1>
                 </div>
@@ -78,11 +69,8 @@ export async function POST(req: NextRequest) {
                   <p style="color:#939393;font-size:12px;">You're receiving this because you have an account at <a href="https://seo.cgmimm.com" style="color:#68ccd1;">seo.cgmimm.com</a></p>
                 </div>
               </div>`,
-            }),
-          })
-          emailsSent++
-        } catch {}
-      }
+      })
+      emailsSent++
     }
   }
 

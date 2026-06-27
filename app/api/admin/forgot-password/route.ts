@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { sendMail } from '@/lib/sendmail'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,21 +29,14 @@ export async function POST(req: NextRequest) {
     data: { reset_token: token, reset_token_expires_at: expiresAt },
   })
 
-  // Send email via Resend
-  const resendKey = process.env.RESEND_API_KEY
+  // Send the reset email via the local mail server
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://seo.cgmimm.com'
   const resetUrl = `${siteUrl}/admin/reset-password?token=${token}`
 
-  if (resendKey) {
-    try {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: 'SEO by CGMIMM <noreply@cgmimm.com>',
-          to: admin.email,
-          subject: 'Admin Password Reset',
-          html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:2rem;">
+  await sendMail({
+    to: admin.email,
+    subject: 'Admin Password Reset',
+    html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:2rem;">
             <div style="background:#2367a0;padding:1.5rem;border-radius:12px 12px 0 0;text-align:center;">
               <h1 style="color:#fff;margin:0;font-size:20px;">Admin Portal <span style="color:#68ccd1;">Password Reset</span></h1>
             </div>
@@ -57,12 +51,7 @@ export async function POST(req: NextRequest) {
               <p style="color:#939393;font-size:11px;">If you didn't request this, ignore this email. Your password won't change.</p>
             </div>
           </div>`,
-        }),
-      })
-    } catch (err) {
-      console.error('Failed to send reset email:', err)
-    }
-  }
+  })
 
   return NextResponse.json({ success: true })
 }
