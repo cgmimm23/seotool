@@ -47,6 +47,7 @@ export default function SiteLayout({
         { label: 'Page Speed', href: `/dashboard/pagespeed?site=${siteUrl}` },
         { label: 'AI Visibility', href: `/dashboard/ai-visibility?site=${siteUrl}` },
         { label: 'Backlinks', href: `/dashboard/backlinks?site=${siteUrl}` },
+        { label: 'CGM Backlinks', href: `/dashboard/cgm-backlinks?site=${siteUrl}` },
       ]
     },
     {
